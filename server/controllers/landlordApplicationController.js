@@ -2,7 +2,72 @@ import LandlordApplication from '../models/landlordApplication.js';
 import User from '../models/user.js';
 import { clerkClient } from '@clerk/express';
 
-// Submit landlord application
+// Instant landlord signup — auto-approves, admin can revoke later
+export const instantSignup = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const user = req.user;
+
+        // Already a landlord?
+        if (user.role === 'houseOwner' || user.role === 'admin') {
+            return res.status(400).json({ success: false, message: 'You are already a landlord!' });
+        }
+
+        const { phoneNumber } = req.body;
+        if (!phoneNumber) {
+            return res.status(400).json({ success: false, message: 'Phone number is required' });
+        }
+
+        // Check existing application
+        const existing = await LandlordApplication.findOne({ userId, status: 'approved' });
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'Already approved as landlord!' });
+        }
+
+        // Create auto-approved application record for admin tracking
+        await LandlordApplication.findOneAndUpdate(
+            { userId },
+            {
+                userId,
+                fullName: user.username || 'Landlord',
+                phoneNumber,
+                idNumber: 'auto-signup',
+                idDocument: 'auto-signup',
+                numberOfProperties: 1,
+                totalRooms: 1,
+                propertiesLocation: 'TBD',
+                status: 'approved',
+                reviewedAt: new Date(),
+                notes: 'Auto-approved via instant signup'
+            },
+            { upsert: true, new: true }
+        );
+
+        // Promote user to houseOwner
+        await User.findByIdAndUpdate(userId, {
+            role: 'houseOwner',
+            phoneNumber
+        });
+
+        // Respond immediately
+        res.json({
+            success: true,
+            message: 'Welcome! You are now a landlord. You can start listing properties.',
+            role: 'houseOwner'
+        });
+
+        // Update Clerk metadata in background
+        clerkClient.users.updateUser(userId, {
+            publicMetadata: { role: 'houseOwner' }
+        }).catch(err => console.error('Clerk metadata update error:', err.message));
+
+    } catch (error) {
+        console.error('Instant signup error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Submit landlord application (legacy — kept for admin records)
 export const submitApplication = async (req, res) => {
     try {
         const userId = req.user._id;

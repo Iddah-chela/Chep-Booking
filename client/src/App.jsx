@@ -24,6 +24,7 @@ import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
 import UnlockPolicy from './pages/UnlockPolicy'
 import Safety from './pages/Safety'
+import ManagedProperties from './pages/ManagedProperties'
 import {Toaster} from 'react-hot-toast'
 import { useAppContext } from './context/AppContext'
 
@@ -63,6 +64,7 @@ const App = () => {
           <Route path='/privacy' element={<Privacy/>}/>
           <Route path='/unlock-policy' element={<UnlockPolicy/>}/>
           <Route path='/safety' element={<Safety/>}/>
+          <Route path='/managed-properties' element={<ManagedProperties/>}/>
           <Route path='/owner' element={<Layout/>}>
               <Route index element={<Dashboard/>}/>
               <Route path='viewing-requests' element={<ViewingRequests/>}/>

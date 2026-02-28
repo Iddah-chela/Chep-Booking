@@ -92,7 +92,7 @@ const MyViewings = () => {
       });
 
       if (data.success) {
-        toast.success('Room booked! Redirecting to My Rentals...');
+        toast.success('Room booked! Redirecting to My Bookings...');
         setBookingViewingId(null);
         setMoveInDate('');
         setTimeout(() => navigate('/my-bookings'), 1200);

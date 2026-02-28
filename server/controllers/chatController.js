@@ -84,6 +84,7 @@ export const sendMessage = async (req, res) => {
             User.findById(senderId),
             User.findById(recipientId)
         ]);
+        //i never recieve this email, maybe because of the content? or because of the email provider? i will test more later
         if (recipient?.email) {
             const propertyName = updatedChat.property?.name || 'a property';
             sendEmail(

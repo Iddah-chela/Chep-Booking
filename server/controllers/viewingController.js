@@ -65,6 +65,7 @@ export const createViewingRequest = async (req, res) => {
         if (ownerUser?.email) {
             const renterUser = await User.findById(renterId);
             const dateStr = new Date(viewingDate).toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            //i never recieve this email, maybe because of the content? or because of the email provider? i will test more later
             sendEmail(
                 ownerUser.email,
                 `New Viewing Request for ${property.name}`,
@@ -152,7 +153,7 @@ export const respondToViewingRequest = async (req, res) => {
             const mapsLink = property.googleMapsUrl 
                 ? `<div style="text-align:center;margin-top:16px;"><a href="${property.googleMapsUrl}" style="display:inline-block;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(22,163,74,0.3);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" style="vertical-align:middle;margin-right:6px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Open in Google Maps</a></div>`
                 : `<p style="margin-top:12px;color:#666;font-size:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Location: ${property.address}, ${property.estate}, ${property.place}</p>`;  
-            
+            // i never recieve this email, maybe because of the content? or because of the email provider? i will test more later
             sendEmail(
                 renterUser.email,
                 isApproved 

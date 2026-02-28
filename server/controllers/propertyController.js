@@ -274,3 +274,132 @@ export const verifyListing = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
+// ── Caretaker management ────────────────────────────────────────────────
+
+// Add a caretaker email to a property (owner only)
+export const addCaretaker = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+    const owner = req.user._id;
+
+    if (!email) {
+      return res.json({ success: false, message: "Email is required" });
+    }
+
+    const property = await Property.findOne({ _id: id, owner });
+    if (!property) {
+      return res.json({ success: false, message: "Property not found or unauthorized" });
+    }
+
+    // Check if email is already a caretaker
+    const normalizedEmail = email.toLowerCase().trim();
+    if (property.caretakers.includes(normalizedEmail)) {
+      return res.json({ success: false, message: "This email is already a caretaker" });
+    }
+
+    // Verify the email belongs to a registered user
+    const caretakerUser = await User.findOne({ email: normalizedEmail });
+    if (!caretakerUser) {
+      return res.json({ success: false, message: "No registered user found with that email" });
+    }
+
+    property.caretakers.push(normalizedEmail);
+    await property.save();
+
+    res.json({ 
+      success: true, 
+      message: `${caretakerUser.username} added as caretaker`,
+      caretakers: property.caretakers
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Remove a caretaker email from a property (owner only)
+export const removeCaretaker = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+    const owner = req.user._id;
+
+    const property = await Property.findOne({ _id: id, owner });
+    if (!property) {
+      return res.json({ success: false, message: "Property not found or unauthorized" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    property.caretakers = property.caretakers.filter(e => e !== normalizedEmail);
+    await property.save();
+
+    res.json({ 
+      success: true, 
+      message: "Caretaker removed",
+      caretakers: property.caretakers
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get properties where the logged-in user is a caretaker
+export const getManagedProperties = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    if (!userEmail) {
+      return res.json({ success: false, message: "User email not found" });
+    }
+
+    const properties = await Property.find({ caretakers: userEmail.toLowerCase() })
+      .populate('owner', 'username email image')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, properties });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Toggle room availability — also allows caretakers
+export const caretakerToggleRoom = async (req, res) => {
+  try {
+    const { propertyId, buildingId, row, col } = req.body;
+    const userEmail = req.user.email;
+
+    const property = await Property.findById(propertyId);
+    if (!property) {
+      return res.json({ success: false, message: "Property not found" });
+    }
+
+    // Allow if user is owner OR caretaker
+    const isOwner = property.owner === req.user._id;
+    const isCaretaker = property.caretakers.includes(userEmail?.toLowerCase());
+
+    if (!isOwner && !isCaretaker) {
+      return res.json({ success: false, message: "Unauthorized — you are not the owner or a caretaker" });
+    }
+
+    const building = property.buildings.find(b => b.id === buildingId);
+    if (!building) {
+      return res.json({ success: false, message: "Building not found" });
+    }
+
+    const cell = building.grid[row][col];
+    if (cell.type !== 'room') {
+      return res.json({ success: false, message: "Not a room cell" });
+    }
+
+    cell.isVacant = !cell.isVacant;
+    await property.save();
+
+    res.json({
+      success: true,
+      message: `Room ${cell.isVacant ? 'marked as vacant' : 'marked as occupied'}`,
+      property
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};

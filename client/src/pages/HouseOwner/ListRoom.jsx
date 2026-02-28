@@ -3,6 +3,7 @@ import Title from '../../components/Title'
 import { useAppContext } from '../../context/AppContext'
 import toast from 'react-hot-toast'
 import PropertyListingModal from '../../components/PropertyListingModal'
+import { UserPlus, X, Users } from 'lucide-react'
 
 const ListRoom = () => {
 
@@ -10,6 +11,8 @@ const ListRoom = () => {
   const [showPropertyModal, setShowPropertyModal] = useState(false)
   const [editingProperty, setEditingProperty] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [caretakerInput, setCaretakerInput] = useState({})   // { [propertyId]: emailString }
+  const [showCaretakers, setShowCaretakers] = useState({})    // { [propertyId]: bool }
   const { user, getToken, axios } = useAppContext()
 
   // fetch Properties
@@ -88,6 +91,46 @@ const ListRoom = () => {
       }
     } catch (error) {
       toast.error('Failed to refresh listing')
+    }
+  }
+
+  // ── Caretaker management ──────────────────────────────────────────────
+
+  const addCaretaker = async (propertyId) => {
+    const email = caretakerInput[propertyId]?.trim()
+    if (!email) return toast.error('Enter a caretaker email')
+
+    try {
+      const response = await axios.post(`/api/properties/${propertyId}/caretakers`, { email }, {
+        headers: { Authorization: `Bearer ${await getToken()}` }
+      })
+      if (response.data.success) {
+        toast.success(response.data.message)
+        setCaretakerInput(prev => ({ ...prev, [propertyId]: '' }))
+        fetchData()
+      } else {
+        toast.error(response.data.message)
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add caretaker')
+    }
+  }
+
+  const removeCaretaker = async (propertyId, email) => {
+    if (!confirm(`Remove ${email} as caretaker?`)) return
+    try {
+      const response = await axios.delete(`/api/properties/${propertyId}/caretakers`, {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+        data: { email }
+      })
+      if (response.data.success) {
+        toast.success(response.data.message)
+        fetchData()
+      } else {
+        toast.error(response.data.message)
+      }
+    } catch (error) {
+      toast.error('Failed to remove caretaker')
     }
   }
 
@@ -205,6 +248,62 @@ const ListRoom = () => {
                    <div className='px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-medium'>
                      {property.buildings.length} {property.buildings.length === 1 ? 'Building' : 'Buildings'}
                    </div>
+                 </div>
+
+                 {/* ── Caretakers Section ──────────────────────────── */}
+                 <div className='mb-4'>
+                   <button
+                     onClick={() => setShowCaretakers(prev => ({ ...prev, [property._id]: !prev[property._id] }))}
+                     className='flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors'
+                   >
+                     <Users className='w-4 h-4' />
+                     Caretakers ({property.caretakers?.length || 0})
+                     <svg className={`w-3 h-3 transition-transform ${showCaretakers[property._id] ? 'rotate-180' : ''}`} fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' /></svg>
+                   </button>
+
+                   {showCaretakers[property._id] && (
+                     <div className='mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200'>
+                       {/* Existing Caretakers */}
+                       {property.caretakers?.length > 0 ? (
+                         <div className='space-y-2 mb-3'>
+                           {property.caretakers.map((email) => (
+                             <div key={email} className='flex items-center justify-between bg-white px-3 py-2 rounded-lg border'>
+                               <span className='text-sm text-gray-700'>{email}</span>
+                               <button
+                                 onClick={() => removeCaretaker(property._id, email)}
+                                 className='text-red-400 hover:text-red-600 p-1'
+                                 title='Remove caretaker'
+                               >
+                                 <X className='w-4 h-4' />
+                               </button>
+                             </div>
+                           ))}
+                         </div>
+                       ) : (
+                         <p className='text-xs text-gray-400 mb-3'>No caretakers assigned yet.</p>
+                       )}
+
+                       {/* Add Caretaker Input */}
+                       <div className='flex gap-2'>
+                         <input
+                           type='email'
+                           placeholder='Caretaker email address'
+                           value={caretakerInput[property._id] || ''}
+                           onChange={(e) => setCaretakerInput(prev => ({ ...prev, [property._id]: e.target.value }))}
+                           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCaretaker(property._id))}
+                           className='flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+                         />
+                         <button
+                           onClick={() => addCaretaker(property._id)}
+                           className='flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors'
+                         >
+                           <UserPlus className='w-4 h-4' />
+                           Add
+                         </button>
+                       </div>
+                       <p className='text-xs text-gray-400 mt-2'>Caretakers can toggle room vacancy for this property.</p>
+                     </div>
+                   )}
                  </div>
 
                  {/* Building Visual Grid — fixed 52px cells, scrollable */}

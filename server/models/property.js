@@ -105,6 +105,11 @@ const propertySchema = new mongoose.Schema({
   needsRefresh: {
     type: Boolean,
     default: false  // warn after 14 days without refresh
+  },
+  // ── Caretaker emails ──────────────────────────────────────────────────
+  caretakers: {
+    type: [String],   // array of email addresses
+    default: []
   }
 }, { timestamps: true });
 

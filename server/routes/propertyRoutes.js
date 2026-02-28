@@ -8,7 +8,11 @@ import {
   updateProperty,
   deleteProperty,
   toggleRoomAvailability,
-  verifyListing
+  verifyListing,
+  addCaretaker,
+  removeCaretaker,
+  getManagedProperties,
+  caretakerToggleRoom
 } from "../controllers/propertyController.js";
 
 const propertyRouter = express.Router();
@@ -20,6 +24,12 @@ propertyRouter.get('/', getAllProperties);
 propertyRouter.post('/', protect, createProperty);
 propertyRouter.get('/owner/my-properties', protect, getOwnerProperties);
 propertyRouter.post('/toggle-room', protect, toggleRoomAvailability);
+
+// Caretaker routes
+propertyRouter.get('/managed', protect, getManagedProperties);
+propertyRouter.post('/caretaker-toggle-room', protect, caretakerToggleRoom);
+propertyRouter.post('/:id/caretakers', protect, addCaretaker);
+propertyRouter.delete('/:id/caretakers', protect, removeCaretaker);
 
 // Wildcard routes last
 propertyRouter.get('/:id', getPropertyById);
