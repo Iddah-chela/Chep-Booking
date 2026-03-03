@@ -1,6 +1,9 @@
 import Booking from "../models/booking.js";
 import Property from "../models/property.js";
 import ViewingRequest from "../models/viewingRequest.js";
+import User from "../models/user.js";
+import { sendEmail } from "../utils/mailer.js";
+import { sendPushNotification } from "../utils/pushNotifier.js";
 
 // api to create a new booking
 //Post /api/bookings/book
@@ -111,6 +114,102 @@ export const confirmMoveIn = async (req, res) => {
         res.json({ success: true, message: 'Move-in confirmed' });
     } catch (error) {
         res.json({ success: false, message: error.message });
+    }
+};
+
+// Token / authenticated move-in action — GET /api/bookings/move-in-action
+// Used by email links: ?id=X&answer=yes|no|owner-yes|owner-no&token=Y
+export const handleMoveInAction = async (req, res) => {
+    try {
+        const { id, answer, token } = req.query;
+        const BASE = process.env.CLIENT_URL || 'http://localhost:5173';
+
+        const booking = await Booking.findById(id).populate('property');
+        if (!booking) return res.status(404).send('<h2>Booking not found.</h2>');
+
+        const property = booking.property;
+
+        if (answer === 'yes') {
+            // Renter confirms move-in
+            if (booking.hasMoved) return res.redirect(`${BASE}/my-bookings`);
+            booking.hasMoved = true;
+            await booking.save();
+            // Update grid cell
+            try {
+                if (property) {
+                    const building = property.buildings?.find(b => b.id === booking.roomDetails.buildingId);
+                    if (building?.grid?.[booking.roomDetails.row]?.[booking.roomDetails.col]) {
+                        building.grid[booking.roomDetails.row][booking.roomDetails.col].isVacant = false;
+                        building.grid[booking.roomDetails.row][booking.roomDetails.col].isBooked = false;
+                        property.markModified('buildings');
+                        await property.save();
+                    }
+                    // Notify owner
+                    const renterUser = await User.findById(booking.user);
+                    const ownerUser = await User.findById(property.owner);
+                    if (ownerUser) {
+                        sendPushNotification(property.owner, {
+                            title: 'Move-in confirmed!',
+                            body: `${renterUser?.username || 'Your tenant'} has confirmed they moved into ${property.name}`,
+                            url: '/owner/bookings',
+                            tag: `movein-confirmed-${booking._id}`
+                        });
+                    }
+                }
+            } catch (_) {}
+            return res.redirect(`${BASE}/my-bookings?moved=1`);
+        }
+
+        if (answer === 'no') {
+            // Renter says not yet — just redirect to app
+            return res.redirect(`${BASE}/my-bookings`);
+        }
+
+        if (answer === 'owner-yes' && token && booking.moveInOwnerToken === token) {
+            // Owner confirms renter moved in
+            booking.hasMoved = true;
+            booking.moveInOwnerToken = null;
+            await booking.save();
+            try {
+                if (property) {
+                    const building = property.buildings?.find(b => b.id === booking.roomDetails.buildingId);
+                    if (building?.grid?.[booking.roomDetails.row]?.[booking.roomDetails.col]) {
+                        building.grid[booking.roomDetails.row][booking.roomDetails.col].isVacant = false;
+                        building.grid[booking.roomDetails.row][booking.roomDetails.col].isBooked = false;
+                        property.markModified('buildings');
+                        await property.save();
+                    }
+                }
+                // Tell renter
+                sendPushNotification(booking.user, {
+                    title: 'Move-in confirmed',
+                    body: `Your move-in at ${property?.name} has been confirmed by the owner`,
+                    url: '/my-bookings',
+                    tag: `movein-owner-confirmed-${booking._id}`
+                });
+            } catch (_) {}
+            return res.send(`<html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;"><h2 style="color:#16a34a;">✓ Move-in recorded</h2><p>Thank you. The tenant's move-in has been confirmed.</p><a href="${BASE}/owner/bookings" style="background:#4F46E5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a></body></html>`);
+        }
+
+        if (answer === 'owner-no' && token && booking.moveInOwnerToken === token) {
+            // Owner says renter hasn't moved in — flag for review
+            booking.moveInOwnerToken = null;
+            await booking.save();
+            try {
+                sendPushNotification(booking.user, {
+                    title: 'Move-in issue',
+                    body: `Your caretaker reported you haven't moved in yet at ${property?.name}. Please contact them.`,
+                    url: '/my-bookings',
+                    tag: `movein-issue-${booking._id}`
+                });
+            } catch (_) {}
+            return res.send(`<html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;"><h2 style="color:#d97706;">Noted</h2><p>We've notified the tenant to follow up. Both parties should be in contact to resolve this.</p><a href="${BASE}/owner/bookings" style="background:#4F46E5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a></body></html>`);
+        }
+
+        return res.status(400).send('<h2>Invalid or expired link.</h2>');
+    } catch (error) {
+        console.error('[MoveInAction]', error.message);
+        res.status(500).send('<h2>Something went wrong.</h2>');
     }
 };
 

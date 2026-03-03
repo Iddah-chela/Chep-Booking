@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
 
 const InstallPWA = ({ isScrolled }) => {
@@ -45,10 +45,10 @@ const InstallPWA = ({ isScrolled }) => {
       onClick={handleInstall}
       className={`flex items-center gap-1.5 border px-3 py-1 text-sm font-light rounded-full cursor-pointer transition-all ${
         isScrolled
-          ? 'text-indigo-600 border-indigo-500 bg-indigo-50 hover:bg-indigo-100'
+          ? 'text-indigo-600 border-indigo-500 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:border-indigo-400 dark:text-indigo-300'
           : 'text-white border-white/60 bg-white/10 hover:bg-white/20'
       }`}
-      title="Install CampusCrib app"
+      title="Install PataKeja app"
     >
       <Download className="w-3.5 h-3.5" />
       Install

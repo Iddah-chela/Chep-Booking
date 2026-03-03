@@ -31,15 +31,15 @@ const Newsletter = () => {
   }
 
   return (
-    <div className="flex flex-col items-center max-w-5xl lg:w-full rounded-2xl px-4 py-12 md:py-16 mx-2 lg:mx-auto my-30 bg-gray-900 text-white">
+    <div className="flex flex-col items-center max-w-5xl lg:w-full rounded-2xl px-4 py-12 md:py-16 mx-2 lg:mx-auto my-30 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white">
 
         <Title title="Stay Updated" subTitle="Subscribe to get alerts when new verified rental listings matching your preferences become available"/>
 
         {subscribed ? (
           <div className="mt-6 flex flex-col items-center gap-2">
-            <PartyPopper className='w-8 h-8 text-green-400' />
-            <p className="text-green-400 font-medium text-lg">You're subscribed!</p>
-            <p className="text-gray-400 text-sm text-center">We'll email you whenever new listings go live.</p>
+            <PartyPopper className='w-8 h-8 text-green-500 dark:text-green-400' />
+            <p className="text-green-600 dark:text-green-400 font-medium text-lg">You're subscribed!</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm text-center">We'll email you whenever new listings go live.</p>
           </div>
         ) : (
           <form onSubmit={handleSubscribe} className="flex flex-col md:flex-row items-center justify-center gap-4 mt-6 w-full max-w-xl">
@@ -48,13 +48,13 @@ const Newsletter = () => {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="bg-white/10 px-4 py-2.5 border border-white/20 rounded outline-none flex-1 w-full placeholder-white/40"
+              className="bg-white dark:bg-white/10 px-4 py-2.5 border border-gray-300 dark:border-white/20 rounded outline-none flex-1 w-full text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40"
               placeholder="Enter your email"
             />
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center justify-center gap-2 group bg-black px-4 md:px-7 py-2.5 rounded active:scale-95 transition-all disabled:opacity-60 whitespace-nowrap"
+              className="flex items-center justify-center gap-2 group bg-gray-900 dark:bg-black text-white px-4 md:px-7 py-2.5 rounded active:scale-95 transition-all disabled:opacity-60 whitespace-nowrap hover:bg-gray-700 dark:hover:bg-gray-800"
             >
               {loading ? 'Subscribing...' : 'Subscribe'}
               {!loading && <img src={assets.arrowIcon} alt="" className='w-3.5 invert group-hover:translate-x-1 transition-all' />}
@@ -62,7 +62,7 @@ const Newsletter = () => {
           </form>
         )}
 
-        <p className="text-gray-500 mt-6 text-xs text-center">Get notified about new listings, price drops, and exclusive rental deals. Unsubscribe anytime.</p>
+        <p className="text-gray-400 dark:text-gray-500 mt-6 text-xs text-center">Get notified about new listings, price drops, and exclusive rental deals. Unsubscribe anytime.</p>
     </div>
   )
 }

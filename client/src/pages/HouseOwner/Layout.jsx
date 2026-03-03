@@ -5,15 +5,27 @@ import {useAppContext} from '../../context/AppContext'
 import { useEffect } from 'react'
 
 const Layout = () => {
-  const {isOwner, navigate, user} = useAppContext()
+  const { isOwner, navigate, user, authLoading } = useAppContext()
 
-  useEffect(()=> {
-    if(!user){
-      navigate('/')
-    } else if(!isOwner){
-      navigate('/')
-    }
-  }, [isOwner, user])
+  useEffect(() => {
+    if (authLoading) return
+    if (!user) { navigate('/'); return }
+    if (!isOwner) { navigate('/'); return }
+  }, [isOwner, user, authLoading])
+
+  if (authLoading) {
+    return (
+      <div className='flex items-center justify-center h-screen bg-white dark:bg-gray-900'>
+        <div className='text-center'>
+          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4'></div>
+          <p className='text-gray-500 dark:text-gray-400 text-sm'>Loading…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user || !isOwner) return null
+
   return (
     <div className='flex pt-20 min-h-screen'>
         <Sidebar/>

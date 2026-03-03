@@ -31,7 +31,7 @@ const Hero = () => {
           Verified listings. Viewing requests. Safe and secure rentals.
         </p>
         
-        <form onSubmit={handleSearch} className='bg-white/85 text-gray-700 rounded-lg px-6 py-5 mt-10 flex flex-col md:flex-row max-md:items-start gap-4 w-full max-w-3xl'>
+        <form onSubmit={handleSearch} className='bg-white/85 dark:bg-gray-800/90 text-gray-700 dark:text-gray-200 rounded-lg px-6 py-5 mt-10 flex flex-col md:flex-row max-md:items-start gap-4 w-full max-w-3xl'>
 
             <div className='flex-1'>
                 <div className='flex items-center gap-2 mb-2'>

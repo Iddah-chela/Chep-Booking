@@ -1,7 +1,8 @@
-import Chat from "../models/chat.js";
+﻿import Chat from "../models/chat.js";
 import User from "../models/user.js";
 import Property from "../models/property.js";
 import { sendEmail } from "../utils/mailer.js";
+import { sendPushNotification } from "../utils/pushNotifier.js";
 
 // Get or create a chat between tenant and house owner for a specific room
 export const getOrCreateChat = async (req, res) => {
@@ -55,6 +56,14 @@ export const sendMessage = async (req, res) => {
         const { chatId, content } = req.body;
         const senderId = req.user._id;
 
+        // Input validation
+        if (!content || typeof content !== 'string' || content.trim().length === 0) {
+            return res.json({ success: false, message: "Message cannot be empty" });
+        }
+        if (content.length > 5000) {
+            return res.json({ success: false, message: "Message is too long (max 5000 characters)" });
+        }
+
         const chat = await Chat.findById(chatId);
         if (!chat) {
             return res.json({ success: false, message: "Chat not found" });
@@ -78,34 +87,47 @@ export const sendMessage = async (req, res) => {
 
         const updatedChat = await Chat.findById(chatId).populate('tenant houseOwner property');
 
-        // Notify the other user via email (non-blocking)
-        const recipientId = senderId === chat.tenant.toString() ? chat.houseOwner : chat.tenant;
-        const [sender, recipient] = await Promise.all([
-            User.findById(senderId),
-            User.findById(recipientId)
-        ]);
-        //i never recieve this email, maybe because of the content? or because of the email provider? i will test more later
-        if (recipient?.email) {
-            const propertyName = updatedChat.property?.name || 'a property';
-            sendEmail(
-                recipient.email,
-                `New message from ${sender?.username || 'someone'} on CampusCrib`,
-                `<div style="font-family:'Segoe UI',Roboto,sans-serif;max-width:520px;margin:auto;color:#222;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
-                    <div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);padding:24px;text-align:center;">
-                        <h2 style="color:#fff;margin:0;font-size:20px;">New Message</h2>
-                    </div>
-                    <div style="padding:20px 24px;background:#fff;">
-                        <p style="font-size:14px;line-height:1.6;"><strong>${sender?.username || 'Someone'}</strong> sent you a message about <strong style="color:#4F46E5;">${propertyName}</strong>:</p>
-                        <div style="background:#f3f4f6;border-radius:8px;padding:12px 16px;margin:12px 0;">
-                            <p style="margin:0;font-size:14px;color:#333;">"${content.length > 200 ? content.substring(0, 200) + '...' : content}"</p>
-                        </div>
-                        <p style="font-size:13px;color:#888;margin-top:12px;">Log in to CampusCrib to reply.</p>
-                    </div>
-                </div>`
-            ).catch(() => {});
-        }
-
+        // Send response immediately — don't make the user wait for notifications
         res.json({ success: true, chat: updatedChat });
+
+        // Fire-and-forget: email + push notifications
+        (async () => {
+            try {
+                const recipientId = senderId === chat.tenant.toString() ? chat.houseOwner : chat.tenant;
+                const [sender, recipient] = await Promise.all([
+                    User.findById(senderId),
+                    User.findById(recipientId)
+                ]);
+                if (recipient?.email) {
+                    const propertyName = updatedChat.property?.name || 'a property';
+                    sendEmail(
+                        recipient.email,
+                        `New message from ${sender?.username || 'someone'} — PataKeja`,
+                        `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#222;">
+                            <div style="background:#4F46E5;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                                <h2 style="color:#fff;margin:0;font-size:18px;">New Message on PataKeja</h2>
+                            </div>
+                            <div style="padding:20px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+                                <p style="font-size:14px;line-height:1.6;margin:0 0 12px;"><strong>${sender?.username || 'Someone'}</strong> sent you a message about <strong>${propertyName}</strong>:</p>
+                                <div style="background:#f3f4f6;border-radius:8px;padding:12px 16px;margin:0 0 12px;">
+                                    <p style="margin:0;font-size:14px;color:#333;">${content.length > 200 ? content.substring(0, 200) + '...' : content}</p>
+                                </div>
+                                <p style="font-size:13px;color:#888;margin:0;">Log in to PataKeja to reply.</p>
+                            </div>
+                        </div>`
+                    ).catch(e => console.warn('[Chat] Email notification failed:', e.message));
+
+                    sendPushNotification(recipientId, {
+                        title: `${sender?.username || 'Someone'} sent a message`,
+                        body: content.length > 100 ? content.substring(0, 100) + '...' : content,
+                        url: `/my-chats?chatId=${chatId}`,
+                        tag: `chat-${chatId}`
+                    });
+                }
+            } catch (e) {
+                console.warn('[Chat] Notification error:', e.message);
+            }
+        })();
     } catch (error) {
         res.json({ success: false, message: error.message });
     }

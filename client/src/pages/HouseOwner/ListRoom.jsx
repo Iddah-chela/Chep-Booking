@@ -137,9 +137,9 @@ const ListRoom = () => {
   const getFreshnessBadge = (property) => {
     const baseline = property.lastVerifiedAt || property.createdAt
     const days = Math.floor((Date.now() - new Date(baseline)) / (1000 * 60 * 60 * 24))
-    if (property.isExpired) return { label: 'Expired (hidden)', color: 'bg-red-100 text-red-700', days, urgent: true }
-    if (property.needsRefresh) return { label: `Stale (${days}d old)`, color: 'bg-yellow-100 text-yellow-700', days, urgent: true }
-    return { label: `Fresh (${days}d ago)`, color: 'bg-green-100 text-green-700', days, urgent: false }
+    if (property.isExpired) return { label: 'Expired (hidden)', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300', days, urgent: true }
+    if (property.needsRefresh) return { label: `Stale (${days}d old)`, color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300', days, urgent: true }
+    return { label: `Fresh (${days}d ago)`, color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300', days, urgent: false }
   }
 
   useEffect(() => {
@@ -166,7 +166,7 @@ const ListRoom = () => {
        {loading ? (
          <div className='text-center py-20'>Loading your properties...</div>
        ) : properties.length === 0 ? (
-         <div className='text-center py-20 bg-gray-50 rounded-lg'>
+         <div className='text-center py-20 bg-gray-50 dark:bg-gray-800 rounded-lg'>
            <p className='text-gray-500 text-lg mb-4'>You haven't listed any properties yet</p>
            <button 
              onClick={() => setShowPropertyModal(true)}
@@ -179,17 +179,17 @@ const ListRoom = () => {
          <div className='grid gap-6'>
            {properties.map((property) => {
              return (
-               <div key={property._id} className='border border-gray-200 rounded-xl p-6 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden'>
+               <div key={property._id} className='border border-gray-200 dark:border-gray-700 rounded-xl p-6 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow overflow-hidden'>
                  <div className='flex flex-col sm:flex-row justify-between items-start gap-3 mb-4'>
                   <div className='min-w-0'>
-                     <h4 className='text-2xl font-bold text-gray-800'>{property.name}</h4>
-                     <p className='text-sm text-gray-600 mt-1'>{property.address}, {property.estate}</p>
-                     <p className='text-sm text-gray-500'>{property.place} • {property.propertyType}</p>
+                     <h4 className='text-2xl font-bold text-gray-800 dark:text-gray-100'>{property.name}</h4>
+                     <p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>{property.address}, {property.estate}</p>
+                     <p className='text-sm text-gray-500 dark:text-gray-500'>{property.place} • {property.propertyType}</p>
                    </div>
                <div className='flex gap-2 flex-wrap flex-shrink-0'>
                      <button 
                        onClick={() => {setEditingProperty(property); setShowPropertyModal(true)}}
-                       className='flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-100'
+                       className='flex items-center gap-1.5 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
                      >
                        <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' /></svg>
                        Edit
@@ -199,7 +199,7 @@ const ListRoom = () => {
                        return fb.urgent ? (
                          <button
                            onClick={() => refreshListing(property._id)}
-                           className='flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-300 rounded-lg text-sm font-semibold hover:bg-amber-100 animate-pulse'
+                           className='flex items-center gap-1.5 px-4 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded-lg text-sm font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/50 animate-pulse'
                          >
                            <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'/></svg>
                            Refresh Listing
@@ -207,7 +207,7 @@ const ListRoom = () => {
                        ) : (
                          <button
                            onClick={() => refreshListing(property._id)}
-                           className='flex items-center gap-1.5 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100'
+                           className='flex items-center gap-1.5 px-4 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium hover:bg-green-100 dark:hover:bg-green-900/50'
                          >
                            <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'/></svg>
                            Refresh
@@ -216,7 +216,7 @@ const ListRoom = () => {
                      })()}
                      <button 
                        onClick={() => deleteProperty(property._id)}
-                       className='flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100'
+                       className='flex items-center gap-1.5 px-4 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/50'
                      >
                        <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' /></svg>
                        Delete
@@ -236,16 +236,16 @@ const ListRoom = () => {
                  })()}
 
                  <div className='flex gap-6 mb-4 text-sm flex-wrap'>
-                   <div className='px-4 py-2 bg-green-50 text-green-700 rounded-lg font-medium'>
+                   <div className='px-4 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium'>
                      {property.vacantRooms} Vacant
                    </div>
-                   <div className='px-4 py-2 bg-red-50 text-red-700 rounded-lg font-medium'>
+                   <div className='px-4 py-2 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-medium'>
                      {property.totalRooms - property.vacantRooms} Occupied
                    </div>
-                   <div className='px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium'>
+                   <div className='px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium'>
                      {property.totalRooms} Total Units
                    </div>
-                   <div className='px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-medium'>
+                   <div className='px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg font-medium'>
                      {property.buildings.length} {property.buildings.length === 1 ? 'Building' : 'Buildings'}
                    </div>
                  </div>
@@ -254,7 +254,7 @@ const ListRoom = () => {
                  <div className='mb-4'>
                    <button
                      onClick={() => setShowCaretakers(prev => ({ ...prev, [property._id]: !prev[property._id] }))}
-                     className='flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors'
+                           className='flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors'
                    >
                      <Users className='w-4 h-4' />
                      Caretakers ({property.caretakers?.length || 0})
@@ -262,13 +262,13 @@ const ListRoom = () => {
                    </button>
 
                    {showCaretakers[property._id] && (
-                     <div className='mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200'>
+                     <div className='mt-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600'>
                        {/* Existing Caretakers */}
                        {property.caretakers?.length > 0 ? (
                          <div className='space-y-2 mb-3'>
                            {property.caretakers.map((email) => (
-                             <div key={email} className='flex items-center justify-between bg-white px-3 py-2 rounded-lg border'>
-                               <span className='text-sm text-gray-700'>{email}</span>
+                             <div key={email} className='flex items-center justify-between bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border dark:border-gray-600'>
+                               <span className='text-sm text-gray-700 dark:text-gray-300'>{email}</span>
                                <button
                                  onClick={() => removeCaretaker(property._id, email)}
                                  className='text-red-400 hover:text-red-600 p-1'
@@ -291,7 +291,7 @@ const ListRoom = () => {
                            value={caretakerInput[property._id] || ''}
                            onChange={(e) => setCaretakerInput(prev => ({ ...prev, [property._id]: e.target.value }))}
                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCaretaker(property._id))}
-                           className='flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+                           className='flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400'
                          />
                          <button
                            onClick={() => addCaretaker(property._id)}
@@ -311,7 +311,7 @@ const ListRoom = () => {
                    const CELL = 52
                    return (
                      <div key={building.id} className='mt-4 border-t pt-4'>
-                       <h5 className='font-semibold text-gray-700 mb-2 text-sm'>{building.name}</h5>
+                       <h5 className='font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm'>{building.name}</h5>
                        <div className='overflow-x-auto'>
                          <div className='inline-block pb-2'>
                            {/* Roof */}
@@ -319,28 +319,29 @@ const ListRoom = () => {
                              <svg width={building.cols * CELL} height='22'>
                                <polygon
                                  points={`0,22 ${(building.cols * CELL) / 2},0 ${building.cols * CELL},22`}
-                                 fill='#7c3aed' stroke='#4c1d95' strokeWidth='2'
+                                 className='fill-violet-600 dark:fill-violet-500 stroke-violet-900 dark:stroke-violet-700'
+                                 strokeWidth='2'
                                />
                              </svg>
                            </div>
                            {/* Grid */}
-                           <div className='bg-white shadow border-2 border-indigo-400'>
+                           <div className='bg-white dark:bg-gray-800 shadow border-2 border-indigo-400 dark:border-indigo-600'>
                              {building.grid.map((row, rowIndex) => (
                                <div key={rowIndex} className='flex'>
                                  {row.map((cell, colIndex) => {
                                    if (cell.type === 'empty') return (
-                                     <div key={colIndex} style={{width: CELL, height: CELL}} className='border border-gray-200 bg-gray-50' />
+                                     <div key={colIndex} style={{width: CELL, height: CELL}} className='border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700' />
                                    )
                                    if (cell.type === 'common') return (
-                                     <div key={colIndex} style={{width: CELL, height: CELL}} className='border border-gray-200 bg-gray-100 flex items-center justify-center'>
-                                       <span className='text-[8px] text-gray-400'>C</span>
+                                     <div key={colIndex} style={{width: CELL, height: CELL}} className='border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-600 flex items-center justify-center'>
+                                       <span className='text-[8px] text-gray-400 dark:text-gray-300'>C</span>
                                      </div>
                                    )
                                    return (
                                      <div
                                        key={colIndex}
                                        style={{width: CELL, height: CELL}}
-                                       className={`relative border border-gray-200 overflow-hidden group ${cell.isBooked ? 'bg-yellow-50' : cell.isVacant ? 'bg-green-50' : 'bg-red-50'}`}
+                                       className={`relative border border-gray-200 dark:border-gray-600 overflow-hidden group ${cell.isBooked ? 'bg-yellow-50 dark:bg-yellow-900/30' : cell.isVacant ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}
                                      >
                                        <div className='flex flex-col items-center justify-center h-full text-center px-0.5'>
                                          <span className='font-semibold leading-tight truncate w-full text-center' style={{fontSize: '8px'}}>{cell.roomType}</span>

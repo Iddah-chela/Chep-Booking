@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 
@@ -16,7 +16,7 @@ const UnlockPolicy = () => {
         <section>
           <h2 className='text-xl font-semibold mb-3'>How It Works</h2>
           <p className='text-gray-700 leading-relaxed'>
-            CampusCrib uses a browsing pass system. Once you purchase a pass, you can view landlord contact details 
+            PataKeja uses a browsing pass system. Once you purchase a pass, you can view landlord contact details 
             (phone number, WhatsApp, exact address) for <strong>all properties</strong> on the Platform for the duration 
             of your pass.
           </p>
@@ -24,21 +24,21 @@ const UnlockPolicy = () => {
 
         <section>
           <h2 className='text-xl font-semibold mb-3'>Pass Options</h2>
-          <div className='bg-gray-50 rounded-lg p-6 space-y-4'>
+          <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-6 space-y-4'>
             <div className='flex items-start gap-4'>
-              <div className='bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap'>Free Trial</div>
+              <div className='bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap'>Free Trial</div>
               <div>
                 <p className='text-gray-700'>New users may receive up to <strong>2 free property unlocks</strong> upon signing up. This lets you try the service before paying.</p>
               </div>
             </div>
             <div className='flex items-start gap-4'>
-              <div className='bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap'>1-Day Pass</div>
+              <div className='bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap'>1-Day Pass</div>
               <div>
                 <p className='text-gray-700'><strong>Ksh 100</strong> — Full access to all landlord contact details for 24 hours. Ideal for a quick search in one day.</p>
               </div>
             </div>
             <div className='flex items-start gap-4'>
-              <div className='bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap'>7-Day Pass</div>
+              <div className='bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap'>7-Day Pass</div>
               <div>
                 <p className='text-gray-700'><strong>Ksh 300</strong> — Full access for 7 days. Best for active house hunters comparing multiple properties.</p>
               </div>
@@ -98,7 +98,7 @@ const UnlockPolicy = () => {
         <section>
           <h2 className='text-xl font-semibold mb-3'>Questions?</h2>
           <p className='text-gray-700 leading-relaxed'>
-            Contact us at <a href='mailto:support@CampusCrib.co.ke' className='text-indigo-600 hover:underline'>support@CampusCrib.co.ke</a> for 
+            Contact us at <a href='mailto:support@PataKeja.co.ke' className='text-indigo-600 hover:underline'>support@PataKeja.co.ke</a> for 
             payment issues or pass-related questions.
           </p>
         </section>

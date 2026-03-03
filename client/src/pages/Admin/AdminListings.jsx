@@ -95,17 +95,17 @@ const AdminListings = () => {
         value={search}
         onChange={e => setSearch(e.target.value)}
         placeholder="Search by name, estate, location, or owner email..."
-        className="w-full mb-6 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      className="w-full mb-6 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
       />
 
       {loading ? (
         <p>Loading listings...</p>
       ) : filtered.length === 0 ? (
-        <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">No properties found</div>
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center text-gray-500">No properties found</div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {filtered.map((property) => (
-            <div key={property._id} className={`bg-white rounded-lg border p-4 md:p-5 ${property.isExpired ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
+            <div key={property._id} className={`bg-white dark:bg-gray-800 rounded-lg border p-4 md:p-5 ${property.isExpired ? 'border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800' : 'border-gray-200 dark:border-gray-700'}`}>
               <div className="flex flex-col sm:flex-row gap-4">
                 {property.images?.[0] && (
                   <img src={property.images[0]} alt="" className="w-full sm:w-28 h-24 rounded-lg object-cover shrink-0" />
@@ -119,12 +119,12 @@ const AdminListings = () => {
                     </div>
                     <div className="flex flex-wrap gap-1.5 shrink-0">
                       {property.isVerified && (
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex items-center gap-0.5"><Check className='w-3 h-3' /> Verified</span>
+                        <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium flex items-center gap-0.5"><Check className='w-3 h-3' /> Verified</span>
                       )}
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${property.isExpired ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${property.isExpired ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'}`}>
                         {property.isExpired ? 'Delisted' : 'Live'}
                       </span>
-                      <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                      <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium">
                         {property.vacantRooms ?? 0} vacant
                       </span>
                     </div>
@@ -136,14 +136,14 @@ const AdminListings = () => {
                   </div>
 
                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                    <span className="px-2 py-1 bg-gray-100 rounded">{property.buildings?.length ?? 0} buildings</span>
-                    <span className="px-2 py-1 bg-gray-100 rounded">{property.totalRooms ?? 0} rooms</span>
-                    <span className="px-2 py-1 bg-gray-100 rounded">{property.createdAt ? new Date(property.createdAt).toLocaleDateString() : ''}</span>
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded">{property.buildings?.length ?? 0} buildings</span>
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded">{property.totalRooms ?? 0} rooms</span>
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded">{property.createdAt ? new Date(property.createdAt).toLocaleDateString() : ''}</span>
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-3">
                     <a href={`/rooms/${property._id}`} target="_blank" rel="noopener noreferrer"
-                      className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-xs hover:bg-gray-50">
+                      className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">
                       View Listing ↗
                     </a>
                     {!property.isVerified ? (

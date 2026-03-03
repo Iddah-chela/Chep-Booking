@@ -23,6 +23,11 @@ const userPassSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    property: {
+        type: String,  // Property ID — set for free (per-property) unlocks, null for paid (global) passes
+        ref: "Property",
+        default: null
+    },
     paymentStatus: {
         type: String,
         enum: ["pending", "completed", "failed"],

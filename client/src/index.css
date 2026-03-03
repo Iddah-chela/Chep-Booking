@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Playfair:ital,opsz,wght@0,5..1200,300..900;1,5..1200,300..900&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme{
   --color-primary: #4F46E5;
   --color-secondary: #FBBF24;
@@ -13,4 +15,163 @@
 
 .font-playfair{
   font-family: Playfair !important;
+}
+
+/* Dark mode base overrides */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #111827;
+  color: #f3f4f6;
+}
+
+/* Dark mode form element defaults */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #f3f4f6;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* Auto-invert common gray text colors in dark mode */
+html.dark .text-gray-900 { color: #f3f4f6; }
+html.dark .text-gray-800 { color: #e5e7eb; }
+html.dark .text-gray-700 { color: #d1d5db; }
+html.dark .text-gray-600 { color: #9ca3af; }
+
+/* Dark mode scrollbar */
+html.dark ::-webkit-scrollbar {
+  background: #1f2937;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+/* Transition for dark mode toggle */
+html.dark-transition,
+html.dark-transition *,
+html.dark-transition *::before,
+html.dark-transition *::after {
+  transition: background-color 0.3s ease, color 0.2s ease, border-color 0.3s ease !important;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* ── Clerk modal dark mode overrides ─────────────────────────────────── */
+html.dark .cl-card,
+html.dark .cl-signIn-root,
+html.dark .cl-signUp-root {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark .cl-headerTitle,
+html.dark .cl-headerSubtitle {
+  color: #f3f4f6 !important;
+}
+
+html.dark .cl-formFieldLabel,
+html.dark .cl-formFieldHintText,
+html.dark .cl-formResendCodeLink,
+html.dark .cl-footerActionText,
+html.dark .cl-dividerText,
+html.dark .cl-identityPreviewText {
+  color: #d1d5db !important;
+}
+
+html.dark .cl-formFieldInput {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark .cl-formFieldInput:focus {
+  border-color: #6366f1 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.25) !important;
+}
+
+html.dark .cl-socialButtonsIconButton,
+html.dark .cl-socialButtonsBlockButton {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark .cl-dividerLine {
+  background-color: #374151 !important;
+}
+
+html.dark .cl-footerAction,
+html.dark .cl-footer {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+html.dark .cl-otpCodeFieldInput {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark .cl-footerActionLink,
+html.dark .cl-footerPagesLink {
+  color: #a5b4fc !important;
+}
+
+html.dark .cl-footerPages,
+html.dark .cl-footerPagesLogoBox,
+html.dark .cl-footerPagesLink__help,
+html.dark .cl-footerPagesLink__privacy,
+html.dark .cl-footerPagesLink__terms {
+  background-color: #1f2937 !important;
+  color: #9ca3af !important;
+}
+
+/* Bottom section / inner modal containers */
+html.dark .cl-main,
+html.dark .cl-cardBox,
+html.dark .cl-scrollBox {
+  background-color: #1f2937 !important;
+}
+
+html.dark .cl-navbar,
+html.dark .cl-navbarMobileMenuRow {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+}
+
+html.dark .cl-profilePage,
+html.dark .cl-userProfile-root {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark .cl-selectButton,
+html.dark .cl-selectOption {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+html.dark .cl-internal-b3fm6y,
+html.dark [class^="cl-internal-"] {
+  background-color: #1f2937 !important;
+  color: #d1d5db !important;
+  border-color: #374151 !important;
 }

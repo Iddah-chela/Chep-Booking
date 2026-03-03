@@ -1,8 +1,8 @@
-const CACHE_NAME = 'campuscrib-v2';
+﻿const CACHE_NAME = 'patakeja-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/icons/icon-192.png',
+  '/icons/icon-192-2.png',
   '/manifest.json',
 ];
 
@@ -63,6 +63,63 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       });
+    })
+  );
+});
+
+// ── Push Notifications ─────────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    // Support custom actions passed in payload (e.g. nudge yes/no)
+    const defaultActions = [{ action: 'open', title: 'Open' }, { action: 'dismiss', title: 'Dismiss' }];
+    const options = {
+      body: data.body || '',
+      icon: data.icon || '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: data.tag || undefined,
+      data: { url: data.url || '/', actionUrls: data.actionUrls || {} },
+      vibrate: [100, 50, 100],
+      actions: data.actions || defaultActions
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'PataKeja', options)
+    );
+  } catch (e) {
+    // Fallback for plain text push
+    event.waitUntil(
+      self.registration.showNotification('PataKeja', {
+        body: event.data.text(),
+        icon: '/icons/icon-192.png'
+      })
+    );
+  }
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'dismiss') { event.notification.close(); return; }
+
+  // If the action has a specific URL mapped (e.g. nudge yes/no), use it
+  const actionUrls = event.notification.data?.actionUrls || {};
+  const url = actionUrls[event.action] || event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // If a tab with the app is already open, focus it and navigate
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin)) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      // Otherwise open a new tab
+      return clients.openWindow(url);
     })
   );
 });

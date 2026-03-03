@@ -5,23 +5,23 @@ import StarRating from './StarRating'
 
 const Testimonials = () => {
   return (
-    <div className='flex flex-col items-center px-6 md:px-16 lg:px-24 bg-slate-50 pt-20 pb-30'>
+    <div className='flex flex-col items-center px-6 md:px-16 lg:px-24 bg-slate-50 dark:bg-gray-800 pt-20 pb-30'>
         <Title title="What our Customers Say" subTitle="Discover why discerning accomodators consistently choose This platform for their exclusive and luxurious accomodations around Eldoret"/>
 
         <div className="flex flex-wrap items-center  gap-6 mt-20 ">
                 {testimonials.map((testimonial) => (
-                    <div key={testimonial.id} className="bg-white p-6 rounded-xl shadow">
+                    <div key={testimonial.id} className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow dark:shadow-gray-900/30">
                         <div className="flex items-center gap-3">
                             <img className="w-12 h-12 rounded-full" src={testimonial.image} alt={testimonial.name} />
                             <div>
                                 <p className="font-playfair text-xl">{testimonial.name}</p>
-                                <p className="text-gray-500">{testimonial.address}</p>
+                                <p className="text-gray-500 dark:text-gray-400">{testimonial.address}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-1 mt-4">
                            <StarRating/>
                         </div>
-                        <p className="text-gray-500 max-w-90 mt-4">"{testimonial.review}"</p>
+                        <p className="text-gray-500 dark:text-gray-400 max-w-90 mt-4">"{testimonial.review}"</p>
                     </div>
                 ))}
             </div>

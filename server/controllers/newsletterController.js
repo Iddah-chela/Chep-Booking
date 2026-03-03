@@ -1,4 +1,4 @@
-import Subscriber from '../models/subscriber.js';
+﻿import Subscriber from '../models/subscriber.js';
 import { sendEmail } from '../utils/mailer.js';
 
 // POST /api/newsletter/subscribe
@@ -19,7 +19,7 @@ export const subscribe = async (req, res) => {
         // Send a welcome email (non-blocking)
         sendEmail(
             email,
-            'Welcome to CampusCrib listing alerts!',
+            'Welcome to PataKeja listing alerts!',
             `
             <div style="font-family:'Segoe UI',Roboto,sans-serif;max-width:600px;margin:auto;color:#222;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
                 <style>
@@ -31,7 +31,7 @@ export const subscribe = async (req, res) => {
                     <div style="animation:bounceIn 0.8s ease-out;">
                         <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:14px;"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
                         <h1 style="color:#fff;margin:0;font-size:26px;font-weight:700;">You're In!</h1>
-                        <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:15px;">Welcome to CampusCrib alerts</p>
+                        <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:15px;">Welcome to PataKeja alerts</p>
                     </div>
                 </div>
                 <div style="padding:28px 32px;background:#fff;animation:fadeIn 0.8s ease-out;">

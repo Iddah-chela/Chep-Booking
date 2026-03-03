@@ -1,12 +1,28 @@
-import IntaSend from 'intasend-node';
+﻿import IntaSend from 'intasend-node';
 import UserPass from "../models/userPass.js";
 import User from "../models/user.js";
+import Property from "../models/property.js";
 
 const PASS_PRICES = { '1day': 100, '7day': 300 };
 const PASS_DAYS   = { '1day': 1,   '7day': 7   };
 
-const activePassForUser = (userId) =>
-    UserPass.findOne({ user: userId, paymentStatus: 'completed', expiresAt: { $gt: new Date() } });
+// Find an active pass for a user.
+// If propertyId is given, match a global pass (no property) OR a per-property pass.
+const activePassForUser = (userId, propertyId) => {
+    const base = { user: userId, paymentStatus: 'completed', expiresAt: { $gt: new Date() } };
+    if (propertyId) {
+        return UserPass.findOne({
+            ...base,
+            $or: [
+                { property: null },
+                { property: { $exists: false } },
+                { property: propertyId }
+            ]
+        });
+    }
+    // No propertyId — only global passes count
+    return UserPass.findOne({ ...base, $or: [{ property: null }, { property: { $exists: false } }] });
+};
 
 const priorCompletedCount = (userId) =>
     UserPass.countDocuments({ user: userId, paymentStatus: 'completed' });
@@ -39,11 +55,11 @@ export const checkFirstUnlock = async (req, res) => {
 // Purchase / activate a pass
 export const initiateUnlock = async (req, res) => {
     try {
-        const { phoneNumber, passType = '1day' } = req.body;
+        const { phoneNumber, passType = '1day', propertyId } = req.body;
         const userId = req.user._id;
 
-        // If user already has an active pass, tell them
-        const existing = await activePassForUser(userId);
+        // If user already has an active pass that covers this property, tell them
+        const existing = await activePassForUser(userId, propertyId);
         if (existing) {
             return res.json({
                 success: true,
@@ -60,10 +76,11 @@ export const initiateUnlock = async (req, res) => {
         const availableReferralUnlocks = (dbUser?.referralUnlocks || 0) - (dbUser?.referralUnlocksUsed || 0);
         
         if (priorCount < FREE_UNLOCKS) {
-            // Signup freebie
+            // Signup freebie — per-property only (not global)
             const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
             const freePass = await UserPass.create({
-                user: userId, passType: '7day', amount: 0, isFree: true,
+                user: userId, passType: '1day', amount: 0, isFree: true,
+                property: propertyId || null,
                 phoneNumber: phoneNumber || '0000', paymentStatus: 'completed',
                 transactionRef: 'FREE_' + Date.now(), expiresAt
             });
@@ -79,10 +96,11 @@ export const initiateUnlock = async (req, res) => {
         }
         
         if (availableReferralUnlocks > 0) {
-            // Referral freebie — 24hr access
+            // Referral freebie — per-property only
             const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
             const freePass = await UserPass.create({
                 user: userId, passType: '1day', amount: 0, isFree: true,
+                property: propertyId || null,
                 phoneNumber: phoneNumber || '0000', paymentStatus: 'completed',
                 transactionRef: 'REFERRAL_' + Date.now(), expiresAt
             });
@@ -155,14 +173,14 @@ export const initiateUnlock = async (req, res) => {
             const collection = intasend.collection();
 
             const stkRes = await collection.mpesaStkPush({
-                first_name: (req.user.fullName || 'CampusCrib').split(' ')[0],
+                first_name: (req.user.fullName || 'PataKeja').split(' ')[0],
                 last_name:  (req.user.fullName || 'User').split(' ').slice(1).join(' ') || 'User',
-                email:      req.user.email || 'customer@CampusCrib.co.ke',
+                email:      req.user.email || 'customer@PataKeja.co.ke',
                 host:       process.env.BACKEND_URL || 'http://localhost:4000',
                 amount,
                 phone_number: formattedPhone,
                 api_ref:      transactionRef,
-                narrative:    `CampusCrib ${passType} pass - Ksh ${amount}`
+                narrative:    `PataKeja ${passType} pass - Ksh ${amount}`
             });
 
             // SDK throws on failure; reaching here means STK was queued
@@ -194,10 +212,11 @@ export const initiateUnlock = async (req, res) => {
     }
 };
 
-// Check if user currently has an active pass (global — not per property)
+// Check if user currently has an active pass (global or per-property)
 export const checkUnlockStatus = async (req, res) => {
     try {
-        const pass = await activePassForUser(req.user._id);
+        const propertyId = req.query.propertyId || req.params.propertyId;
+        const pass = await activePassForUser(req.user._id, propertyId);
         if (pass) {
             res.json({
                 success: true, unlocked: true,
@@ -210,6 +229,66 @@ export const checkUnlockStatus = async (req, res) => {
         } else {
             res.json({ success: true, unlocked: false });
         }
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Combined endpoint: pass-status + is-first-unlock + referral-info in ONE call
+export const getPropertyUnlockInfo = async (req, res) => {
+    try {
+        const propertyId = req.query.propertyId;
+        const userId = req.user._id;
+
+        // Run all 3 checks in parallel
+        const [pass, count, dbUser] = await Promise.all([
+            activePassForUser(userId, propertyId),
+            priorCompletedCount(userId),
+            User.findById(userId)
+        ]);
+
+        // Pass status
+        const unlocked = !!pass;
+        const unlock = pass ? {
+            passType: pass.passType,
+            expiresAt: pass.expiresAt,
+            daysRemaining: Math.ceil((pass.expiresAt - new Date()) / (1000 * 60 * 60 * 24))
+        } : null;
+
+        // Free check
+        const availableReferralUnlocks = (dbUser?.referralUnlocks || 0) - (dbUser?.referralUnlocksUsed || 0);
+        const isFree = count < FREE_UNLOCKS || availableReferralUnlocks > 0;
+        const reason = count < FREE_UNLOCKS ? 'signup' : availableReferralUnlocks > 0 ? 'referral' : null;
+
+        // Referral info
+        let referralCode = dbUser?.referralCode;
+        if (!referralCode && dbUser) {
+            const crypto = await import('crypto');
+            const hash = crypto.createHash('sha256').update(dbUser._id + Date.now().toString()).digest('hex');
+            referralCode = 'PS' + hash.substring(0, 6).toUpperCase();
+            dbUser.referralCode = referralCode;
+            await dbUser.save();
+        }
+        const referralCount = dbUser?.referralCount || 0;
+
+        res.json({
+            success: true,
+            // pass status
+            unlocked,
+            unlock,
+            // free check
+            isFree,
+            reason,
+            referralUnlocksAvailable: Math.max(0, availableReferralUnlocks),
+            // referral info
+            referralCode,
+            referralCount,
+            referralUnlocks: dbUser?.referralUnlocks || 0,
+            referralUnlocksUsed: dbUser?.referralUnlocksUsed || 0,
+            refsPerUnlock: REFS_PER_UNLOCK,
+            refsUntilNextUnlock: availableReferralUnlocks > 0 ? 0 : REFS_PER_UNLOCK - (referralCount % REFS_PER_UNLOCK),
+            maxReferralUnlocks: MAX_REFERRAL_UNLOCKS
+        });
     } catch (error) {
         res.json({ success: false, message: error.message });
     }
@@ -350,7 +429,7 @@ export const processRefund  = async (_req, res) => res.json({ success: false, me
 
 // -- REFERRAL SYSTEM --------------------------------------------------
 // How many referrals a user must make to earn one free day pass
-const REFS_PER_UNLOCK = 5;
+const REFS_PER_UNLOCK = 1;
 // Maximum free day passes earnable via referrals
 const MAX_REFERRAL_UNLOCKS = 10;
 
@@ -403,7 +482,7 @@ export const applyReferral = async (req, res) => {
         // Can't refer yourself
         const referrer = await User.findOne({ referralCode });
         if (!referrer) return res.json({ success: false, message: 'Invalid referral code' });
-        if (referrer._id === currentUser._id) return res.json({ success: false, message: 'Cannot refer yourself' });
+        if (referrer._id.toString() === currentUser._id.toString()) return res.json({ success: false, message: 'Cannot refer yourself' });
 
         // Apply referral
         currentUser.referredBy = referrer._id;
@@ -420,8 +499,180 @@ export const applyReferral = async (req, res) => {
         const refsUntilNext = REFS_PER_UNLOCK - (newCount % REFS_PER_UNLOCK || REFS_PER_UNLOCK);
         const earnedUnlock = newCount % REFS_PER_UNLOCK === 0;
         res.json({ success: true, message: earnedUnlock
-            ? `Referral counted! Your friend earned a free day pass (${newCount} referrals total).`
+            ? `Referral applied! You earned a free day pass (${newCount} total referral${newCount > 1 ? 's' : ''}).`
             : `Referral counted! ${refsUntilNext} more friend${refsUntilNext > 1 ? 's' : ''} needed to earn a free day pass.` });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// -- GUEST PAYMENT (no login required) ------------------------------------
+
+// Initiate a guest (unauthenticated) M-Pesa payment
+export const guestInitiateUnlock = async (req, res) => {
+    try {
+        const { phoneNumber, passType = '1day', propertyId } = req.body;
+
+        if (!propertyId) return res.json({ success: false, message: 'Property ID is required' });
+        if (!PASS_PRICES[passType]) return res.json({ success: false, message: "Invalid pass type. Choose '1day' or '7day'." });
+
+        const phoneRegex = /^(\+?254|0)?[17]\d{8}$/;
+        if (!phoneRegex.test((phoneNumber || '').replace(/\s/g, ''))) {
+            return res.json({ success: false, message: 'Please enter a valid Kenyan phone number' });
+        }
+
+        // Format phone
+        let formattedPhone = (phoneNumber || '').replace(/\s/g, '');
+        if (formattedPhone.startsWith('0')) formattedPhone = '254' + formattedPhone.substring(1);
+        else if (formattedPhone.startsWith('+254')) formattedPhone = formattedPhone.substring(1);
+        else if (!formattedPhone.startsWith('254')) formattedPhone = '254' + formattedPhone;
+
+        // Check for existing active guest pass for this phone + property
+        const existingGuest = await UserPass.findOne({
+            user: formattedPhone,
+            property: propertyId,
+            paymentStatus: 'completed',
+            expiresAt: { $gt: new Date() }
+        });
+        if (existingGuest) {
+            return res.json({ success: true, alreadyUnlocked: true, message: 'You already have active access to this property.' });
+        }
+
+        const amount = PASS_PRICES[passType];
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + PASS_DAYS[passType]);
+        const transactionRef = 'GUEST_' + Date.now() + '_' + Math.random().toString(36).substring(7);
+
+        const pass = await UserPass.create({
+            user: formattedPhone,  // phone number as guest identifier
+            passType, amount,
+            property: propertyId,
+            phoneNumber: formattedPhone,
+            paymentStatus: 'pending',
+            expiresAt
+        });
+
+        // TEST MODE
+        if (process.env.PAYMENT_TEST_MODE === 'true') {
+            pass.transactionRef = transactionRef;
+            pass.paymentStatus = 'completed';
+            await pass.save();
+            console.log('🧪 TEST MODE: guest pass auto-activated', pass._id);
+            return res.json({
+                success: true, testMode: true, passType, amount,
+                message: `[TEST] Guest pass activated instantly.`,
+                transactionRef, unlockId: pass._id
+            });
+        }
+
+        // INTASEND STK PUSH
+        const publishableKey = process.env.INTASEND_PUBLISHABLE_KEY;
+        const secretKey      = process.env.INTASEND_SECRET_KEY;
+        const isLive         = process.env.INTASEND_LIVE === 'true';
+
+        if (!publishableKey || !secretKey) {
+            await pass.deleteOne();
+            return res.json({ success: false, message: 'Payment gateway not configured.' });
+        }
+
+        try {
+            const intasend   = new IntaSend(publishableKey, secretKey, !isLive);
+            const collection = intasend.collection();
+            const stkRes = await collection.mpesaStkPush({
+                first_name: 'Guest', last_name: 'User',
+                email: 'guest@PataKeja.co.ke',
+                host: process.env.BACKEND_URL || 'http://localhost:4000',
+                amount,
+                phone_number: formattedPhone,
+                api_ref: transactionRef,
+                narrative: `PataKeja ${passType} guest pass - Ksh ${amount}`
+            });
+            pass.invoiceId = stkRes?.invoice?.invoice_id || stkRes?.invoice_id;
+        } catch (stkErr) {
+            await pass.deleteOne();
+            const errDetail = stkErr?.response?.data || stkErr?.message || stkErr;
+            return res.json({ success: false, message: `Payment error: ${typeof errDetail === 'object' ? JSON.stringify(errDetail) : errDetail}` });
+        }
+
+        pass.transactionRef = transactionRef;
+        await pass.save();
+
+        res.json({
+            success: true, passType, amount,
+            message: `Payment of Ksh ${amount} initiated. Check your phone for M-Pesa prompt.`,
+            transactionRef, unlockId: pass._id
+        });
+    } catch (error) {
+        console.error('Guest unlock error:', error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Confirm guest payment
+export const guestConfirmPayment = async (req, res) => {
+    try {
+        const { unlockId } = req.body;
+        if (!unlockId) return res.json({ success: false, message: 'Missing unlock ID' });
+
+        const pass = await UserPass.findById(unlockId);
+        if (!pass) return res.json({ success: false, message: 'Pass record not found' });
+
+        // Already activated
+        if (pass.paymentStatus === 'completed') {
+            return res.json({
+                success: true,
+                message: `Your ${pass.passType} pass is active.`,
+                unlock: { passType: pass.passType, expiresAt: pass.expiresAt,
+                    daysRemaining: Math.ceil((pass.expiresAt - new Date()) / (1000 * 60 * 60 * 24)) }
+            });
+        }
+
+        // TEST MODE
+        if (process.env.PAYMENT_TEST_MODE === 'true') {
+            pass.paymentStatus = 'completed';
+            await pass.save();
+            return res.json({
+                success: true, message: '[TEST] Guest pass activated.',
+                unlock: { passType: pass.passType, expiresAt: pass.expiresAt,
+                    daysRemaining: Math.ceil((pass.expiresAt - new Date()) / (1000 * 60 * 60 * 24)) }
+            });
+        }
+
+        // Verify with IntaSend
+        if (!pass.invoiceId) {
+            return res.json({ success: false, message: 'Payment not found. Please initiate a new payment.' });
+        }
+
+        const publishableKey = process.env.INTASEND_PUBLISHABLE_KEY;
+        const secretKey      = process.env.INTASEND_SECRET_KEY;
+        const isLive         = process.env.INTASEND_LIVE === 'true';
+        const intasend       = new IntaSend(publishableKey, secretKey, !isLive);
+        const collection     = intasend.collection();
+
+        let statusRes;
+        try {
+            statusRes = await collection.status(pass.invoiceId);
+        } catch (e) {
+            return res.json({ success: false, message: 'Could not verify payment. Try again shortly.' });
+        }
+
+        const state = (statusRes?.invoice?.state || statusRes?.state || '').toUpperCase();
+        if (state === 'COMPLETE') {
+            pass.paymentStatus = 'completed';
+            await pass.save();
+            return res.json({
+                success: true,
+                message: `Payment confirmed! Your ${pass.passType} pass is now active.`,
+                unlock: { passType: pass.passType, expiresAt: pass.expiresAt,
+                    daysRemaining: Math.ceil((pass.expiresAt - new Date()) / (1000 * 60 * 60 * 24)) }
+            });
+        } else if (state === 'FAILED' || state === 'CANCELLED') {
+            pass.paymentStatus = 'failed';
+            await pass.save();
+            return res.json({ success: false, message: 'Payment was not completed. Please try again.' });
+        } else {
+            return res.json({ success: false, message: 'Payment is still being processed. Please wait and try again.' });
+        }
     } catch (error) {
         res.json({ success: false, message: error.message });
     }

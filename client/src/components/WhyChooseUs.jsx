@@ -48,14 +48,14 @@ const stats = [
 
 const WhyChooseUs = () => {
   return (
-    <div className='py-20 px-4 md:px-16 lg:px-24 xl:px-32 bg-white'>
+    <div className='py-20 px-4 md:px-16 lg:px-24 xl:px-32 bg-white dark:bg-gray-900'>
       <div className='max-w-7xl mx-auto'>
         {/* Header */}
         <div className='text-center mb-14'>
-          <h2 className='text-3xl md:text-4xl font-playfair font-semibold text-gray-800 mb-3'>
+          <h2 className='text-3xl md:text-4xl font-playfair font-semibold text-gray-800 dark:text-gray-100 mb-3'>
             Why Renters Choose Us
           </h2>
-          <p className='text-gray-500 max-w-xl mx-auto'>
+          <p className='text-gray-500 dark:text-gray-400 max-w-xl mx-auto'>
             Finding a house in Eldoret should be fast, honest, and stress-free. Here's how we make that happen.
           </p>
         </div>
@@ -63,12 +63,12 @@ const WhyChooseUs = () => {
         {/* Feature Cards */}
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16'>
           {features.map((f, i) => (
-            <div key={i} className='bg-gray-50 rounded-xl p-6 border border-gray-100 hover:shadow-md transition-shadow'>
-              <div className='w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-4'>
+            <div key={i} className='bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow'>
+              <div className='w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center mb-4'>
                 {f.icon}
               </div>
-              <h3 className='font-semibold text-gray-800 mb-2'>{f.title}</h3>
-              <p className='text-gray-500 text-sm leading-relaxed'>{f.desc}</p>
+              <h3 className='font-semibold text-gray-800 dark:text-gray-100 mb-2'>{f.title}</h3>
+              <p className='text-gray-500 dark:text-gray-400 text-sm leading-relaxed'>{f.desc}</p>
             </div>
           ))}
         </div>

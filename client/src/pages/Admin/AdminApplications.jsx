@@ -157,25 +157,25 @@ const AdminApplications = () => {
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setFilter('pending')}
-          className={`px-4 py-2 rounded-lg ${filter === 'pending' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+          className={`px-4 py-2 rounded-lg ${filter === 'pending' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'}`}
         >
           Pending ({applications.filter(a => a.status === 'pending').length})
         </button>
         <button
           onClick={() => setFilter('approved')}
-          className={`px-4 py-2 rounded-lg ${filter === 'approved' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+          className={`px-4 py-2 rounded-lg ${filter === 'approved' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'}`}
         >
           Approved
         </button>
         <button
           onClick={() => setFilter('rejected')}
-          className={`px-4 py-2 rounded-lg ${filter === 'rejected' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+          className={`px-4 py-2 rounded-lg ${filter === 'rejected' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'}`}
         >
           Rejected
         </button>
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg ${filter === 'all' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+          className={`px-4 py-2 rounded-lg ${filter === 'all' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'}`}
         >
           All
         </button>
@@ -183,13 +183,13 @@ const AdminApplications = () => {
 
       {/* Applications List */}
       {applications.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
           <p className="text-gray-500">No applications found</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Applicant
@@ -211,9 +211,9 @@ const AdminApplications = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {applications.map((app) => (
-                <tr key={app._id} className="hover:bg-gray-50">
+                <tr key={app._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
@@ -271,7 +271,7 @@ const AdminApplications = () => {
           onClick={() => setSelectedApplication(null)}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 border-b border-gray-200">

@@ -1,4 +1,4 @@
-import React, {useEffect, useState } from "react";
+﻿import React, {useEffect, useState } from "react";
 import { Link, useLocation } from 'react-router-dom';
 import { assets } from '../assets/assets';
 import { useAppContext } from '../context/AppContext';
@@ -6,6 +6,7 @@ import ProfileModal from './ProfileModal';
 import { SignInButton, SignUpButton } from '@clerk/clerk-react';
 import PropertyListingModal from './PropertyListingModal';
 import LandlordApplicationModal from './LandlordApplicationModal';
+import { isPushSupported, getPermissionState } from '../utils/pushNotifications';
 
 const Navbar = () => {
     const navLinks = [
@@ -23,7 +24,19 @@ const Navbar = () => {
     
     const location = useLocation()
 
-    const{user, navigate, isOwner, dbImage} = useAppContext()
+    const{user, navigate, isOwner, dbImage, enablePushNotifications, darkMode, toggleDarkMode, isCaretaker} = useAppContext()
+
+    const [showPushPrompt, setShowPushPrompt] = useState(false)
+
+    // Show push notification prompt after login if not yet subscribed
+    useEffect(() => {
+        const dismissed = localStorage.getItem('PataKeja_push_dismissed');
+        const alreadyEnabled = localStorage.getItem('PataKeja_push_enabled') === 'true';
+        if (user && isPushSupported() && !alreadyEnabled && !dismissed) {
+            const timer = setTimeout(() => setShowPushPrompt(true), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [user]);
 
     useEffect(() => {
         if(location.pathname !== '/'){
@@ -43,28 +56,28 @@ const Navbar = () => {
 
     return (
         <>
-            <nav className={`fixed top-0 left-0 w-full flex items-center justify-between px-4 md:px-16 lg:px-24 xl:px-32 transition-all duration-500 z-40 overflow-visible ${isScrolled ? "bg-white/80 shadow-md text-gray-700 backdrop-blur-lg py-2 md:py-2" : "py-3 md:py-4"}`}>
+            <nav className={`fixed top-0 left-0 w-full flex items-center justify-between px-4 md:px-16 lg:px-24 xl:px-32 transition-all duration-500 z-40 overflow-visible ${isScrolled ? "bg-white/80 dark:bg-gray-900/80 shadow-md text-gray-700 dark:text-gray-200 backdrop-blur-lg py-2 md:py-2" : "py-3 md:py-4"}`}>
 
                 {/* Logo - overflows navbar intentionally */}
                 <Link to ="/" className="flex-shrink-0 relative z-50">
-                    <img src={assets.logo} alt="logo" className={`h-24 md:h-32 w-auto -my-6 md:-my-8 ${isScrolled && "invert opacity-80"}`} />
+                    <img src={assets.logo} alt="logo" className={`h-24 md:h-32 w-auto -my-6 md:-my-8 ${isScrolled && !darkMode && "invert opacity-80"}`} />
                 </Link>
 
                 {/* Desktop Nav */}
                 <div className="hidden md:flex items-center gap-4 lg:gap-8">
                     {navLinks.map((link, i) => (
-                        <a key={i} href={link.path} className={`group flex flex-col gap-0.5 ${isScrolled ? "text-gray-700" : "text-gray-900"}`}>
+                        <a key={i} href={link.path} className={`group flex flex-col gap-0.5 ${isScrolled ? "text-gray-700 dark:text-gray-200" : "text-[#111827]"}`}>
                             {link.name}
-                            <div className={`${isScrolled ? "bg-gray-700" : "bg-gray-900"} h-0.5 w-0 group-hover:w-full transition-all duration-300`} />
+                            <div className={`${isScrolled ? "bg-gray-700 dark:bg-gray-300" : "bg-[#111827]"} h-0.5 w-0 group-hover:w-full transition-all duration-300`} />
                         </a>
                     ))}
 
                 {user && isOwner && (   
                     <>
-                        <button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${isScrolled ? 'text-black border-gray-700' : 'text-gray-900 border-gray-900'} transition-all hover:bg-gray-100`} onClick={()=> navigate('/owner')}>
+                        <button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${isScrolled ? 'text-black dark:text-gray-200 border-gray-700 dark:border-gray-500' : 'text-[#111827] border-[#111827]'} transition-all hover:bg-gray-100 dark:hover:bg-gray-700`} onClick={()=> navigate('/owner')}>
                             Dashboard
                         </button>
-                        <button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${isScrolled ? 'text-black border-gray-700 bg-indigo-50' : 'text-gray-900 border-indigo-600 bg-indigo-50'} transition-all hover:bg-indigo-100`} onClick={() => setShowPropertyModal(true)}>
+                        <button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${isScrolled ? 'text-black dark:text-gray-200 border-gray-700 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-[#111827] border-indigo-600 bg-indigo-50'} transition-all hover:bg-indigo-100 dark:hover:bg-indigo-900/50`} onClick={() => setShowPropertyModal(true)}>
                             + List Property
                         </button>
                     </>
@@ -72,7 +85,7 @@ const Navbar = () => {
                 
                 {user && !isOwner && (
                     <button 
-                        className={`flex items-center gap-1.5 border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${isScrolled ? 'text-black border-green-700 bg-green-50' : 'text-gray-900 border-green-600 bg-green-50'} transition-all hover:bg-green-100`} 
+                        className={`flex items-center gap-1.5 border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${isScrolled ? 'text-black dark:text-gray-200 border-green-700 dark:border-green-500 bg-green-50 dark:bg-green-900/30' : 'text-[#111827] border-green-600 bg-green-50'} transition-all hover:bg-green-100 dark:hover:bg-green-900/50`} 
                         onClick={() => setShowLandlordApplicationModal(true)}
                     >
                         <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5' /></svg>
@@ -83,23 +96,48 @@ const Navbar = () => {
 
                 {/* Desktop Right */}
                 <div className="hidden md:flex items-center gap-4">
+                    {/* Dark Mode Toggle */}
+                    <button
+                        onClick={toggleDarkMode}
+                        className={`p-2 rounded-full transition-all hover:scale-110 ${isScrolled ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-[#374151] hover:bg-gray-100/50'}`}
+                        title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                    >
+                        {darkMode ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                        )}
+                    </button>
                     <button onClick={() => navigate('/rooms')} className="focus:outline-none">
-                        <img src={assets.searchIcon} alt="search" className={`${isScrolled ? 'opacity-70' : 'opacity-90'} h-7 transition-all duration-500 cursor-pointer hover:scale-110`}/>
+                        <img src={assets.searchIcon} alt="search" className={`${isScrolled ? 'opacity-70' : 'opacity-90'} h-7 transition-all duration-500 cursor-pointer hover:scale-110 ${darkMode ? 'invert' : ''}`}/>
                     </button>
 
                 {user ? (
-                    // Profile Picture - Click to open modal
+                    <div className="flex items-center gap-3">
+                    {/* Notification Bell — shows when push not fully set up */}
+                    {isPushSupported() && (getPermissionState() !== 'granted' || localStorage.getItem('PataKeja_push_enabled') !== 'true') && (
+                        <button
+                            onClick={async () => { setShowPushPrompt(false); await enablePushNotifications(); }}
+                            className={`relative p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all ${isScrolled ? 'text-gray-600 dark:text-gray-300' : 'text-[#374151]'}`}
+                            title="Enable notifications"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                            <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                    )}
+                    {/* Profile Picture - Click to open modal */}
                     <img 
                         src={dbImage || user.imageUrl} 
                         alt={user.fullName}
                         onClick={() => setShowProfileModal(true)}
-                        className="w-10 h-10 rounded-full cursor-pointer border-2 border-gray-300 hover:border-indigo-500 transition-all"
+                        className="w-10 h-10 rounded-full cursor-pointer border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 transition-all"
                         onError={(e) => { const fb = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'U')}&background=6366f1&color=fff&bold=true`; if (e.target.src !== fb) e.target.src = fb }}
                     />
+                    </div>
                 ) : (
                     <div className="flex gap-2">
                         <SignInButton mode="modal">
-                            <button className={`px-6 py-2 rounded-full transition-all duration-500 border ${isScrolled ? "text-gray-700 border-gray-700 hover:bg-gray-100" : "text-gray-900 border-gray-900 hover:bg-gray-100"}`}>
+                            <button className={`px-6 py-2 rounded-full transition-all duration-500 border ${isScrolled ? "text-gray-700 dark:text-gray-200 border-gray-700 dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" : "text-[#111827] border-[#111827] hover:bg-gray-100/70"}`}>
                                 Login
                             </button>
                         </SignInButton>
@@ -123,11 +161,11 @@ const Navbar = () => {
                             onError={(e) => { const fb = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'U')}&background=6366f1&color=fff&bold=true`; if (e.target.src !== fb) e.target.src = fb }}
                         />
                     )}
-                    <img onClick={() => setIsMenuOpen(!isMenuOpen)} src={assets.menuIcon} alt="" className={`h-4 transition-all${isScrolled ? ' brightness-0' : ''}`} />
+                    <img onClick={() => setIsMenuOpen(!isMenuOpen)} src={assets.menuIcon} alt="" className={`h-4 transition-all${isScrolled && !darkMode ? ' brightness-0' : ''}${darkMode ? ' invert' : ''}`} />
                 </div>
 
                 {/* Mobile Menu */}
-                <div className={`fixed top-0 left-0 w-full h-screen bg-white text-base flex flex-col md:hidden items-center justify-center gap-6 font-medium text-gray-800 transition-all duration-500 ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+                <div className={`fixed top-0 left-0 w-full h-screen bg-white dark:bg-gray-900 text-base flex flex-col md:hidden items-center justify-center gap-5 font-medium text-gray-800 dark:text-gray-200 transition-all duration-500 overflow-y-auto py-16 ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
                     <button className="absolute top-4 right-4" onClick={() => setIsMenuOpen(false)}>
                         <img src={assets.closeIcon} alt="" className='h-6.5' />
                     </button>
@@ -138,15 +176,37 @@ const Navbar = () => {
                         </a>
                     ))}
 
+                    {/* Mobile Dark Mode Toggle */}
+                    <button
+                        onClick={toggleDarkMode}
+                        className="flex items-center gap-2 border dark:border-gray-600 px-4 py-1.5 text-sm font-light rounded-full cursor-pointer transition-all"
+                    >
+                        {darkMode ? (
+                            <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg> Light Mode</>
+                        ) : (
+                            <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg> Dark Mode</>
+                        )}
+                    </button>
+
                     {user && isOwner &&
-                    <button className="border px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all" onClick={()=> navigate('/owner')}>
+                    <button className="border dark:border-gray-600 px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all" onClick={()=> navigate('/owner')}>
                         Dashboard
                     </button>}
+
+                    {user && !isOwner && (
+                        <button 
+                            className="flex items-center gap-1.5 border border-green-600 dark:border-green-500 bg-green-50 dark:bg-green-900/30 px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all hover:bg-green-100 dark:hover:bg-green-900/50"
+                            onClick={() => { setIsMenuOpen(false); setShowLandlordApplicationModal(true); }}
+                        >
+                            <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5' /></svg>
+                            Become a Landlord
+                        </button>
+                    )}
 
                     {!user && (
                         <>
                             <SignInButton mode="modal">
-                                <button className="border border-gray-800 text-gray-800 px-8 py-2.5 rounded-full transition-all duration-500 hover:bg-gray-100">
+                                <button className="border border-gray-800 dark:border-gray-400 text-gray-800 dark:text-gray-200 px-8 py-2.5 rounded-full transition-all duration-500 hover:bg-gray-100 dark:hover:bg-gray-700">
                                     Login
                                 </button>
                             </SignInButton>
@@ -169,6 +229,38 @@ const Navbar = () => {
             )}
             {showPropertyModal && (
                 <PropertyListingModal onClose={() => setShowPropertyModal(false)} />
+            )}
+
+            {/* Push Notification Prompt */}
+            {showPushPrompt && (
+                <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 z-50 animate-slide-up">
+                    <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Enable notifications?</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Get instant alerts for messages, viewing responses, and more.</p>
+                            <div className="flex gap-2 mt-2.5">
+                                <button
+                                    onClick={async () => { setShowPushPrompt(false); await enablePushNotifications(); }}
+                                    className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all"
+                                >
+                                    Enable
+                                </button>
+                                <button
+                                    onClick={() => { setShowPushPrompt(false); localStorage.setItem('PataKeja_push_dismissed', 'true'); }}
+                                    className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
+                                >
+                                    Not now
+                                </button>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowPushPrompt(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                </div>
             )}
         </>
     );

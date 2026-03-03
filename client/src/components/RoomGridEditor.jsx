@@ -78,11 +78,11 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
     return (
         <div 
             onClick={onClose}
-            className='fixed top-0 bottom-0 left-0 right-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto p-4'
+            className='fixed top-0 bottom-0 left-0 right-0 z-[100] flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm overflow-y-auto p-4'
         >
             <div 
                 onClick={(e) => e.stopPropagation()}
-                className='bg-white rounded-xl max-w-6xl w-full shadow-2xl max-h-[90vh] overflow-y-auto'
+                className='bg-white dark:bg-gray-800 rounded-xl max-w-6xl w-full shadow-2xl max-h-[90vh] overflow-y-auto'
             >
                 {/* Header */}
                 <div className='sticky top-0 bg-gradient-to-r from-indigo-500 to-purple-600 p-6 rounded-t-xl flex justify-between items-center'>
@@ -105,14 +105,14 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                             <div className='flex gap-2 mb-4'>
                                 <button
                                     onClick={() => setEditMode('place')}
-                                    className={`px-4 py-2 rounded-lg transition-all ${editMode === 'place' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                                    className={`px-4 py-2 rounded-lg transition-all ${editMode === 'place' ? 'bg-indigo-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'}`}
                                 >
                                     Add/Select Rooms
                                 </button>
                             </div>
 
                             {/* The Grid */}
-                            <div className='bg-gray-50 p-6 rounded-lg border-2 border-gray-300'>
+                            <div className='bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg border-2 border-gray-300 dark:border-gray-600'>
                                 <div className='inline-block'>
                                     {Array.from({length: gridLayout.rows}).map((_, row) => (
                                         <div key={row} className='flex gap-2 mb-2'>
@@ -125,10 +125,10 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                                                         key={`${row}-${col}`}
                                                         onClick={() => handleCellClick(row, col)}
                                                         className={`w-24 h-24 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all
-                                                            ${isGateCell ? 'bg-yellow-100 border-yellow-500' : ''}
-                                                            ${room && room.status === 'vacant' ? 'bg-green-100 border-green-500 hover:border-green-600' : ''}
-                                                            ${room && room.status === 'occupied' ? 'bg-red-100 border-red-500 hover:border-red-600' : ''}
-                                                            ${!room && !isGateCell ? 'bg-white border-gray-300 hover:border-indigo-400' : ''}
+                                                            ${isGateCell ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-500' : ''}
+                                                            ${room && room.status === 'vacant' ? 'bg-green-100 dark:bg-green-900/30 border-green-500 hover:border-green-600' : ''}
+                                                            ${room && room.status === 'occupied' ? 'bg-red-100 dark:bg-red-900/30 border-red-500 hover:border-red-600' : ''}
+                                                            ${!room && !isGateCell ? 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-400' : ''}
                                                             ${selectedRoom?.id === room?.id ? 'ring-4 ring-indigo-400' : ''}
                                                         `}
                                                     >
@@ -153,7 +153,7 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                                     ))}
                                 </div>
                                 
-                                <div className='mt-4 text-sm text-gray-600'>
+                                <div className='mt-4 text-sm text-gray-600 dark:text-gray-300'>
                                     <p className='flex items-center gap-2'><DoorOpen className='w-4 h-4' /> Gate entrance | <Circle className='w-3 h-3 fill-green-500 text-green-500' /> Vacant | <Circle className='w-3 h-3 fill-red-500 text-red-500' /> Occupied</p>
                                 </div>
                             </div>
@@ -162,25 +162,25 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                             <div className='mt-4 flex gap-2'>
                                 <button
                                     onClick={() => setGridLayout({...gridLayout, rows: Math.max(1, gridLayout.rows - 1)})}
-                                    className='px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded'
+                                    className='px-3 py-1 bg-gray-200 dark:bg-gray-600 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 rounded'
                                 >
                                     - Row
                                 </button>
                                 <button
                                     onClick={() => setGridLayout({...gridLayout, rows: Math.min(6, gridLayout.rows + 1)})}
-                                    className='px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded'
+                                    className='px-3 py-1 bg-gray-200 dark:bg-gray-600 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 rounded'
                                 >
                                     + Row
                                 </button>
                                 <button
                                     onClick={() => setGridLayout({...gridLayout, cols: Math.max(1, gridLayout.cols - 1)})}
-                                    className='px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded'
+                                    className='px-3 py-1 bg-gray-200 dark:bg-gray-600 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 rounded'
                                 >
                                     - Col
                                 </button>
                                 <button
                                     onClick={() => setGridLayout({...gridLayout, cols: Math.min(8, gridLayout.cols + 1)})}
-                                    className='px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded'
+                                    className='px-3 py-1 bg-gray-200 dark:bg-gray-600 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 rounded'
                                 >
                                     + Col
                                 </button>
@@ -188,7 +188,7 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                         </div>
 
                         {/* Room Editor Panel */}
-                        <div className='w-full lg:w-80 bg-gray-50 p-4 rounded-lg'>
+                        <div className='w-full lg:w-80 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg'>
                             <h3 className='font-semibold text-lg mb-4'>
                                 {selectedRoom ? `Edit Room ${selectedRoom.number}` : 'Select a room to edit'}
                             </h3>
@@ -201,7 +201,7 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                                             type='number'
                                             value={selectedRoom.number}
                                             onChange={(e) => updateSelectedRoom({number: parseInt(e.target.value)})}
-                                            className='w-full px-3 py-2 border rounded-lg'
+                                            className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-gray-100'
                                         />
                                     </div>
 
@@ -210,7 +210,7 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                                         <select
                                             value={selectedRoom.status}
                                             onChange={(e) => updateSelectedRoom({status: e.target.value})}
-                                            className='w-full px-3 py-2 border rounded-lg'
+                                            className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-gray-100'
                                         >
                                             <option value='vacant'>Vacant</option>
                                             <option value='occupied'>Occupied</option>
@@ -223,7 +223,7 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                                             type='number'
                                             value={selectedRoom.price}
                                             onChange={(e) => updateSelectedRoom({price: parseInt(e.target.value)})}
-                                            className='w-full px-3 py-2 border rounded-lg'
+                                            className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-gray-100'
                                         />
                                     </div>
 
@@ -235,11 +235,11 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                                     </button>
                                 </div>
                             ) : (
-                                <p className='text-gray-500 text-sm'>Click on the grid or an existing room to edit its details</p>
+                                <p className='text-gray-500 dark:text-gray-400 text-sm'>Click on the grid or an existing room to edit its details</p>
                             )}
 
                             {/* Summary */}
-                            <div className='mt-6 p-3 bg-white rounded-lg border'>
+                            <div className='mt-6 p-3 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-600'>
                                 <h4 className='font-semibold mb-2'>Summary</h4>
                                 <p className='text-sm'>Total Rooms: {gridLayout.rooms.length}</p>
                                 <p className='text-sm'>Vacant: {gridLayout.rooms.filter(r => r.status === 'vacant').length}</p>
@@ -252,7 +252,7 @@ const RoomGridEditor = ({ onClose, roomData, onSave }) => {
                     <div className='mt-6 flex justify-end gap-3'>
                         <button
                             onClick={onClose}
-                            className='px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50'
+                            className='px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-200'
                         >
                             Cancel
                         </button>

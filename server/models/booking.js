@@ -27,6 +27,9 @@ const bookingSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    moveInNudgeSentAt: { type: Date, default: null },
+    moveInOwnerNudgeSentAt: { type: Date, default: null },
+    moveInOwnerToken: { type: String, default: null },
     status: {
         type: String,
         enum: ["pending", "confirmed", "cancelled"],

@@ -88,10 +88,10 @@ const AdminUsers = () => {
       {loading ? (
         <p>Loading users...</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px]">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
@@ -99,9 +99,9 @@ const AdminUsers = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filtered.map((user) => (
-                  <tr key={user._id} className="hover:bg-gray-50">
+                  <tr key={user._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <img src={user.image} alt="" className="w-8 h-8 rounded-full shrink-0" />

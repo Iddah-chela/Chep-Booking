@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+﻿import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -25,7 +25,7 @@ export const sendEmail = async (to, subject, html) => {
     }
     try {
         await transporter.sendMail({
-            from: `"CampusCrib" <${process.env.EMAIL_USER}>`,
+            from: `"PataKeja" <${process.env.EMAIL_USER}>`,
             to: Array.isArray(to) ? to.join(',') : to,
             subject,
             html
@@ -54,7 +54,7 @@ export const sendNewListingAlert = async (subscribers, property) => {
             <div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);padding:32px;text-align:center;">
                 <div style="animation:slideDown 0.6s ease-out;">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                    <h1 style="color:#fff;margin:0;font-size:24px;font-weight:700;">New Listing on CampusCrib</h1>
+                    <h1 style="color:#fff;margin:0;font-size:24px;font-weight:700;">New Listing on PataKeja</h1>
                     <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:14px;">A new property just went live!</p>
                 </div>
             </div>
@@ -92,7 +92,7 @@ export const sendNewListingAlert = async (subscribers, property) => {
 
                 <hr style="margin:28px 0;border:none;border-top:1px solid #e5e7eb;" />
                 <p style="font-size:12px;color:#9ca3af;text-align:center;">
-                    You're receiving this because you subscribed to CampusCrib listing alerts.<br/>
+                    You're receiving this because you subscribed to PataKeja listing alerts.<br/>
                     <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/unsubscribe?email=EMAIL_PLACEHOLDER" style="color:#6366f1;">Unsubscribe</a>
                 </p>
             </div>

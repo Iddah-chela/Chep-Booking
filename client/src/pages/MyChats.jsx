@@ -2,18 +2,35 @@ import React, { useEffect, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'react-hot-toast';
 import ChatInterface from '../components/ChatInterface';
+import { ChatListSkeleton } from '../components/Skeletons';
+import { useSearchParams } from 'react-router-dom';
 
 const MyChats = () => {
   const { axios, getToken, user, isOwner } = useAppContext();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedChat, setSelectedChat] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     if (user) {
       fetchChats();
     }
   }, [user]);
+
+  // Deep-link: auto-open chat from notification
+  useEffect(() => {
+    const chatId = searchParams.get('chatId');
+    if (chatId && chats.length > 0 && !selectedChat) {
+      const target = chats.find(c => c._id === chatId);
+      if (target) {
+        setSelectedChat(target);
+        // Clean up the URL
+        searchParams.delete('chatId');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [chats, searchParams]);
 
   const fetchChats = async () => {
     try {
@@ -62,7 +79,10 @@ const MyChats = () => {
   if (loading) {
     return (
       <div className="py-28 px-4 md:px-16 lg:px-24 xl:px-32 min-h-screen">
-        <p className="text-center">Loading your chats...</p>
+        <div className='h-9 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-8 animate-pulse' />
+        <div className='space-y-0'>
+          {[...Array(5)].map((_, i) => <ChatListSkeleton key={i} />)}
+        </div>
       </div>
     );
   }
@@ -73,8 +93,8 @@ const MyChats = () => {
 
       {chats.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-gray-500 text-lg">No conversations yet</p>
-          <p className="text-gray-400 mt-2">Start chatting with house owners to find your perfect place!</p>
+          <p className="text-gray-500 dark:text-gray-400 text-lg">No conversations yet</p>
+          <p className="text-gray-400 dark:text-gray-500 mt-2">Start chatting with house owners to find your perfect place!</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -87,7 +107,7 @@ const MyChats = () => {
               <div
                 key={chat._id}
                 onClick={() => setSelectedChat(chat)}
-                className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition-all border border-gray-100"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition-all border border-gray-100 dark:border-gray-700"
               >
                 <div className="flex items-start gap-4">
                   <img
@@ -100,8 +120,7 @@ const MyChats = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-semibold text-lg">{otherUser.username}</h3>
-                        <p className="text-sm text-gray-500">
-                          {chat.property?.name} - {chat.roomDetails?.buildingName} - {chat.roomDetails?.roomType}
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                         </p>
                       </div>
                       <div className="text-right">
@@ -116,7 +135,7 @@ const MyChats = () => {
                       </div>
                     </div>
                     {lastMsg && (
-                      <p className="text-gray-600 mt-2 truncate">
+                      <p className="text-gray-600 dark:text-gray-400 mt-2 truncate">
                         {lastMsg.sender === user.id ? 'You: ' : ''}
                         {lastMsg.content}
                       </p>

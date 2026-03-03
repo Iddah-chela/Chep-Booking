@@ -412,8 +412,8 @@ const getCellDisplay = (cell, roomNum) => {
       <Title align='left' font='outfit' title='List Your Rental Property' subTitle='Provide property details, design the layout using the grid, and set room pricing - all in one step!' />
 
       {/* SECTION 1: Property Details */}
-      <div className='bg-white border border-gray-200 rounded-lg p-6 mt-6'>
-        <h2 className='text-xl font-semibold mb-4 text-gray-800'>1. Property Information</h2>
+      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6'>
+        <h2 className='text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100'>1. Property Information</h2>
         
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           <div>
@@ -521,8 +521,8 @@ const getCellDisplay = (cell, roomNum) => {
       </div>
 
       {/* SECTION 2: Property Photos */}
-      <div className='bg-white border border-gray-200 rounded-lg p-6 mt-6'>
-        <h2 className='text-xl font-semibold mb-4 text-gray-800'>2. Property Photos</h2>
+      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6'>
+        <h2 className='text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100'>2. Property Photos</h2>
         <p className='text-sm text-gray-500 mb-3'>Upload clear photos of the property (at least 1 required)</p>
         <div className='grid grid-cols-2 sm:flex gap-4 flex-wrap'>
           {Object.keys(images).map((key)=>(
@@ -536,8 +536,8 @@ const getCellDisplay = (cell, roomNum) => {
       </div>
 
       {/* SECTION 3: Building Layout Grid Editor */}
-      <div className='bg-white border border-gray-200 rounded-lg p-6 mt-6'>
-        <h2 className='text-xl font-semibold mb-4 text-gray-800'>3. Building Layout (Grid Editor)</h2>
+      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6'>
+        <h2 className='text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100'>3. Building Layout (Grid Editor)</h2>
         <p className='text-sm text-gray-500 mb-4'>Design your property layout. Click cells to configure rooms, add floors, or duplicate buildings.</p>
         
         {/* Grid Controls */}
@@ -561,7 +561,7 @@ const getCellDisplay = (cell, roomNum) => {
         </div>
 
         {/* Drag & Drop Palette */}
-        <div className='mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg'>
+        <div className='mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg'>
           <p className='text-xs font-semibold text-indigo-700 mb-2'>Drag & Drop — drag a room type onto the grid</p>
           <div className='flex gap-2 flex-wrap items-end'>
             {paletteItems.map((item) => (
@@ -722,8 +722,8 @@ const getCellDisplay = (cell, roomNum) => {
       </div>
 
       {/* SECTION 4: Room Configuration */}
-      <div className='bg-white border border-gray-200 rounded-lg p-6 mt-6'>
-        <h2 className='text-xl font-semibold mb-4 text-gray-800'>4. Configure Selected Cell</h2>
+      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6'>
+        <h2 className='text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100'>4. Configure Selected Cell</h2>
         {selectedCell ? (
           <div className='space-y-4'>
             <p className='text-sm text-gray-600'>Editing: Row {selectedCell.row + 1}, Column {selectedCell.col + 1}</p>

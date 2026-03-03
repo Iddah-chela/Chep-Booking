@@ -10,7 +10,10 @@ import {
     processRefund,
     checkFirstUnlock,
     getReferralInfo,
-    applyReferral
+    applyReferral,
+    guestInitiateUnlock,
+    guestConfirmPayment,
+    getPropertyUnlockInfo
 } from '../controllers/paymentController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { isAdmin } from '../controllers/adminController.js';
@@ -19,6 +22,9 @@ const paymentRouter = express.Router();
 
 // Check if first unlock is free
 paymentRouter.get('/is-first-unlock', protect, checkFirstUnlock);
+
+// Combined: pass-status + free-check + referral-info in one call
+paymentRouter.get('/property-unlock-info', protect, getPropertyUnlockInfo);
 
 // Initiate property unlock payment
 paymentRouter.post('/initiate-unlock', protect, initiateUnlock);
@@ -30,6 +36,10 @@ paymentRouter.get('/unlock-status/:propertyId', protect, checkUnlockStatus);
 
 // PayHero webhook (no auth required - PayHero calls this)
 paymentRouter.post('/webhook', paymentWebhook);
+
+// Guest payment (no auth required)
+paymentRouter.post('/guest-unlock', guestInitiateUnlock);
+paymentRouter.post('/guest-confirm', guestConfirmPayment);
 
 // Manual payment confirmation (for testing)
 paymentRouter.post('/confirm-payment', protect, confirmPayment);

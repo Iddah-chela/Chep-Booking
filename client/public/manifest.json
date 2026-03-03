@@ -1,6 +1,6 @@
-{
-  "name": "CampusCrib",
-  "short_name": "CampusCrib",
+﻿{
+  "name": "PataKeja",
+  "short_name": "PataKeja",
   "description": "Find verified rental houses near University of Eldoret",
   "start_url": "/",
   "display": "standalone",

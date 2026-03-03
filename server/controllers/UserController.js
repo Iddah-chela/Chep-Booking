@@ -1,4 +1,5 @@
 import User from "../models/user.js";
+import Property from "../models/property.js";
 // GET /api/user/
 
 export const getUserData = async (req, res) => {
@@ -6,8 +7,19 @@ export const getUserData = async (req, res) => {
         const role = req.user.role || 'user';
         const recentSearchedPlaces = req.user.recentSearchedPlaces || [];
         const image = req.user.image || null;
-        console.log('User role:', role, 'User ID:', req.user._id);
-        res.json({success: true, role, recentSearchedPlaces, image})
+        const email = req.user.email || '';
+
+        // Check if user is a caretaker for any property
+        let isCaretaker = false;
+        if (email) {
+            const managed = await Property.findOne({
+                caretakers: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+            }).select('_id').lean();
+            isCaretaker = !!managed;
+        }
+
+        console.log('User role:', role, 'User ID:', req.user._id, 'isCaretaker:', isCaretaker);
+        res.json({success: true, role, recentSearchedPlaces, image, isCaretaker})
     } catch (error) {
         res.json({success: false, message: error.message})
     }

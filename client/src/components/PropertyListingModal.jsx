@@ -2,10 +2,10 @@ import React, { useState, useRef } from 'react'
 import { assets, Places } from '../assets/assets'
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
-import { HardHat, Save, Home, Check, X as XIcon, GripVertical } from 'lucide-react';
+import { HardHat, Save, Home, Check, X as XIcon, GripVertical, MapPin, Navigation, ExternalLink } from 'lucide-react';
 
 const PropertyListingModal = ({ onClose, existingProperty = null }) => {
-  const { user, navigate, getToken, axios } = useAppContext()
+  const { user, navigate, getToken, axios, darkMode } = useAppContext()
 
   // Property Details State
   const [propertyInfo, setPropertyInfo] = useState(existingProperty ? {
@@ -73,19 +73,46 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
 
   const [images, setImages] = useState({ 1: null, 2: null, 3: null, 4: null })
   const [loading, setLoading] = useState(false)
+  const [locating, setLocating] = useState(false)
   const [selectMode, setSelectMode] = useState(false) // Multi-select mode
   const [compoundGate, setCompoundGate] = useState(existingProperty?.compoundGate || { side: 'bottom', layout: 'row' })
   const [quickSetup, setQuickSetup] = useState({ rooms: '', roomType: 'BedSitter', price: '', floors: 1 })
   const [dragPrice, setDragPrice] = useState(3500)
   const dragDataRef = useRef(null)
 
+  // Get device GPS location → build a Google Maps URL
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser')
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const url = `https://www.google.com/maps?q=${coords.latitude},${coords.longitude}`
+        setPropertyInfo(prev => ({ ...prev, googleMapsUrl: url }))
+        toast.success('Location pinned!')
+        setLocating(false)
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error('Location permission denied. Please paste a Google Maps link manually.')
+        } else {
+          toast.error('Could not get location. Paste a link manually.')
+        }
+        setLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
   // Drag-and-drop palette items
   const paletteItems = [
-    { type: 'room', roomType: 'BedSitter', label: 'BedSitter', color: 'bg-emerald-100 border-emerald-400 text-emerald-800' },
-    { type: 'room', roomType: 'One-Bedroom', label: '1-Bedroom', color: 'bg-blue-100 border-blue-400 text-blue-800' },
-    { type: 'room', roomType: 'Self-Contain', label: 'Self-Contain', color: 'bg-purple-100 border-purple-400 text-purple-800' },
-    { type: 'common', roomType: '', label: 'Common Area', color: 'bg-gray-200 border-gray-400 text-gray-700' },
-    { type: 'empty', roomType: '', label: 'Empty', color: 'bg-white border-gray-300 text-gray-500' },
+    { type: 'room', roomType: 'BedSitter',    label: 'BedSitter',    color: 'bg-emerald-100 border-emerald-400 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-600 dark:text-emerald-300' },
+    { type: 'room', roomType: 'One-Bedroom',  label: '1-Bedroom',    color: 'bg-blue-100 border-blue-400 text-blue-800 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-300' },
+    { type: 'room', roomType: 'Self-Contain', label: 'Self-Contain', color: 'bg-purple-100 border-purple-400 text-purple-800 dark:bg-purple-900/40 dark:border-purple-600 dark:text-purple-300' },
+    { type: 'common', roomType: '', label: 'Common Area',            color: 'bg-gray-200 border-gray-400 text-gray-700 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-200' },
+    { type: 'empty',  roomType: '', label: 'Empty',                  color: 'bg-white border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-500 dark:text-gray-300' },
   ]
 
   const handleDragStart = (item) => {
@@ -364,8 +391,9 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
     if (cell.type === 'room') {
       return (
         <div className='relative w-full flex flex-col items-center justify-center h-full'>
-          {roomNum > 0 && <span style={{ fontSize: numSize + 'px', lineHeight: '1' }} className='text-gray-700 font-extrabold absolute top-0.5 left-1'>R{roomNum}</span>}
-          <span style={{ fontSize: Math.max(12, Math.floor(baseCellPx * 0.32)) + 'px', lineHeight: '1' }}>🚪</span>
+          {roomNum > 0 && <span style={{ fontSize: numSize + 'px', lineHeight: '1' }} className='text-gray-700 dark:text-gray-300 font-extrabold absolute top-0.5 left-1'>R{roomNum}</span>}
+          {/* Door — CSS div instead of emoji for dark mode compatibility */}
+          <div style={{ width: Math.max(14, Math.floor(baseCellPx * 0.32)) + 'px', height: Math.max(18, Math.floor(baseCellPx * 0.40)) + 'px', background: '#7c2d12', borderRadius: '2px 2px 0 0', border: '1px solid #451a03', marginTop: 'auto' }}></div>
         </div>
       )
     }
@@ -462,9 +490,11 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
 
   return (
     <div onClick={onClose} className='fixed inset-0 z-[100] flex items-center justify-center bg-black/70 overflow-y-auto p-4'>
-      <form onSubmit={onSubmitHandler} onClick={(e) => e.stopPropagation()} className='bg-white rounded-xl max-w-6xl w-full my-auto max-h-[95vh] overflow-y-auto overflow-x-hidden p-6 md:p-8 relative'>
+      <form onSubmit={onSubmitHandler} onClick={(e) => e.stopPropagation()} className='bg-white dark:bg-gray-800 rounded-xl max-w-6xl w-full my-auto max-h-[95vh] overflow-y-auto overflow-x-hidden p-6 md:p-8 relative'>
         
-        <img src={assets.closeIcon} alt="" className='absolute top-4 right-4 h-5 w-5 cursor-pointer hover:opacity-70' onClick={onClose} />
+        <button type="button" onClick={onClose} className='absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 transition-colors'>
+          <XIcon className='w-5 h-5' />
+        </button>
 
         <h1 className='text-3xl font-bold mb-2'>{existingProperty ? 'Edit Property' : 'List Your Rental Property'}</h1>
         <p className='text-gray-600 mb-6'>Fill in details, design the layout, and set room pricing - all in one go!</p>
@@ -473,23 +503,61 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
         <div className='border-l-4 border-indigo-500 pl-4 mb-6'>
           <h2 className='text-xl font-semibold mb-3'>Property Information</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-            <input type="text" placeholder='Property Name *' className='border border-gray-300 rounded px-3 py-2 outline-indigo-500' value={propertyInfo.name} onChange={(e) => setPropertyInfo({ ...propertyInfo, name: e.target.value })} required />
-            <select className='border border-gray-300 rounded px-3 py-2 outline-indigo-500' value={propertyInfo.propertyType} onChange={(e) => setPropertyInfo({ ...propertyInfo, propertyType: e.target.value })} required>
+            <input type="text" placeholder='Property Name *' className='border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100' value={propertyInfo.name} onChange={(e) => setPropertyInfo({ ...propertyInfo, name: e.target.value })} required />
+            <select className='border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100' value={propertyInfo.propertyType} onChange={(e) => setPropertyInfo({ ...propertyInfo, propertyType: e.target.value })} required>
               <option value="">Select type *</option>
               <option value="Apartments">Apartment Complex</option>
               <option value="Bedsitters">Bedsitter Units</option>
               <option value="Single Rooms">Single Room Rentals</option>
               <option value="Mixed">Mixed</option>
             </select>
-            <input type="tel" placeholder='Contact Phone *' className='border border-gray-300 rounded px-3 py-2 outline-indigo-500' value={propertyInfo.contact} onChange={(e) => setPropertyInfo({ ...propertyInfo, contact: e.target.value })} required />
-            <input type="tel" placeholder='WhatsApp Number (Optional)' className='border border-gray-300 rounded px-3 py-2 outline-indigo-500' value={propertyInfo.whatsappNumber} onChange={(e) => setPropertyInfo({ ...propertyInfo, whatsappNumber: e.target.value })} />
-            <input type="text" placeholder='Street Address *' className='border border-gray-300 rounded px-3 py-2 outline-indigo-500' value={propertyInfo.address} onChange={(e) => setPropertyInfo({ ...propertyInfo, address: e.target.value })} required />
-            <input type="text" placeholder='Estate/Building Name *' className='border border-gray-300 rounded px-3 py-2 outline-indigo-500' value={propertyInfo.estate} onChange={(e) => setPropertyInfo({ ...propertyInfo, estate: e.target.value })} required />
-            <select className='border border-gray-300 rounded px-3 py-2 outline-indigo-500 md:col-span-2' value={propertyInfo.place} onChange={(e) => setPropertyInfo({ ...propertyInfo, place: e.target.value })} required>
+            <input type="tel" placeholder='Contact Phone *' className='border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100' value={propertyInfo.contact} onChange={(e) => setPropertyInfo({ ...propertyInfo, contact: e.target.value })} required />
+            <input type="tel" placeholder='WhatsApp Number (Optional)' className='border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100' value={propertyInfo.whatsappNumber} onChange={(e) => setPropertyInfo({ ...propertyInfo, whatsappNumber: e.target.value })} />
+            <input type="text" placeholder='Street Address *' className='border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100' value={propertyInfo.address} onChange={(e) => setPropertyInfo({ ...propertyInfo, address: e.target.value })} required />
+            <input type="text" placeholder='Estate/Building Name *' className='border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100' value={propertyInfo.estate} onChange={(e) => setPropertyInfo({ ...propertyInfo, estate: e.target.value })} required />
+            <select className='border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100 md:col-span-2' value={propertyInfo.place} onChange={(e) => setPropertyInfo({ ...propertyInfo, place: e.target.value })} required>
               <option value="">Select Location *</option>
               {Places.map((place) => (<option key={place} value={place}>{place}</option>))}
             </select>
-            <input type="url" placeholder='Google Maps Link (paste from Maps share button)' className='border border-gray-300 rounded px-3 py-2 outline-indigo-500 md:col-span-2' value={propertyInfo.googleMapsUrl} onChange={(e) => setPropertyInfo({ ...propertyInfo, googleMapsUrl: e.target.value })} />
+            {/* Location picker */}
+            <div className='md:col-span-2 space-y-2'>
+              <div className='flex items-center gap-2'>
+                <MapPin className='w-4 h-4 text-indigo-500' />
+                <span className='text-sm font-medium text-gray-700 dark:text-gray-300'>Property Location on Google Maps</span>
+                <span className='text-xs text-gray-400'>(shown to tenants after viewing is confirmed)</span>
+              </div>
+              <div className='flex gap-2'>
+                <input
+                  type='url'
+                  placeholder='Paste a Google Maps link, or use the button →'
+                  className='flex-1 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100 text-sm'
+                  value={propertyInfo.googleMapsUrl}
+                  onChange={(e) => setPropertyInfo({ ...propertyInfo, googleMapsUrl: e.target.value })}
+                />
+                <button
+                  type='button'
+                  onClick={handleGetLocation}
+                  disabled={locating}
+                  className='flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded text-sm font-medium transition-all whitespace-nowrap'
+                >
+                  {locating ? (
+                    <><span className='w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block' /> Locating...</>
+                  ) : (
+                    <><Navigation className='w-4 h-4' /> Use my location</>
+                  )}
+                </button>
+              </div>
+              {propertyInfo.googleMapsUrl && (
+                <a
+                  href={propertyInfo.googleMapsUrl}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:underline'
+                >
+                  <ExternalLink className='w-3 h-3' /> Preview pinned location
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
@@ -499,8 +567,8 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
           <div className='flex gap-2 flex-wrap'>
             {Object.keys(images).map((key) => (
               <label htmlFor={`propertyImage${key}`} key={key} className='cursor-pointer group'>
-                <div className='h-20 w-20 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden group-hover:border-indigo-500 transition-all'>
-                  <img className='h-full w-full object-cover' src={images[key] ? URL.createObjectURL(images[key]) : assets.uploadArea} alt="" />
+                <div className='h-20 w-20 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden group-hover:border-indigo-500 transition-all'>
+                  <img className='h-full w-full object-cover dark:opacity-88' src={images[key] ? URL.createObjectURL(images[key]) : assets.uploadArea} alt="" />
                 </div>
                 <input type='file' accept='image/*' id={`propertyImage${key}`} hidden onChange={e => setImages({ ...images, [key]: e.target.files[0] })} />
               </label>
@@ -522,11 +590,11 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                 placeholder='e.g. 10'
                 value={quickSetup.rooms}
                 onChange={(e) => setQuickSetup({ ...quickSetup, rooms: e.target.value })}
-                className='border px-3 py-2 rounded w-28 outline-indigo-500 block'
+                className='border px-3 py-2 rounded w-28 outline-indigo-500 block bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100'
               />
             </div>
             <div>
-              <label className='text-xs text-gray-600 font-medium'>Floors</label>
+              <label className='text-xs text-gray-600 dark:text-gray-400 font-medium'>Floors</label>
               <input
                 type='number'
                 min='1'
@@ -534,15 +602,15 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                 placeholder='1'
                 value={quickSetup.floors}
                 onChange={(e) => setQuickSetup({ ...quickSetup, floors: e.target.value })}
-                className='border px-3 py-2 rounded w-20 outline-indigo-500 block'
+                className='border px-3 py-2 rounded w-20 outline-indigo-500 block bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100'
               />
             </div>
             <div>
-              <label className='text-xs text-gray-600 font-medium'>Room Type</label>
+              <label className='text-xs text-gray-600 dark:text-gray-400 font-medium'>Room Type</label>
               <select
                 value={quickSetup.roomType}
                 onChange={(e) => setQuickSetup({ ...quickSetup, roomType: e.target.value })}
-                className='border px-3 py-2 rounded outline-indigo-500 block'
+                className='border px-3 py-2 rounded outline-indigo-500 block bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100'
               >
                 <option value='BedSitter'>BedSitter</option>
                 <option value='One-Bedroom'>One-Bedroom</option>
@@ -550,20 +618,20 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
               </select>
             </div>
             <div>
-              <label className='text-xs text-gray-600 font-medium'>Rent (Ksh/month)</label>
+              <label className='text-xs text-gray-600 dark:text-gray-400 font-medium'>Rent (Ksh/month)</label>
               <input
                 type='number'
                 min='100'
                 placeholder='e.g. 3500'
                 value={quickSetup.price}
                 onChange={(e) => setQuickSetup({ ...quickSetup, price: e.target.value })}
-                className='border px-3 py-2 rounded w-32 outline-indigo-500 block'
+                className='border px-3 py-2 rounded w-32 outline-indigo-500 block bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100'
               />
             </div>
             <button
               type='button'
               onClick={handleQuickSetup}
-              className='bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium text-sm'
+              className='bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-800 text-white px-4 py-2 rounded font-medium text-sm'
             >
               Generate Layout
             </button>
@@ -576,39 +644,39 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
 
           {/* Action buttons */}
           <div className='flex gap-2 mb-3 flex-wrap text-sm'>
-            <button type="button" onClick={addStory} className='flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded font-medium'>
+            <button type="button" onClick={addStory} className='flex items-center gap-1 bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1.5 rounded font-medium'>
               <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 4v16m8-8H4' /></svg>
               Floor
             </button>
-            <button type="button" onClick={addColumn} className='flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded font-medium'>
+            <button type="button" onClick={addColumn} className='flex items-center gap-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white px-3 py-1.5 rounded font-medium'>
               <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' /></svg>
               House
             </button>
-            <button type="button" onClick={removeColumn} className='flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded font-medium'>
+            <button type="button" onClick={removeColumn} className='flex items-center gap-1 bg-red-500 dark:bg-red-600 hover:bg-red-600 dark:hover:bg-red-700 text-white px-3 py-1.5 rounded font-medium'>
               <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z' /></svg>
               Remove
             </button>
-            <button type="button" onClick={duplicateBuilding} className='flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded font-medium'>
+            <button type="button" onClick={duplicateBuilding} className='flex items-center gap-1 bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white px-3 py-1.5 rounded font-medium'>
               <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z' /></svg>
               Duplicate
             </button>
 
-            <button type="button" onClick={addNewBuilding} className='flex items-center gap-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded font-medium'>
+            <button type="button" onClick={addNewBuilding} className='flex items-center gap-1 bg-orange-500 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-700 text-white px-3 py-1.5 rounded font-medium'>
               <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5' /></svg>
               New Building
             </button>
-            <button type="button" onClick={() => { setSelectMode(!selectMode); setSelectedCells([]) }} className={`px-3 py-1.5 rounded font-medium ${selectMode ? 'bg-yellow-500 text-white' : 'bg-gray-300 text-gray-700'}`}>
+            <button type="button" onClick={() => { setSelectMode(!selectMode); setSelectedCells([]) }} className={`px-3 py-1.5 rounded font-medium ${selectMode ? 'bg-yellow-500 dark:bg-yellow-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200'}`}>
               {selectMode ? 'Multi-Select ON' : 'Multi-Select'}
             </button>
-            <button type="button" onClick={applyToAllCells} className='flex items-center gap-1 bg-teal-500 hover:bg-teal-600 text-white px-3 py-1.5 rounded font-medium'>
-              <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2' /></svg>
+            <button type="button" onClick={applyToAllCells} className='flex items-center gap-1 bg-teal-500 dark:bg-teal-600 hover:bg-teal-600 dark:hover:bg-teal-700 text-white px-3 py-1.5 rounded font-medium'>
+              <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2' /></svg>
               Apply to All
             </button>
           </div>
 
           {/* Drag & Drop Palette */}
-          <div className='mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg'>
-            <p className='text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1.5'>
+          <div className='mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg'>
+            <p className='text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-2 flex items-center gap-1.5'>
               <GripVertical className='w-3.5 h-3.5' /> Drag & Drop — drag a room type onto the grid
             </p>
             <div className='flex gap-2 flex-wrap items-end'>
@@ -623,13 +691,13 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                 </div>
               ))}
               <div className='flex items-center gap-1.5 ml-2'>
-                <label className='text-[10px] text-gray-600 font-medium whitespace-nowrap'>Default rent:</label>
+                <label className='text-[10px] text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap'>Default rent:</label>
                 <input
                   type='number'
                   min='100'
                   value={dragPrice}
                   onChange={(e) => setDragPrice(e.target.value)}
-                  className='border border-indigo-300 rounded px-2 py-1 w-24 text-xs outline-indigo-500'
+                  className='border border-indigo-300 dark:border-indigo-600 rounded px-2 py-1 w-24 text-xs outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100'
                   placeholder='Ksh'
                 />
               </div>
@@ -651,7 +719,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                 { id: 'bottom-right', label: '↘ Bot-Right' },
               ].map(({ id, label }) => (
                 <button key={id} type="button" onClick={() => setCompoundGate(g => ({ ...g, side: id }))}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-all ${compoundGate.side === id ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>
+                  className={`px-2 py-1 rounded text-xs font-medium transition-all ${compoundGate.side === id ? 'bg-amber-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
                   {label}
                 </button>
               ))}
@@ -662,7 +730,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
             <span className='text-gray-600 font-medium text-xs'>Building arrangement:</span>
             {[{ id: 'row', label: '↔ Side by Side' }, { id: 'col', label: '↕ Stacked' }].map(({ id, label }) => (
               <button key={id} type='button' onClick={() => setCompoundGate(g => ({ ...g, layout: id }))}
-                className={`px-2 py-1 rounded text-xs font-medium transition-all ${(compoundGate.layout || 'row') === id ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>
+                className={`px-2 py-1 rounded text-xs font-medium transition-all ${(compoundGate.layout || 'row') === id ? 'bg-indigo-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
                 {label}
               </button>
             ))}
@@ -701,23 +769,23 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                     'bottom-right': { paddingBottom: 40, paddingRight: 40 },
                   }[gs] || {}
                   return (
-                <div className='border-2 border-dashed border-gray-500 p-3 bg-gradient-to-br from-green-50 to-slate-100 relative'
+                <div className='border-2 border-dashed border-gray-500 dark:border-gray-400 p-3 bg-gradient-to-br from-green-50 to-slate-100 dark:from-gray-700 dark:to-gray-800 relative'
                   style={{ ...(cornerClip ? { clipPath: cornerClip } : {}), ...cornerPad }}>
                   {/* Trunk strips — grey path towards gate, corridors bleed into them creating T-junctions */}
                   {trunkList.map((t, i) => t.dir === 'h' ? (
-                    <div key={i} className='absolute left-0 right-0 overflow-hidden'
+                    <div key={i} className='absolute left-0 right-0 overflow-hidden bg-gray-500 dark:bg-gray-600'
                       style={t.pos === 'top'
-                        ? { top: 0, height: 14, background: '#6b7280', zIndex: 1 }
-                        : { bottom: 0, height: 14, background: '#6b7280', zIndex: 1 }}>
+                        ? { top: 0, height: 14, zIndex: 1 }
+                        : { bottom: 0, height: 14, zIndex: 1 }}>
                       <div className='absolute inset-0 flex items-center' style={{ padding: '0 6px' }}>
                         <div style={{ borderTop: '2px dashed rgba(255,255,255,0.55)', width: '100%' }}></div>
                       </div>
                     </div>
                   ) : (
-                    <div key={i} className='absolute top-0 bottom-0 overflow-hidden'
+                    <div key={i} className='absolute top-0 bottom-0 overflow-hidden bg-gray-500 dark:bg-gray-600'
                       style={t.pos === 'left'
-                        ? { left: 0, width: 14, background: '#6b7280', zIndex: 1 }
-                        : { right: 0, width: 14, background: '#6b7280', zIndex: 1 }}>
+                        ? { left: 0, width: 14, zIndex: 1 }
+                        : { right: 0, width: 14, zIndex: 1 }}>
                       <div className='absolute inset-0 flex justify-center'>
                         <div style={{ borderLeft: '2px dashed rgba(255,255,255,0.55)', height: '100%' }}></div>
                       </div>
@@ -732,7 +800,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                           {buildingIndex > 0 && (isColLayout ? (
                             /* Horizontal corridor for stacked buildings — bleeds to left+right fence */
                             <div style={{ height: 14, alignSelf: 'stretch', flexShrink: 0, marginLeft: '-12px', marginRight: '-12px' }} className='my-1.5 relative'>
-                              <div className='h-full w-full' style={{ background: '#6b7280' }}>
+                              <div className='h-full w-full bg-gray-500 dark:bg-gray-600'>
                                 <div className='absolute inset-0 flex items-center px-2'>
                                   <div style={{ borderTop: '2px dashed rgba(255,255,255,0.6)', width: '100%' }}></div>
                                 </div>
@@ -741,7 +809,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                           ) : (
                             /* Vertical corridor for side-by-side buildings — bleeds to top+bottom fence */
                             <div style={{ width: 18, alignSelf: 'stretch', flexShrink: 0, marginTop: '-12px', marginBottom: '-12px' }} className='flex items-stretch mx-1.5 relative'>
-                              <div className='w-full h-full' style={{ background: '#6b7280' }}>
+                              <div className='w-full h-full bg-gray-500 dark:bg-gray-600'>
                                 <div className='absolute inset-0 flex justify-center'>
                                   <div style={{ borderLeft: '2px dashed rgba(255,255,255,0.6)', height: '100%' }}></div>
                                 </div>
@@ -754,14 +822,14 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                           style={{ transform: isActive ? 'scale(1)' : 'scale(0.88)', transformOrigin: 'bottom center' }}
                         >
                           {/* Building label */}
-                          <div className={`text-center text-xs font-semibold mb-1 ${isActive ? 'text-indigo-700' : 'text-gray-500'}`}>{building.name}</div>
+                          <div className={`text-center text-xs font-semibold mb-1 ${isActive ? 'text-indigo-700 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}>{building.name}</div>
 
                           {/* Roof — outlined triangle with overhang, no bottom border */}
                           <div className='flex justify-center' style={{ marginLeft: -Math.round(baseCellPx * 0.15), marginRight: -Math.round(baseCellPx * 0.15) }}>
                             <svg width={building.cols * baseCellPx + Math.round(baseCellPx * 0.3)} height="28">
                               <polyline
                                 points={`0,28 ${(building.cols * baseCellPx + Math.round(baseCellPx * 0.3)) / 2},2 ${building.cols * baseCellPx + Math.round(baseCellPx * 0.3)},28`}
-                                fill={isActive ? '#f5f3ff' : '#f9fafb'}
+                                fill={isActive ? (darkMode ? '#4338ca' : '#ede9fe') : 'transparent'}
                                 stroke={isActive ? '#4f46e5' : '#9ca3af'}
                                 strokeWidth={isActive ? '3.5' : '2'}
                                 strokeLinejoin='round'
@@ -770,7 +838,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                           </div>
 
                           {/* Grid */}
-                          <div className={`bg-white shadow border-2 ${isActive ? 'border-indigo-400' : 'border-gray-300'}`}>
+                          <div className={`bg-white dark:bg-gray-700 shadow border-2 ${isActive ? 'border-indigo-400' : 'border-gray-300 dark:border-gray-600'}`}>
                             {building.grid.map((row, rowIndex) => (
                               <div key={rowIndex} className='flex'>
                                 {row.map((cell, colIndex) => {
@@ -783,22 +851,22 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                                       onDragOver={(e) => { if (isActive) e.preventDefault() }}
                                       onDrop={(e) => { if (isActive) { e.preventDefault(); handleDrop(rowIndex, colIndex) } }}
                                       style={{ width: baseCellPx + 'px', height: baseCellPx + 'px' }}
-                                      className={`group relative border border-gray-300 flex items-center justify-center transition-all ${
-                                        isSelected ? 'ring-4 ring-indigo-500 bg-indigo-200 cursor-pointer' :
-                                        isMultiSelected ? 'ring-2 ring-yellow-400 bg-yellow-100 cursor-pointer' :
-                                        isActive && cell.type === 'room' && !cell.isVacant ? 'bg-red-200 border-red-400 hover:bg-red-300 cursor-pointer' :
-                                        isActive && cell.type === 'room' ? 'bg-emerald-200 border-emerald-400 hover:bg-emerald-300 cursor-pointer' :
-                                        isActive && cell.type === 'common' ? 'bg-gray-200 border-gray-400 hover:bg-gray-300 cursor-pointer' :
-                                        isActive ? 'bg-gray-50 hover:bg-gray-100 cursor-pointer' :
-                                        cell.type === 'room' && !cell.isVacant ? 'bg-red-200 border-red-400' :
-                                        cell.type === 'room' ? 'bg-emerald-200 border-emerald-400' :
-                                        cell.type === 'common' ? 'bg-gray-200 border-gray-400' : 'bg-gray-50'
+                                      className={`group relative border border-gray-300 dark:border-gray-600 flex items-center justify-center transition-all ${
+                                        isSelected ? 'ring-4 ring-indigo-500 bg-indigo-200 dark:bg-indigo-900 cursor-pointer' :
+                                        isMultiSelected ? 'ring-2 ring-yellow-400 bg-yellow-100 dark:bg-yellow-900 cursor-pointer' :
+                                        isActive && cell.type === 'room' && !cell.isVacant ? 'bg-red-200 dark:bg-red-900 border-red-400 hover:bg-red-300 cursor-pointer' :
+                                        isActive && cell.type === 'room' ? 'bg-emerald-200 dark:bg-emerald-900 border-emerald-400 hover:bg-emerald-300 cursor-pointer' :
+                                        isActive && cell.type === 'common' ? 'bg-gray-200 dark:bg-gray-700 border-gray-400 hover:bg-gray-300 cursor-pointer' :
+                                        isActive ? 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 cursor-pointer' :
+                                        cell.type === 'room' && !cell.isVacant ? 'bg-red-200 dark:bg-red-950 border-red-400' :
+                                        cell.type === 'room' ? 'bg-emerald-200 dark:bg-emerald-950 border-emerald-400' :
+                                        cell.type === 'common' ? 'bg-gray-200 dark:bg-gray-700 border-gray-400' : 'bg-gray-50'
                                       }`}
                                     >
                                       {getCellDisplay(cell, cell.type === 'room' ? getRoomNumber(building.grid, rowIndex, colIndex) : 0)}
                                       {cell.type === 'room' && (
                                         <div className='hidden group-hover:flex flex-col absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none items-center'>
-                                          <div className='bg-gray-900 text-white rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-xl text-left'>
+                                          <div className='bg-gray-900  text-white rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-xl text-left'>
                                             <div className='font-bold text-[11px]'>R{getRoomNumber(building.grid, rowIndex, colIndex)} · {cell.roomType || 'Room'}</div>
                                             {cell.pricePerMonth && <div className='text-[10px] text-gray-300 mt-0.5'>Ksh {cell.pricePerMonth?.toLocaleString()}/mo</div>}
                                             <div className={`text-[10px] font-medium mt-0.5 ${cell.isVacant ? 'text-green-300' : 'text-red-300'}`}>
@@ -873,19 +941,19 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                 <p className='text-sm font-medium text-yellow-700 bg-yellow-50 p-2 rounded'>Editing {selectedCells.length} cells - Changes will apply to all selected</p>
               )}
               <div className='flex gap-2 flex-wrap items-center'>
-                <select className='border px-3 py-2 rounded outline-indigo-500' value={roomConfig.type} onChange={(e) => setRoomConfig({ ...roomConfig, type: e.target.value })}>
+                <select className='border px-3 py-2 rounded outline-indigo-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100' value={roomConfig.type} onChange={(e) => setRoomConfig({ ...roomConfig, type: e.target.value })}>
                   <option value="empty">Empty</option>
                   <option value="room">Room</option>
                   <option value="common">Common Area</option>
                 </select>
                 {roomConfig.type === 'room' && (<>
-                  <select className='border px-3 py-2 rounded outline-indigo-500' value={roomConfig.roomType} onChange={(e) => setRoomConfig({ ...roomConfig, roomType: e.target.value })}>
+                  <select className='border px-3 py-2 rounded outline-indigo-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100' value={roomConfig.roomType} onChange={(e) => setRoomConfig({ ...roomConfig, roomType: e.target.value })}>
                     <option value="">Room Type *</option>
                     <option value="BedSitter">BedSitter</option>
                     <option value="One-Bedroom">One-Bedroom</option>
                     <option value="Self-Contain">Self-Contain</option>
                   </select>
-                  <input type='number' placeholder='Monthly Rent *' min="100" className='border px-3 py-2 rounded w-32 outline-indigo-500' value={roomConfig.pricePerMonth} onChange={(e) => setRoomConfig({ ...roomConfig, pricePerMonth: e.target.value })} />
+                  <input type='number' placeholder='Monthly Rent *' min="100" className='border px-3 py-2 rounded w-32 outline-indigo-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100' value={roomConfig.pricePerMonth} onChange={(e) => setRoomConfig({ ...roomConfig, pricePerMonth: e.target.value })} />
                   <button
                     type="button"
                     onClick={() => setRoomConfig({ ...roomConfig, isVacant: !roomConfig.isVacant })}

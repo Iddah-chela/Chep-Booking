@@ -32,13 +32,14 @@ const AdminLayout = () => {
     { name: 'Applications', path: '/admin/applications' },
     { name: 'Reports', path: '/admin/reports' },
     { name: 'Users', path: '/admin/users' },
-    { name: 'Listings', path: '/admin/listings' }
+    { name: 'Listings', path: '/admin/listings' },
+    { name: 'Feedback', path: '/admin/feedback' }
   ];
 
   const SidebarContent = () => (
     <>
-      <div className="p-5 border-b border-gray-200">
-        <h1 className="text-xl font-semibold text-gray-800">Admin Panel</h1>
+      <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+        <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Admin Panel</h1>
         <p className="text-xs text-gray-500 mt-0.5">Management Dashboard</p>
       </div>
       <nav className="mt-2 flex-1">
@@ -49,8 +50,8 @@ const AdminLayout = () => {
             end={link.path === '/admin'}
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }) =>
-              `block px-5 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors ${
-                isActive ? 'bg-indigo-50 border-r-4 border-indigo-600 text-indigo-600 font-medium' : ''
+              `block px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 border-r-4 border-indigo-600 text-indigo-600 font-medium' : ''
               }`
             }
           >
@@ -58,10 +59,10 @@ const AdminLayout = () => {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={() => navigate('/')}
-          className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg text-left"
+          className="w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-left"
         >
           ← Back to Site
         </button>
@@ -70,7 +71,7 @@ const AdminLayout = () => {
   );
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -81,7 +82,7 @@ const AdminLayout = () => {
 
       {/* Sidebar — fixed on desktop, slide-over on mobile */}
       <div className={`
-        fixed lg:static top-0 left-0 h-full w-60 bg-white border-r border-gray-200 z-30 flex flex-col
+        fixed lg:static top-0 left-0 h-full w-60 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-30 flex flex-col
         transition-transform duration-200
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -91,7 +92,7 @@ const AdminLayout = () => {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-1.5 rounded-md hover:bg-gray-100"

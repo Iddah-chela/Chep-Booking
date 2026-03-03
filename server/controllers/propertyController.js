@@ -299,8 +299,8 @@ export const addCaretaker = async (req, res) => {
       return res.json({ success: false, message: "This email is already a caretaker" });
     }
 
-    // Verify the email belongs to a registered user
-    const caretakerUser = await User.findOne({ email: normalizedEmail });
+    // Verify the email belongs to a registered user (case-insensitive)
+    const caretakerUser = await User.findOne({ email: { $regex: new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
     if (!caretakerUser) {
       return res.json({ success: false, message: "No registered user found with that email" });
     }
@@ -352,7 +352,9 @@ export const getManagedProperties = async (req, res) => {
       return res.json({ success: false, message: "User email not found" });
     }
 
-    const properties = await Property.find({ caretakers: userEmail.toLowerCase() })
+    const properties = await Property.find({ 
+      caretakers: { $regex: new RegExp(`^${userEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    })
       .populate('owner', 'username email image')
       .sort({ createdAt: -1 });
 
@@ -375,7 +377,7 @@ export const caretakerToggleRoom = async (req, res) => {
 
     // Allow if user is owner OR caretaker
     const isOwner = property.owner === req.user._id;
-    const isCaretaker = property.caretakers.includes(userEmail?.toLowerCase());
+    const isCaretaker = property.caretakers.some(e => e.toLowerCase() === userEmail?.toLowerCase());
 
     if (!isOwner && !isCaretaker) {
       return res.json({ success: false, message: "Unauthorized — you are not the owner or a caretaker" });

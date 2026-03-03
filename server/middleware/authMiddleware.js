@@ -1,6 +1,5 @@
 import User from "../models/user.js";
-import { clerkClient, createClerkClient } from '@clerk/express'
-import jwt from 'jsonwebtoken';
+import { createClerkClient, verifyToken } from '@clerk/express'
 
 // Create a Clerk client for backend operations
 const clerk = createClerkClient({
@@ -10,62 +9,86 @@ const clerk = createClerkClient({
 // middleware to check if the user is authenticated  
 export const protect = async (req, res, next)=>{
     try {
-        console.log('🔐 Auth middleware triggered');
-        
         // Get token from Authorization header
         const authHeader = req.headers.authorization;
-        console.log('   Authorization header:', authHeader ? 'Present' : 'Missing');
         
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            console.log('❌ No Bearer token in Authorization header');
             return res.status(401).json({success: false, message: "No token provided"})
         }
         
         const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-        console.log('   Token extracted (first 20 chars):', token.substring(0, 20) + '...');
         
-        // Decode the JWT (without verification first, to get the session ID)
-        let decoded;
+        // ── VERIFY the JWT signature using Clerk's secret key ──
+        let payload;
         try {
-            decoded = jwt.decode(token);
-            console.log('📄 Token decoded:', decoded);
-        } catch (decodeError) {
-            console.error('❌ Token decode failed:', decodeError.message);
-            return res.status(401).json({success: false, message: "Invalid token format"})
+            payload = await verifyToken(token, {
+                secretKey: process.env.CLERK_SECRET_KEY,
+            });
+        } catch (verifyError) {
+            return res.status(401).json({success: false, message: "Invalid or expired token"})
         }
         
-        if (!decoded || !decoded.sub) {
-            console.log('❌ No user ID in token');
+        if (!payload || !payload.sub) {
             return res.status(401).json({success: false, message: "Invalid token"})
         }
         
-        const userId = decoded.sub;
-        console.log('   userId from token:', userId);
+        const userId = payload.sub;
         
         // Find user in MongoDB (should have been created by webhook)
         let user = await User.findById(userId);
         
         if (!user) {
-            // User doesn't exist in MongoDB yet - create minimal record
-            // The webhook should handle full sync, but this allows immediate access
-            console.log('⚠️  User not found in MongoDB, creating minimal record');
-            user = await User.create({
-                _id: userId,
-                username: 'User',
-                email: decoded.email || `${userId}@temp.clerk.dev`,
-                image: `https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&bold=true`,
-                role: 'user'
-            });
-            console.log('✅ Created minimal user record for:', userId);
-        } else {
-            console.log('✅ Found user in MongoDB:', user.email, 'Role:', user.role);
+            // User doesn't exist in MongoDB yet — fetch real info from Clerk API
+            try {
+                const clerkUser = await clerk.users.getUser(userId);
+                const realEmail = clerkUser.emailAddresses?.[0]?.emailAddress || '';
+                const realName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'User';
+                const realImage = clerkUser.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(realName)}&background=6366f1&color=fff&bold=true`;
+                
+                user = await User.create({
+                    _id: userId,
+                    username: realName,
+                    email: realEmail,
+                    image: realImage,
+                    role: clerkUser.publicMetadata?.role || 'user'
+                });
+            } catch (clerkErr) {
+                // Clerk API failed — last resort fallback
+                console.warn('[Auth] Clerk API fetch failed for new user:', clerkErr.message);
+                user = await User.create({
+                    _id: userId,
+                    username: 'User',
+                    email: `${userId}@temp.clerk.dev`,
+                    image: `https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&bold=true`,
+                    role: 'user'
+                });
+            }
+        } else if (user.email?.endsWith('@temp.clerk.dev')) {
+            // Fix users stuck with temp emails — sync real data from Clerk
+            try {
+                const clerkUser = await clerk.users.getUser(userId);
+                const realEmail = clerkUser.emailAddresses?.[0]?.emailAddress || '';
+                if (realEmail && !realEmail.endsWith('@temp.clerk.dev')) {
+                    user.email = realEmail;
+                    user.username = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || user.username;
+                    if (clerkUser.imageUrl) user.image = clerkUser.imageUrl;
+                    await user.save();
+                }
+            } catch (clerkErr) {
+                // Non-critical, skip
+            }
         }
         
+        // Enforce account suspension
+        if (user.isSuspended) {
+            return res.status(403).json({ success: false, message: 'Your account has been suspended. Please contact support.' });
+        }
+
         req.user = user;
         req.auth = () => ({ userId });
         next();
     } catch (error) {
-        console.error('Auth middleware error:', error);
+        console.error('[Auth] Middleware error:', error.message);
         return res.status(401).json({success: false, message: "Invalid or expired token"})
     }
 }

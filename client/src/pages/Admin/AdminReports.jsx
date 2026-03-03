@@ -112,18 +112,18 @@ const AdminReports = () => {
   };
 
   const actionBadge = {
-    none: 'bg-gray-100 text-gray-600',
-    warning: 'bg-yellow-100 text-yellow-800',
-    suspended: 'bg-red-100 text-red-800',
-    removed: 'bg-red-200 text-red-900',
-    verified: 'bg-green-100 text-green-800'
+    none: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+    warning: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300',
+    suspended: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
+    removed: 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200',
+    verified: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
   };
 
   const statusColors = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    reviewed: 'bg-blue-100 text-blue-800',
-    resolved: 'bg-green-100 text-green-800',
-    dismissed: 'bg-gray-100 text-gray-600'
+    pending: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300',
+    reviewed: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300',
+    resolved: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
+    dismissed: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
   };
 
   const isExpanded = (id) => expandedReport === id;
@@ -142,7 +142,7 @@ const AdminReports = () => {
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
               (s === 'all' ? filter === '' : filter === s)
                 ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >
             {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -155,23 +155,23 @@ const AdminReports = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
       ) : reports.length === 0 ? (
-        <div className="bg-gray-50 rounded-xl p-12 text-center">
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-12 text-center">
           <AlertTriangle className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No {filter || ''} reports</p>
         </div>
       ) : (
         <div className="space-y-3">
           {reports.map((report) => (
-            <div key={report._id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div key={report._id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
               {/* Report header */}
               <div
-                className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 onClick={() => { setExpandedReport(isExpanded(report._id) ? null : report._id); setAdminNotes(report.adminNotes || ''); }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full font-medium">
+                      <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs rounded-full font-medium">
                         {reasonLabels[report.reason] || report.reason}
                       </span>
                       <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${statusColors[report.status]}`}>
@@ -203,17 +203,17 @@ const AdminReports = () => {
 
               {/* Expanded details + actions */}
               {isExpanded(report._id) && (
-                <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-4">
+                <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4 space-y-4">
                   {/* Full description */}
                   <div>
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Description</h4>
-                    <p className="text-sm text-gray-800 bg-white rounded-lg p-3 border border-gray-100">{report.description}</p>
+                    <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Description</h4>
+                    <p className="text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">{report.description}</p>
                   </div>
 
                   {/* Reporter + Reported user */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="bg-white rounded-lg p-3 border border-gray-100">
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Reporter</h4>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+                      <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Reporter</h4>
                       <div className="flex items-center gap-2">
                         <img src={report.reportedBy?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(report.reportedBy?.username || 'U')}&background=6366f1&color=fff&bold=true`} alt="" className="w-8 h-8 rounded-full bg-gray-100" onError={(e) => { const fb = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.reportedBy?.username || 'U')}&background=6366f1&color=fff&bold=true`; if (e.target.src !== fb) e.target.src = fb }} />
                         <div>
@@ -224,8 +224,8 @@ const AdminReports = () => {
                     </div>
 
                     {report.reportedUserId && (
-                      <div className="bg-white rounded-lg p-3 border border-gray-100">
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Reported User</h4>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+                        <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Reported User</h4>
                         <div className="flex items-center gap-2">
                           <img src={report.reportedUserId.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(report.reportedUserId.username || 'U')}&background=6366f1&color=fff&bold=true`} alt="" className="w-8 h-8 rounded-full bg-gray-100" onError={(e) => { const fb = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.reportedUserId.username || 'U')}&background=6366f1&color=fff&bold=true`; if (e.target.src !== fb) e.target.src = fb }} />
                           <div>
@@ -242,8 +242,8 @@ const AdminReports = () => {
 
                   {/* Listing info + View link */}
                   {report.reportType === 'listing' && (
-                    <div className="bg-white rounded-lg p-3 border border-gray-100">
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Reported Listing</h4>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+                      <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Reported Listing</h4>
                       {report.listingInfo ? (
                         <div className="flex items-center justify-between gap-3">
                           <div>
@@ -279,23 +279,23 @@ const AdminReports = () => {
 
                   {/* Previous admin notes (on resolved reports) */}
                   {report.adminNotes && report.status !== 'pending' && (
-                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                      <h4 className="text-xs font-semibold text-blue-600 uppercase mb-1">Admin Notes</h4>
-                      <p className="text-sm text-blue-800">{report.adminNotes}</p>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+                      <h4 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase mb-1">Admin Notes</h4>
+                      <p className="text-sm text-blue-800 dark:text-blue-200">{report.adminNotes}</p>
                     </div>
                   )}
 
                   {/* Action panel — only for pending */}
                   {report.status === 'pending' && (
-                    <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-3">
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase">Take Action</h4>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 space-y-3">
+                      <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Take Action</h4>
 
                       <textarea
                         value={adminNotes}
                         onChange={e => setAdminNotes(e.target.value)}
                         placeholder="Admin notes (optional)..."
                         rows={2}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                       />
 
                       <div className="flex flex-wrap gap-2">
@@ -358,7 +358,7 @@ const AdminReports = () => {
                         <button
                           onClick={() => handleDismiss(report)}
                           disabled={!!actionLoading}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 disabled:opacity-50 transition-all ml-auto"
+                          className="flex items-center gap-1.5 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 transition-all ml-auto"
                         >
                           Dismiss
                         </button>

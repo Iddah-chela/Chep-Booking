@@ -5,6 +5,7 @@ import { useAppContext } from '../context/AppContext'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { X, MapPin, Coins } from 'lucide-react'
+import { PropertyCardSkeleton } from '../components/Skeletons'
 
 const CheckBox = ({label, selected = false, onChange =() =>{}}) => {
     return(
@@ -212,7 +213,13 @@ const AllRooms = () => {
   }
 
   if (loading) {
-    return <div className='py-28 text-center'>Loading properties...</div>
+    return (
+      <div className='pt-28 md:pt-35 px-4 md:px-16 lg:px-24 pb-16'>
+        <div className='h-10 bg-gray-200 dark:bg-gray-700 rounded w-64 mb-2 animate-pulse' />
+        <div className='h-5 bg-gray-200 dark:bg-gray-700 rounded w-80 mb-6 animate-pulse' />
+        {[...Array(4)].map((_, i) => <PropertyCardSkeleton key={i} />)}
+      </div>
+    )
   }
 
   return (
@@ -220,7 +227,7 @@ const AllRooms = () => {
       <div className='flex-1 w-full lg:w-auto'>
         <div className='flex flex-col items-start text-left'> 
           <h1 className='font-playfair text-4xl md:text-[40px]'>Available Houses</h1>
-        <p className='text-sm md:text-base text-gray-500/90 mt-2 max-w-2xl'>Find your perfect rental house near campus. Browse available rooms with great amenities and book your next home.</p>
+        <p className='text-sm md:text-base text-gray-500/90 dark:text-gray-400 mt-2 max-w-2xl'>Find your perfect rental house near campus. Browse available rooms with great amenities and book your next home.</p>
         </div>
 
         {/* Search Bar */}
@@ -232,7 +239,7 @@ const AllRooms = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder='Search by house name, location, or room type...'
-              className='w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'
+              className='w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 dark:text-gray-200'
             />
             {searchQuery && (
               <button
@@ -247,13 +254,12 @@ const AllRooms = () => {
           {(urlLocation || urlMinPrice || urlMaxPrice) && (
             <div className='flex flex-wrap gap-2 mt-2'>
               {urlLocation && (
-                <span className='flex items-center gap-1 bg-indigo-100 text-indigo-700 text-xs px-3 py-1 rounded-full font-medium'>
-                  <MapPin className='w-3.5 h-3.5' /> {urlLocation}
+                <span className='flex items-center gap-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs px-3 py-1 rounded-full font-medium'>
                   <button onClick={() => { clearURLParam('location'); setSearchQuery(''); }} className='ml-1 hover:text-indigo-900 font-bold'><X className='w-3 h-3' /></button>
                 </span>
               )}
               {(urlMinPrice || urlMaxPrice) && (
-                <span className='flex items-center gap-1 bg-indigo-100 text-indigo-700 text-xs px-3 py-1 rounded-full font-medium'>
+                <span className='flex items-center gap-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs px-3 py-1 rounded-full font-medium'>
                   <Coins className='w-3.5 h-3.5' /> Ksh {urlMinPrice || '0'} – {urlMaxPrice || '∞'}
                   <button onClick={() => { clearURLParam('minPrice'); clearURLParam('maxPrice'); }} className='ml-1 hover:text-indigo-900 font-bold'><X className='w-3 h-3' /></button>
                 </span>
@@ -271,7 +277,7 @@ const AllRooms = () => {
           .filter(matchesURLPriceRange)  // Apply URL price filter
           .sort(sortProperties)
           .map((property) => (
-          <div key={property._id} className='flex flex-col md:flex-row items-start py-10 gap-6 border-b border-gray-300 last:pb-30 last:border-0'>
+          <div key={property._id} className='flex flex-col md:flex-row items-start py-10 gap-6 border-b border-gray-300 dark:border-gray-700 last:pb-30 last:border-0'>
             <img 
               onClick={() => {navigate(`/rooms/${property._id}`), scrollTo(0,0)}}
               src={property.images[0]} 
@@ -282,7 +288,7 @@ const AllRooms = () => {
 
             <div className='md:w-1/2 flex flex-col gap-2'>
               <div className='flex items-center gap-2'>
-                <p className='text-gray-500'>{property.place}</p>
+                <p className='text-gray-500 dark:text-gray-400'>{property.place}</p>
                 {property.isVerified && (
                   <span className='bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide'>VERIFIED</span>
                 )}
@@ -295,7 +301,7 @@ const AllRooms = () => {
               </div>
               <p 
                 onClick={() => {navigate(`/rooms/${property._id}`), scrollTo(0,0)}}
-                className='text-gray-800 text-3xl font-playfair cursor-pointer hover:text-indigo-600 transition-colors'
+                className='text-gray-800 dark:text-gray-100 text-3xl font-playfair cursor-pointer hover:text-indigo-600 transition-colors'
               >
                 {property.name}
               </p>
@@ -311,7 +317,7 @@ const AllRooms = () => {
                 )}
                 
                 {property.vacantRooms > 0 && (
-                  <div className='px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium'>
+                  <div className='px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-sm font-medium'>
                     {property.vacantRooms} {property.vacantRooms === 1 ? 'Vacancy' : 'Vacancies'}
                   </div>
                 )}
@@ -343,7 +349,7 @@ const AllRooms = () => {
               </div>
               
               {/* Price Range */}
-              <p className='text-xl font-medium text-gray-700'>
+              <p className='text-xl font-medium text-gray-700 dark:text-gray-200'>
                 {property.minPrice === property.maxPrice ? (
                   `Ksh ${property.minPrice.toLocaleString()}/Month`
                 ) : (
@@ -375,10 +381,10 @@ const AllRooms = () => {
         )}
       </div>
       {/*filters*/}
-      <div className='lg:sticky lg:top-28 bg-white w-full max-w-xs lg:max-w-none mx-auto lg:mx-0 lg:w-52 border border-gray-200 text-gray-600 max-lg:mb-6 self-start rounded-lg shadow-sm lg:shrink-0'>
+      <div className='lg:sticky lg:top-28 bg-white dark:bg-gray-800 w-full max-w-xs lg:max-w-none mx-auto lg:mx-0 lg:w-52 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 max-lg:mb-6 self-start rounded-lg shadow-sm lg:shrink-0'>
 
-        <div className={`flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50`}>
-          <p className='text-xs font-semibold text-gray-800'>FILTERS</p>
+        <div className={`flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30`}>
+          <p className='text-xs font-semibold text-gray-800 dark:text-gray-200'>FILTERS</p>
           <div className='text-xs cursor-pointer font-medium'>
             <span onClick={()=> SetOpenFilters(!openFilters)} className='lg:hidden text-indigo-600 hover:text-indigo-700'>
               {openFilters ? '▲' : '▼'}</span>
@@ -387,7 +393,7 @@ const AllRooms = () => {
         </div>
         <div className={`${openFilters ? 'max-h-[1500px]' : "max-h-0 lg:max-h-[1500px]"} overflow-hidden transition-all duration-300`}>
           <div className='px-3 pt-3 pb-2'>
-              <p className='font-medium text-gray-800 text-xs pb-2'>Room Type</p>
+              <p className='font-medium text-gray-800 dark:text-gray-200 text-xs pb-2'>Room Type</p>
               <div className='flex flex-wrap gap-1.5'>
                 {roomTypes.map((room, index)=>(
                   <button
@@ -396,7 +402,7 @@ const AllRooms = () => {
                     className={`px-2 py-1 rounded-full text-xs font-medium border transition-all ${
                       selectedFilters.roomType.includes(room) 
                         ? 'bg-indigo-600 text-white border-indigo-600' 
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400'
+                        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-indigo-400'
                     }`}
                   >
                     {room}
@@ -404,8 +410,8 @@ const AllRooms = () => {
                 ))}
               </div>
           </div>
-          <div className='px-3 pt-2 pb-2 border-t border-gray-100'>
-              <p className='font-medium text-gray-800 text-xs pb-2'>Price Range</p>
+          <div className='px-3 pt-2 pb-2 border-t border-gray-100 dark:border-gray-700'>
+              <p className='font-medium text-gray-800 dark:text-gray-200 text-xs pb-2'>Price Range</p>
               <div className='flex flex-wrap gap-1.5'>
                 {priceRanges.map((range, index)=>(
                   <button
@@ -414,7 +420,7 @@ const AllRooms = () => {
                     className={`px-2 py-1 rounded-full text-xs font-medium border transition-all ${
                       selectedFilters.priceRange.includes(range) 
                         ? 'bg-green-600 text-white border-green-600' 
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-green-400'
+                        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-green-400'
                     }`}
                   >
                     Ksh {range}
@@ -422,13 +428,13 @@ const AllRooms = () => {
                 ))}
               </div>
           </div>
-          <div className='px-3 pt-2 pb-3 border-t border-gray-100'>
-              <p className='font-medium text-gray-800 text-xs pb-2'>Sort By</p>
+          <div className='px-3 pt-2 pb-3 border-t border-gray-100 dark:border-gray-700'>
+              <p className='font-medium text-gray-800 dark:text-gray-200 text-xs pb-2'>Sort By</p>
               <div className='space-y-1'>
                 {sortOptions.map((option, index)=>(
                   <label
                     key={index}
-                    className='flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-1.5 py-1 rounded transition-colors'
+                    className='flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-1.5 py-1 rounded transition-colors'
                   >
                     <input
                       type='radio'
@@ -437,7 +443,7 @@ const AllRooms = () => {
                       onChange={() => handleSortChange(option)}
                       className='w-3 h-3 text-indigo-600'
                     />
-                    <span className='text-xs text-gray-700'>{option}</span>
+                    <span className='text-xs text-gray-700 dark:text-gray-300'>{option}</span>
                   </label>
                 ))}
               </div>

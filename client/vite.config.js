@@ -8,4 +8,11 @@ export default defineConfig({
           react(),
           tailwindcss()
   ],
+  server: {
+    hmr: {
+      overlay: true,
+      protocol: 'ws',
+      host: 'localhost',
+    },
+  },
 })

@@ -65,9 +65,9 @@ const RoomDetails = () => {
 
     const getAvailabilityBadge = (status) => {
       const badges = {
-        available: { text: 'Available', color: 'bg-green-100 text-green-800' },
-        viewing_requested: { text: 'Viewing Pending', color: 'bg-yellow-100 text-yellow-800' },
-        booked: { text: 'Booked', color: 'bg-red-100 text-red-800' }
+        available: { text: 'Available', color: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' },
+        viewing_requested: { text: 'Viewing Pending', color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' },
+        booked: { text: 'Booked', color: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' }
       }
       return badges[status] || badges.available
     }
@@ -107,7 +107,7 @@ const RoomDetails = () => {
 
         {/* Status Message */}
         {viewingRequest && viewingRequest.status === 'pending' && (
-          <div className='mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
+          <div className='mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg'>
             <p className='text-yellow-800 font-medium'>
               <span className='flex items-center gap-1'><Hourglass className='w-4 h-4' /> Viewing requested. Waiting for owner response.</span>
             </p>
@@ -118,7 +118,7 @@ const RoomDetails = () => {
         )}
 
         {viewingRequest && viewingRequest.status === 'confirmed' && (
-          <div className='mt-4 p-4 bg-green-50 border border-green-200 rounded-lg'>
+          <div className='mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg'>
             <p className='text-green-800 font-medium'>
               <span className='flex items-center gap-1'><Check className='w-4 h-4' /> Viewing confirmed for {new Date(viewingRequest.viewingDate).toLocaleDateString()} {viewingRequest.viewingTimeRange}</span>
             </p>
@@ -129,8 +129,8 @@ const RoomDetails = () => {
         )}
 
         {viewingRequest && viewingRequest.status === 'expired' && (
-          <div className='mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg'>
-            <p className='text-gray-800 font-medium'>
+          <div className='mt-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg'>
+            <p className='text-gray-800 dark:text-gray-200 font-medium'>
               <span className='flex items-center gap-1'><AlertTriangle className='w-4 h-4' /> Viewing expired. Request again.</span>
             </p>
             <p className='text-sm text-gray-600 mt-1'>
@@ -163,7 +163,7 @@ const RoomDetails = () => {
         </div>
 
         {/* Price & CTA */}
-        <div className='flex flex-col md:flex-row md:items-center md:justify-between mt-8 gap-4 p-6 bg-gray-50 rounded-lg'>
+        <div className='flex flex-col md:flex-row md:items-center md:justify-between mt-8 gap-4 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'>
           <div>
             <p className='text-3xl font-semibold'>Ksh.{room.pricePerMonth.toLocaleString()}</p>
             <p className='text-gray-600 mt-1'>per month</p>
@@ -171,7 +171,7 @@ const RoomDetails = () => {
           <div className='flex gap-3 flex-wrap'>
             <button 
               onClick={() => setShowChat(true)}
-              className='px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition-all'
+              className='px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all'
             >
               <span className='flex items-center gap-1'><MessageCircle className='w-4 h-4' /> Message Owner</span>
             </button>
@@ -224,7 +224,7 @@ const RoomDetails = () => {
         )}
 
         {/* Owner Info */}
-        <div className='mt-10 p-6 border border-gray-200 rounded-lg'>
+        <div className='mt-10 p-6 border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800'>
           <div className='flex items-start gap-4'>
             <img 
               src={room.house.owner.image} 

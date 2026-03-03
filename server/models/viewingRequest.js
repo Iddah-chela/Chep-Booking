@@ -25,11 +25,11 @@ const viewingRequestSchema = new mongoose.Schema({
     },
     viewingDate: {
         type: Date, 
-        required: true
+        required: false  // not required for direct-apply requests
     },
     viewingTimeRange: {
         type: String, // e.g. "Morning (9AM-12PM)", "Afternoon (12PM-5PM)", "Evening (5PM-8PM)"
-        required: true
+        required: false
     },
     status: {
         type: String,
@@ -52,6 +52,30 @@ const viewingRequestSchema = new mongoose.Schema({
         type: Date,
         required: true,
         default: () => new Date(Date.now() + 48 * 60 * 60 * 1000) // 48 hours
+    },
+    preferredMoveInDate: {
+        type: Date,
+        required: false
+    },
+    nudgeSentAt: {
+        type: Date,
+        required: false
+    },
+    nudgeToken: {
+        type: String,
+        required: false
+    },
+    isDirectApply: {
+        type: Boolean,
+        default: false
+    },
+    ownerActionToken: {
+        type: String,
+        required: false
+    },
+    reminderSentAt: {
+        type: Date,
+        required: false
     }
 }, {timestamps: true});
 

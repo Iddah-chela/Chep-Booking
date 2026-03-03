@@ -38,20 +38,20 @@ const AdminDashboard = () => {
   }
 
   const statCards = [
-    { label: 'Total Users', value: stats.totalUsers, icon: Users, bg: 'bg-blue-50', iconColor: 'text-blue-600' },
-    { label: 'House Owners', value: stats.totalOwners, icon: Home, bg: 'bg-green-50', iconColor: 'text-green-600' },
-    { label: 'Total Properties', value: stats.totalProperties, icon: Building2, bg: 'bg-purple-50', iconColor: 'text-purple-600' },
-    { label: 'Active Listings', value: stats.activeListings, icon: ClipboardList, bg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
-    { label: 'Verified', value: stats.verifiedListings, icon: CheckCircle, bg: 'bg-teal-50', iconColor: 'text-teal-600' },
-    { label: 'Pending Reports', value: stats.pendingReports, icon: AlertTriangle, bg: 'bg-red-50', iconColor: 'text-red-600' },
-    { label: 'Suspended Users', value: stats.suspendedUsers, icon: UserX, bg: 'bg-orange-50', iconColor: 'text-orange-600' }
+    { label: 'Total Users', value: stats.totalUsers, icon: Users, bg: 'bg-blue-50 dark:bg-blue-900/30', iconColor: 'text-blue-600' },
+    { label: 'House Owners', value: stats.totalOwners, icon: Home, bg: 'bg-green-50 dark:bg-green-900/30', iconColor: 'text-green-600' },
+    { label: 'Total Properties', value: stats.totalProperties, icon: Building2, bg: 'bg-purple-50 dark:bg-purple-900/30', iconColor: 'text-purple-600' },
+    { label: 'Active Listings', value: stats.activeListings, icon: ClipboardList, bg: 'bg-indigo-50 dark:bg-indigo-900/30', iconColor: 'text-indigo-600' },
+    { label: 'Verified', value: stats.verifiedListings, icon: CheckCircle, bg: 'bg-teal-50 dark:bg-teal-900/30', iconColor: 'text-teal-600' },
+    { label: 'Pending Reports', value: stats.pendingReports, icon: AlertTriangle, bg: 'bg-red-50 dark:bg-red-900/30', iconColor: 'text-red-600' },
+    { label: 'Suspended Users', value: stats.suspendedUsers, icon: UserX, bg: 'bg-orange-50 dark:bg-orange-900/30', iconColor: 'text-orange-600' }
   ];
 
   const quickActions = [
-    { label: 'Manage Listings', desc: 'Verify, delist, or review properties', path: '/admin/listings', icon: LayoutList, bg: 'bg-indigo-50 hover:bg-indigo-100', textColor: 'text-indigo-700' },
-    { label: 'User Management', desc: 'Suspend, unsuspend, or review users', path: '/admin/users', icon: Users, bg: 'bg-blue-50 hover:bg-blue-100', textColor: 'text-blue-700' },
-    { label: 'Applications', desc: 'Review landlord applications', path: '/admin/applications', icon: Shield, bg: 'bg-green-50 hover:bg-green-100', textColor: 'text-green-700' },
-    { label: 'Reports', desc: 'Handle pending reports', path: '/admin/reports', icon: FileText, bg: 'bg-red-50 hover:bg-red-100', textColor: 'text-red-700' },
+    { label: 'Manage Listings', desc: 'Verify, delist, or review properties', path: '/admin/listings', icon: LayoutList, bg: 'bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40', textColor: 'text-indigo-700 dark:text-indigo-300' },
+    { label: 'User Management', desc: 'Suspend, unsuspend, or review users', path: '/admin/users', icon: Users, bg: 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40', textColor: 'text-blue-700 dark:text-blue-300' },
+    { label: 'Applications', desc: 'Review landlord applications', path: '/admin/applications', icon: Shield, bg: 'bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40', textColor: 'text-green-700 dark:text-green-300' },
+    { label: 'Reports', desc: 'Handle pending reports', path: '/admin/reports', icon: FileText, bg: 'bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40', textColor: 'text-red-700 dark:text-red-300' },
   ];
 
   return (

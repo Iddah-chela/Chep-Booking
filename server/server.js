@@ -1,6 +1,8 @@
 import express from "express"
 import "dotenv/config";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import connectDB from "./config/db.js";
 import { clerkMiddleware } from '@clerk/express'
 import clerkWebhooks from "./controllers/clerkWebhooks.js";
@@ -13,13 +15,16 @@ import bookingRouter from "./routes/bookingRoutes.js";
 import chatRouter from "./routes/chatRoutes.js";
 import viewingRouter from "./routes/viewingRoutes.js";
 import reportRouter from "./routes/reportRoutes.js";
+import feedbackRouter from "./routes/feedbackRoutes.js";
+import rentPaymentRouter from "./routes/rentPaymentRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
 import landlordApplicationRouter from "./routes/landlordApplicationRoutes.js";
 import profileRouter from "./routes/profileRoutes.js";
 import paymentRouter from "./routes/paymentRoutes.js";
 import newsletterRouter from "./routes/newsletterRoutes.js";
+import notificationRouter from "./routes/notificationRoutes.js";
 import { expireViewingRequests } from "./utils/expirationHandler.js";
-import { checkListingFreshness, checkUnlockAutoRefunds } from "./utils/cronJobs.js";
+import { checkListingFreshness, checkUnlockAutoRefunds, sendPostViewingNudges, sendViewingReminders, sendMoveInNudges } from "./utils/cronJobs.js";
 
 
 connectDB()
@@ -27,28 +32,82 @@ connectCloudinary();
 
 const app = express()
 
-app.use(cors())
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // allow Cloudinary images
+    contentSecurityPolicy: false, // CSP can break frontend; leave off for now
+}));
 
-app.use(express.json({ limit: '50mb' }))
-app.use(express.urlencoded({ limit: '50mb', extended: true }))
+// ── CORS — only allow your frontend origins ──────────────────────────────────
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://patakeja.co.ke',
+    'https://www.patakeja.co.ke',
+    process.env.CLIENT_URL,
+].filter(Boolean);
 
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, Postman, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+}));
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+// General: 100 requests per 15 min per IP
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many requests, please try again later' },
+});
+
+// Auth-sensitive routes: stricter (20 per 15 min)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many attempts, please try again later' },
+});
+
+// ── Body parsing — small default, large only where needed ─────────────────────
+app.use(express.json({ limit: '1mb' }))
+app.use(express.urlencoded({ limit: '1mb', extended: true }))
+
+// Webhook must come before clerkMiddleware (needs raw body)
 app.use("/api/clerk", clerkWebhooks)
 app.use(clerkMiddleware())
 
+// ── Routes ────────────────────────────────────────────────────────────────────
 app.get('/', (req, res)=> res.send("Api is working"))
-app.use('/api/user', userRouter)
+
+// Auth-sensitive routes get stricter rate limit
+app.use('/api/payment', authLimiter, paymentRouter)
+app.use('/api/admin', authLimiter, adminRouter)
+
+// Property routes get larger body limit for base64 image uploads
+app.use('/api/properties', express.json({ limit: '50mb' }), propertyRouter)
+app.use('/api/rooms', express.json({ limit: '50mb' }), roomRouter)
+app.use('/api/profile', express.json({ limit: '10mb' }), profileRouter)
+
+// All other routes get general rate limit
+app.use('/api/user', generalLimiter, userRouter)
 app.use('/api/houses', houseRouter)
-app.use('/api/properties', propertyRouter)
-app.use('/api/rooms', roomRouter)
-app.use('/api/bookings', bookingRouter )
-app.use('/api/chat', chatRouter)
-app.use('/api/viewing', viewingRouter)
-app.use('/api/reports', reportRouter)
-app.use('/api/admin', adminRouter)
-app.use('/api/landlord-application', landlordApplicationRouter)
-app.use('/api/profile', profileRouter)
-app.use('/api/payment', paymentRouter)
-app.use('/api/newsletter', newsletterRouter)
+app.use('/api/bookings', generalLimiter, bookingRouter)
+app.use('/api/chat', generalLimiter, chatRouter)
+app.use('/api/viewing', generalLimiter, viewingRouter)
+app.use('/api/reports', authLimiter, reportRouter)
+app.use('/api/feedback', generalLimiter, feedbackRouter)
+app.use('/api/rent-payment', generalLimiter, rentPaymentRouter)
+app.use('/api/landlord-application', authLimiter, landlordApplicationRouter)
+app.use('/api/newsletter', generalLimiter, newsletterRouter)
+app.use('/api/notifications', generalLimiter, notificationRouter)
 
 
 const PORT = process.env.PORT || 3000;
@@ -68,11 +127,29 @@ setInterval(async () => {
     await checkListingFreshness();
 }, 24 * 60 * 60 * 1000);
 
+// Every 5 min: send post-viewing nudges to renters
+setInterval(async () => {
+    await sendPostViewingNudges();
+}, 5 * 60 * 1000);
+
+// Every 6 hours: move-in confirmation nudges
+setInterval(async () => {
+    await sendMoveInNudges();
+}, 6 * 60 * 60 * 1000);
+
+// Daily: send viewing reminders (day-before reminder push + email)
+setInterval(async () => {
+    await sendViewingReminders();
+}, 24 * 60 * 60 * 1000);
+
 // Run all jobs once shortly after startup
 setTimeout(async () => {
     await expireViewingRequests();
     await checkListingFreshness();
     await checkUnlockAutoRefunds();
+    await sendPostViewingNudges();
+    await sendViewingReminders();
+    await sendMoveInNudges();
 }, 5000);
 
 

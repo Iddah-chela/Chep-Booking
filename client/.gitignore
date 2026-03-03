@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Debug icon outputs
+public/icons/_debug_*.png
+public/favicon-2.png
+public/icons/*-2.png
+src/assets/icon.png
+src/assets/favicon.png
+"src/assets/icon and favicon.png"
+"src/assets/icon and favicon 2.png"

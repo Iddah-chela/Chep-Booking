@@ -101,14 +101,14 @@ const Dashboard = () => {
     }
 
     const statCards = [
-        { label: 'Properties', value: stats.totalProperties, icon: Building2, color: 'bg-indigo-50 text-indigo-600', iconBg: 'bg-indigo-100' },
-        { label: 'Total Rooms', value: stats.totalRooms, icon: Home, color: 'bg-blue-50 text-blue-600', iconBg: 'bg-blue-100' },
-        { label: 'Vacant', value: stats.vacantRooms, icon: CheckCircle, color: 'bg-green-50 text-green-600', iconBg: 'bg-green-100' },
-        { label: 'Occupied', value: stats.occupiedRooms, icon: XCircle, color: 'bg-red-50 text-red-600', iconBg: 'bg-red-100' },
-        { label: 'Booked', value: stats.bookedRooms, icon: CalendarCheck, color: 'bg-yellow-50 text-yellow-600', iconBg: 'bg-yellow-100' },
-        { label: 'Total Bookings', value: stats.totalBookings, icon: Users, color: 'bg-purple-50 text-purple-600', iconBg: 'bg-purple-100' },
-        { label: 'Monthly Revenue', value: `Ksh ${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-emerald-50 text-emerald-600', iconBg: 'bg-emerald-100' },
-        { label: 'Pending Viewings', value: stats.pendingViewings, icon: Eye, color: 'bg-orange-50 text-orange-600', iconBg: 'bg-orange-100', onClick: () => navigate('/owner/viewing-requests') },
+        { label: 'Properties', value: stats.totalProperties, icon: Building2, color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600', iconBg: 'bg-indigo-100 dark:bg-indigo-900/40' },
+        { label: 'Total Rooms', value: stats.totalRooms, icon: Home, color: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600', iconBg: 'bg-blue-100 dark:bg-blue-900/40' },
+        { label: 'Vacant', value: stats.vacantRooms, icon: CheckCircle, color: 'bg-green-50 dark:bg-green-900/30 text-green-600', iconBg: 'bg-green-100 dark:bg-green-900/40' },
+        { label: 'Occupied', value: stats.occupiedRooms, icon: XCircle, color: 'bg-red-50 dark:bg-red-900/30 text-red-600', iconBg: 'bg-red-100 dark:bg-red-900/40' },
+        { label: 'Booked', value: stats.bookedRooms, icon: CalendarCheck, color: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600', iconBg: 'bg-yellow-100 dark:bg-yellow-900/40' },
+        { label: 'Total Bookings', value: stats.totalBookings, icon: Users, color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600', iconBg: 'bg-purple-100 dark:bg-purple-900/40' },
+        { label: 'Monthly Revenue', value: `Ksh ${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600', iconBg: 'bg-emerald-100 dark:bg-emerald-900/40' },
+        { label: 'Pending Viewings', value: stats.pendingViewings, icon: Eye, color: 'bg-orange-50 dark:bg-orange-900/30 text-orange-600', iconBg: 'bg-orange-100 dark:bg-orange-900/40', onClick: () => navigate('/owner/viewing-requests') },
     ]
 
     return (
@@ -140,11 +140,9 @@ const Dashboard = () => {
 
             <div className='grid lg:grid-cols-2 gap-6'>
                 {/* Recent Bookings */}
-                <div className='bg-white border border-gray-200 rounded-xl overflow-hidden'>
-                    <div className='px-5 py-4 border-b border-gray-100 flex items-center justify-between'>
-                        <h2 className='font-semibold text-gray-900 flex items-center gap-2'>
-                            <CalendarCheck className='w-4 h-4 text-indigo-500' /> Recent Bookings
-                        </h2>
+                <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden'>
+                    <div className='px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between'>
+                        <h2 className='font-semibold text-gray-800 dark:text-gray-100'>Recent Bookings</h2>
                         <span className='text-xs text-gray-400'>{stats.totalBookings} total</span>
                     </div>
                     {stats.recentBookings.length === 0 ? (
@@ -155,7 +153,7 @@ const Dashboard = () => {
                     ) : (
                         <div className='divide-y divide-gray-100'>
                             {stats.recentBookings.map((booking, i) => (
-                                <div key={i} className='px-5 py-3 flex items-center justify-between hover:bg-gray-50'>
+                                <div key={i} className='px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700'>
                                     <div className='flex items-center gap-3'>
                                         <img
                                             src={booking.user?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.user?.username || 'U')}&background=6366f1&color=fff&bold=true`}
@@ -185,11 +183,9 @@ const Dashboard = () => {
                 </div>
 
                 {/* Pending Viewing Requests */}
-                <div className='bg-white border border-gray-200 rounded-xl overflow-hidden'>
-                    <div className='px-5 py-4 border-b border-gray-100 flex items-center justify-between'>
-                        <h2 className='font-semibold text-gray-900 flex items-center gap-2'>
-                            <Eye className='w-4 h-4 text-orange-500' /> Pending Viewings
-                        </h2>
+                <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden'>
+                    <div className='px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between'>
+                        <h2 className='font-semibold text-gray-800 dark:text-gray-100'>Pending Viewings</h2>
                         <button onClick={() => navigate('/owner/viewing-requests')} className='text-xs text-indigo-600 hover:underline'>View all</button>
                     </div>
                     {stats.recentViewings.length === 0 ? (
@@ -200,7 +196,7 @@ const Dashboard = () => {
                     ) : (
                         <div className='divide-y divide-gray-100'>
                             {stats.recentViewings.map((viewing, i) => (
-                                <div key={i} className='px-5 py-3 flex items-center justify-between hover:bg-gray-50'>
+                                <div key={i} className='px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700'>
                                     <div className='flex items-center gap-3'>
                                         <img
                                             src={viewing.renter?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(viewing.renter?.username || 'U')}&background=6366f1&color=fff&bold=true`}
@@ -236,7 +232,7 @@ const Dashboard = () => {
                             const vacant = rooms.filter(r => r.isVacant && !r.isBooked).length
                             const booked = rooms.filter(r => r.isBooked).length
                             return (
-                                <div key={i} onClick={() => navigate(`/rooms/${prop._id}`)} className='bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all cursor-pointer'>
+                                <div key={i} onClick={() => navigate(`/rooms/${prop._id}`)} className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-md transition-all cursor-pointer'>
                                     {prop.images?.[0] && (
                                         <img src={prop.images[0]} alt='' className='w-full h-32 object-cover' />
                                     )}

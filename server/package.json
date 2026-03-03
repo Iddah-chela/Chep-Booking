@@ -20,12 +20,15 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "intasend-node": "^1.1.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.19.1",
     "multer": "^2.0.2",
     "nodemailer": "^8.0.1",
-    "svix": "^1.76.1"
+    "svix": "^1.76.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

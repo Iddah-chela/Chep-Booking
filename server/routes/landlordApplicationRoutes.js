@@ -1,6 +1,7 @@
 import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
 import { requireAdmin } from '../middleware/roleMiddleware.js';
+import upload from '../middleware/uploadMiddleware.js';
 import {
     instantSignup,
     submitApplication,
@@ -13,7 +14,7 @@ import {
 const router = express.Router();
 
 // User routes
-router.post('/instant-signup', protect, instantSignup);
+router.post('/instant-signup', protect, upload.fields([{ name: 'idDocument', maxCount: 1 }, { name: 'titleDeed', maxCount: 1 }]), instantSignup);
 router.post('/submit', protect, submitApplication);
 router.get('/my-application', protect, getMyApplication);
 

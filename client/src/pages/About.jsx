@@ -85,75 +85,55 @@ const About = () => {
       </div>
 
       {/* Trust & Safety Section */}
-      <div className='bg-gray-50 rounded-2xl p-8 md:p-12 mb-20'>
-        <h2 className='text-3xl font-playfair font-semibold text-gray-800 text-center mb-8'>
+      <div className='bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 md:p-12 mb-20'>
+        <h2 className='text-3xl font-playfair font-semibold text-gray-800 dark:text-gray-100 text-center mb-8'>
           Trust & Safety First
         </h2>
         <div className='grid md:grid-cols-2 gap-8'>
           <div className='flex items-start gap-4'>
-            <div className='flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center'>
-              <svg className='w-6 h-6 text-green-600' fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
+            <div className='flex-shrink-0 w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center'>
+              <svg className='w-6 h-6 text-green-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' /></svg>
             </div>
-            <div>
-              <h3 className='text-lg font-semibold text-gray-800 mb-2'>Phone & ID Verification</h3>
-              <p className='text-gray-600'>
-                Property owners verify their identity to build trust with potential renters
-              </p>
-            </div>
+            <p className='text-gray-600 dark:text-gray-400 pt-3'>
+              Property owners verify their identity to build trust with potential renters
+            </p>
           </div>
 
           <div className='flex items-start gap-4'>
-            <div className='flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center'>
-              <svg className='w-6 h-6 text-green-600' fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
+            <div className='flex-shrink-0 w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center'>
+              <svg className='w-6 h-6 text-green-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z' /><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M9 22V12h6v10' /></svg>
             </div>
-            <div>
-              <h3 className='text-lg font-semibold text-gray-800 mb-2'>Property Verification</h3>
-              <p className='text-gray-600'>
-                Houses are verified with photos and location pins to prevent fake listings
-              </p>
-            </div>
+            <p className='text-gray-600 dark:text-gray-400 pt-3'>
+              Houses are verified with photos and location pins to prevent fake listings
+            </p>
           </div>
 
           <div className='flex items-start gap-4'>
-            <div className='flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center'>
-              <svg className='w-6 h-6 text-green-600' fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
+            <div className='flex-shrink-0 w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center'>
+              <svg className='w-6 h-6 text-green-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H11.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9' /></svg>
             </div>
-            <div>
-              <h3 className='text-lg font-semibold text-gray-800 mb-2'>Report System</h3>
-              <p className='text-gray-600'>
-                Users can report suspicious listings or behavior for admin review
-              </p>
-            </div>
+            <p className='text-gray-600 dark:text-gray-400 pt-3'>
+              Users can report suspicious listings or behavior for admin review
+            </p>
           </div>
 
           <div className='flex items-start gap-4'>
-            <div className='flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center'>
-              <svg className='w-6 h-6 text-green-600' fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
+            <div className='flex-shrink-0 w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center'>
+              <svg className='w-6 h-6 text-green-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' /></svg>
             </div>
-            <div>
-              <h3 className='text-lg font-semibold text-gray-800 mb-2'>Auto-Expire Protection</h3>
-              <p className='text-gray-600'>
-                Viewing requests automatically expire after 48 hours to keep listings available
-              </p>
-            </div>
+            <p className='text-gray-600 dark:text-gray-400 pt-3'>
+              Viewing requests automatically expire after 48 hours to keep listings available
+            </p>
           </div>
         </div>
       </div>
 
       {/* CTA Section */}
-      <div className='text-center bg-primary/5 rounded-2xl p-12'>
-        <h2 className='text-3xl font-playfair font-semibold text-gray-800 mb-4'>
+      <div className='text-center bg-primary/5 dark:bg-primary/10 rounded-2xl p-12'>
+        <h2 className='text-3xl font-playfair font-semibold text-gray-800 dark:text-gray-100 mb-4'>
           Ready to Find Your Next Home?
         </h2>
-        <p className='text-gray-600 mb-8 max-w-2xl mx-auto'>
+        <p className='text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto'>
           Join thousands of renters who have found their perfect home through our trusted platform
         </p>
         <button 

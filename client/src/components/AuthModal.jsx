@@ -83,7 +83,7 @@ const AuthModal = ({ onClose, initialMode = 'login' }) => {
         >
             <div 
                 onClick={(e) => e.stopPropagation()} 
-                className='bg-white rounded-xl max-w-md w-full my-auto shadow-2xl max-h-[95vh] overflow-y-auto'
+                className='bg-white dark:bg-gray-800 rounded-xl max-w-md w-full my-auto shadow-2xl max-h-[95vh] overflow-y-auto'
             >
                 {/* Header */}
                 <div className='relative bg-gradient-to-r from-indigo-500 to-purple-600 p-6 rounded-t-xl'>
@@ -112,7 +112,7 @@ const AuthModal = ({ onClose, initialMode = 'login' }) => {
                                 type='text'
                                 value={formData.username}
                                 onChange={(e) => setFormData({...formData, username: e.target.value})}
-                                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'
+                                className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100'
                                 placeholder='John Doe'
                                 required={mode === 'signup'}
                             />
@@ -127,7 +127,7 @@ const AuthModal = ({ onClose, initialMode = 'login' }) => {
                             type='email'
                             value={formData.email}
                             onChange={(e) => setFormData({...formData, email: e.target.value})}
-                            className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'
+                                className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100'
                             placeholder='john@example.com'
                             required
                         />
@@ -158,14 +158,14 @@ const AuthModal = ({ onClose, initialMode = 'login' }) => {
                                     onClick={() => setFormData({...formData, role: 'tenant'})}
                                     className={`flex-1 p-4 border-2 rounded-lg transition-all ${
                                         formData.role === 'tenant' 
-                                        ? 'border-indigo-500 bg-indigo-50' 
-                                        : 'border-gray-300 hover:border-indigo-300'
+                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' 
+                                        : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300'
                                     }`}
                                 >
                                     <div className='text-center'>
                                         <GraduationCap className='w-7 h-7 mx-auto mb-2 text-indigo-500' />
                                         <div className='font-medium'>Student</div>
-                                        <div className='text-xs text-gray-500 mt-1'>Looking for rentals</div>
+                                        <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Looking for rentals</div>
                                     </div>
                                 </button>
                                 <button
@@ -173,14 +173,14 @@ const AuthModal = ({ onClose, initialMode = 'login' }) => {
                                     onClick={() => setFormData({...formData, role: 'landlord'})}
                                     className={`flex-1 p-4 border-2 rounded-lg transition-all ${
                                         formData.role === 'landlord' 
-                                        ? 'border-indigo-500 bg-indigo-50' 
-                                        : 'border-gray-300 hover:border-indigo-300'
+                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' 
+                                        : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300'
                                     }`}
                                 >
                                     <div className='text-center'>
                                         <Building2 className='w-7 h-7 mx-auto mb-2 text-indigo-500' />
                                         <div className='font-medium'>Landlord/Caretaker</div>
-                                        <div className='text-xs text-gray-500 mt-1'>List properties</div>
+                                        <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>List properties</div>
                                     </div>
                                 </button>
                             </div>

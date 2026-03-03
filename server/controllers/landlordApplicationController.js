@@ -1,6 +1,14 @@
 import LandlordApplication from '../models/landlordApplication.js';
 import User from '../models/user.js';
 import { clerkClient } from '@clerk/express';
+import cloudinary from '../config/cloudinary.js';
+
+// Helper: upload a file from multer to cloudinary
+const uploadToCloudinary = async (file, folder) => {
+    if (!file) return null;
+    const result = await cloudinary.uploader.upload(file.path, { folder });
+    return result.secure_url;
+};
 
 // Instant landlord signup — auto-approves, admin can revoke later
 export const instantSignup = async (req, res) => {
@@ -18,6 +26,19 @@ export const instantSignup = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Phone number is required' });
         }
 
+        const idFile = req.files?.idDocument?.[0];
+        const deedFile = req.files?.titleDeed?.[0];
+
+        if (!idFile) {
+            return res.status(400).json({ success: false, message: 'National ID / Passport upload is required' });
+        }
+
+        // Upload documents to Cloudinary
+        const [idDocumentUrl, ownershipProofUrl] = await Promise.all([
+            uploadToCloudinary(idFile, 'landlord_applications/id'),
+            deedFile ? uploadToCloudinary(deedFile, 'landlord_applications/deeds') : Promise.resolve(null)
+        ]);
+
         // Check existing application
         const existing = await LandlordApplication.findOne({ userId, status: 'approved' });
         if (existing) {
@@ -31,14 +52,15 @@ export const instantSignup = async (req, res) => {
                 userId,
                 fullName: user.username || 'Landlord',
                 phoneNumber,
-                idNumber: 'auto-signup',
-                idDocument: 'auto-signup',
+                idNumber: 'uploaded',
+                idDocument: idDocumentUrl,
+                ownershipProof: ownershipProofUrl || null,
                 numberOfProperties: 1,
                 totalRooms: 1,
                 propertiesLocation: 'TBD',
                 status: 'approved',
                 reviewedAt: new Date(),
-                notes: 'Auto-approved via instant signup'
+                notes: 'Auto-approved via instant signup with document verification'
             },
             { upsert: true, new: true }
         );

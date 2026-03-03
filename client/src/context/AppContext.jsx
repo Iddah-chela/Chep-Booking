@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import { useContext } from "react";
 import { createContext } from "react";
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { useState } from "react";
 import {toast} from 'react-hot-toast'
 import { useEffect } from "react";
 import { roomsDummyData } from "../assets/assets";
+import { resubscribeIfNeeded, subscribeToPush, isPushSupported, getPermissionState } from "../utils/pushNotifications";
 
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
 // In AppContext.jsx or axios config
@@ -26,12 +27,38 @@ export const AppProvider = ({children})=>{
     // App state
     const [isOwner, setIsOwner] = useState(false)
     const [isAdmin, setIsAdmin] = useState(false)
+    const [isCaretaker, setIsCaretaker] = useState(false)
     const [showHouseReg, setShowHouseReg] = useState(false)
     const [searchedPlaces, setSearchedPlaces] = useState([])
     const [rooms, setRooms] = useState([])
     const [properties, setProperties] = useState([]) // For featured listings
     const [authLoading, setAuthLoading] = useState(true) // Track if auth is still loading
     const [dbImage, setDbImage] = useState(null) // Profile picture from DB (custom uploads)
+    
+    // Dark mode state - persist in localStorage
+    const [darkMode, setDarkMode] = useState(() => {
+        const saved = localStorage.getItem('PataKeja_darkMode');
+        if (saved !== null) return saved === 'true';
+        // Default to system preference
+        return window.matchMedia?.('(prefers-color-scheme: dark)').matches || false;
+    });
+    
+    // Apply dark mode class to <html>
+    useEffect(() => {
+        const html = document.documentElement;
+        html.classList.add('dark-transition');
+        if (darkMode) {
+            html.classList.add('dark');
+        } else {
+            html.classList.remove('dark');
+        }
+        localStorage.setItem('PataKeja_darkMode', darkMode);
+        // Remove transition class after animation completes
+        const timer = setTimeout(() => html.classList.remove('dark-transition'), 400);
+        return () => clearTimeout(timer);
+    }, [darkMode]);
+    
+    const toggleDarkMode = () => setDarkMode(prev => !prev);
 
     // Get token from Clerk
     const getToken = async () => {
@@ -82,6 +109,8 @@ export const AppProvider = ({children})=>{
                 console.log('??  No token available, skipping user fetch');
                 setIsOwner(false);
                 setIsAdmin(false);
+                setIsCaretaker(false);
+                setIsCaretaker(false);
                 setAuthLoading(false);
                 return;
             }
@@ -107,15 +136,20 @@ export const AppProvider = ({children})=>{
             console.log('? Fetched user data:', data);
             const ownerStatus = data.role === "houseOwner" || data.role === "admin";
             const adminStatus = data.role === "admin";
-            console.log('Setting isOwner to:', ownerStatus, 'isAdmin to:', adminStatus);
+            const caretakerStatus = !!data.isCaretaker && !ownerStatus;
+            console.log('Setting isOwner to:', ownerStatus, 'isAdmin to:', adminStatus, 'isCaretaker to:', caretakerStatus);
             setIsOwner(ownerStatus);
             setIsAdmin(adminStatus);
+            setIsCaretaker(caretakerStatus);
             setSearchedPlaces(data.recentSearchedPlaces || [])
             setDbImage(data.image || null)
             setAuthLoading(false);
 
+            // Auto re-subscribe to push notifications if user previously opted in
+            resubscribeIfNeeded(getToken);
+
             // Apply referral code if stored in localStorage (captured from ?ref= URL)
-            const pendingRef = localStorage.getItem('CampusCrib_referral');
+            const pendingRef = localStorage.getItem('PataKeja_referral');
             if (pendingRef) {
                 try {
                     const refRes = await axios.post('/api/payment/apply-referral',
@@ -123,7 +157,7 @@ export const AppProvider = ({children})=>{
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     if (refRes.data.success) {
-                        localStorage.removeItem('CampusCrib_referral');
+                        localStorage.removeItem('PataKeja_referral');
                         if (!refRes.data.alreadyReferred) {
                             console.log('? Referral applied successfully');
                         }
@@ -138,6 +172,7 @@ export const AppProvider = ({children})=>{
                console.log('??  User not authenticated (401)');
                setIsOwner(false);
                setIsAdmin(false);
+               setIsCaretaker(false);
                setAuthLoading(false);
                return;
            }
@@ -149,6 +184,7 @@ export const AppProvider = ({children})=>{
            }
            setIsOwner(false);
            setIsAdmin(false);
+           setIsCaretaker(false);
            setAuthLoading(false);
         }
     }
@@ -159,11 +195,38 @@ export const AppProvider = ({children})=>{
             await signOut()
             setIsOwner(false)
             setIsAdmin(false)
+            setIsCaretaker(false)
             navigate('/')
             toast.success('Logged out successfully')
         } catch (error) {
             console.error('Logout error:', error)
             toast.error('Error logging out')
+        }
+    }
+
+    // Enable push notifications (call from UI prompt)
+    const enablePushNotifications = async () => {
+        console.log('[Push] enablePushNotifications called');
+        if (!isPushSupported()) {
+            console.warn('[Push] Not supported in this browser');
+            toast.error('Push notifications are not supported in this browser');
+            return false;
+        }
+        try {
+            const ok = await subscribeToPush(getToken);
+            console.log('[Push] subscribeToPush result:', ok);
+            if (ok) {
+                toast.success('Notifications enabled!');
+            } else if (getPermissionState() === 'denied') {
+                toast.error('Notifications blocked. Please enable in browser settings.');
+            } else {
+                toast.error('Could not enable notifications. Check console for details.');
+            }
+            return ok;
+        } catch (err) {
+            console.error('[Push] enablePushNotifications error:', err);
+            toast.error('Notification setup failed');
+            return false;
         }
     }
 
@@ -180,6 +243,7 @@ export const AppProvider = ({children})=>{
                 // User not logged in - reset states
                 setIsOwner(false);
                 setIsAdmin(false);
+                setIsCaretaker(false);
                 setAuthLoading(false); // Done loading - no user
             }
         }
@@ -198,6 +262,8 @@ export const AppProvider = ({children})=>{
         setIsOwner, 
         isAdmin, 
         setIsAdmin,
+        isCaretaker,
+        setIsCaretaker,
         authLoading, // Expose loading state
         axios, 
         showHouseReg, 
@@ -211,7 +277,10 @@ export const AppProvider = ({children})=>{
         logout,
         dbImage,
         setDbImage,
-        fetchUser
+        fetchUser,
+        enablePushNotifications,
+        darkMode,
+        toggleDarkMode
     }
     return(
         <AppContext.Provider value={value}>

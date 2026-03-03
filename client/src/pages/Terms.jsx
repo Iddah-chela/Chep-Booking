@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 
@@ -16,8 +16,8 @@ const Terms = () => {
         <section>
           <h2 className='text-xl font-semibold mb-3'>1. Acceptance of Terms</h2>
           <p className='text-gray-700 leading-relaxed'>
-            By accessing or using CampusCrib ("the Platform"), you agree to be bound by these Terms of Service. 
-            CampusCrib is a rental listing platform that connects tenants with landlords and property caretakers 
+            By accessing or using PataKeja ("the Platform"), you agree to be bound by these Terms of Service. 
+            PataKeja is a rental listing platform that connects tenants with landlords and property caretakers 
             in Kenya, primarily around university areas. If you do not agree with these terms, please do not use the Platform.
           </p>
         </section>
@@ -25,7 +25,7 @@ const Terms = () => {
         <section>
           <h2 className='text-xl font-semibold mb-3'>2. Description of Service</h2>
           <p className='text-gray-700 leading-relaxed'>
-            CampusCrib provides an online marketplace where landlords can list rental properties and tenants can 
+            PataKeja provides an online marketplace where landlords can list rental properties and tenants can 
             browse, unlock contact details, request viewings, and book rooms. The Platform facilitates connections 
             but is not a party to any rental agreement between landlords and tenants.
           </p>
@@ -45,9 +45,9 @@ const Terms = () => {
           <h2 className='text-xl font-semibold mb-3'>4. Listings & Property Information</h2>
           <ul className='list-disc pl-6 text-gray-700 space-y-2'>
             <li>Landlords are solely responsible for the accuracy of their property listings.</li>
-            <li>CampusCrib does not verify or guarantee the condition, legality, or availability of listed properties.</li>
+            <li>PataKeja does not verify or guarantee the condition, legality, or availability of listed properties.</li>
             <li>Listings that expire (no updates in 60 days) are automatically delisted.</li>
-            <li>CampusCrib reserves the right to remove any listing that violates these terms or applicable laws.</li>
+            <li>PataKeja reserves the right to remove any listing that violates these terms or applicable laws.</li>
           </ul>
         </section>
 
@@ -76,7 +76,7 @@ const Terms = () => {
         <section>
           <h2 className='text-xl font-semibold mb-3'>7. Limitation of Liability</h2>
           <p className='text-gray-700 leading-relaxed'>
-            CampusCrib acts solely as an intermediary. We are not responsible for the quality of any rental property, 
+            PataKeja acts solely as an intermediary. We are not responsible for the quality of any rental property, 
             the conduct of any user, or any disputes between landlords and tenants. Use the Platform at your own risk. 
             Our total liability shall not exceed the amount you have paid to us in the 12 months preceding any claim.
           </p>
@@ -85,9 +85,9 @@ const Terms = () => {
         <section>
           <h2 className='text-xl font-semibold mb-3'>8. Intellectual Property</h2>
           <p className='text-gray-700 leading-relaxed'>
-            All content on the Platform, including the CampusCrib name, logo, design, and software, is our intellectual 
+            All content on the Platform, including the PataKeja name, logo, design, and software, is our intellectual 
             property. User-uploaded content (photos, descriptions) remains the property of the uploader, but you grant 
-            CampusCrib a non-exclusive license to display it on the Platform.
+            PataKeja a non-exclusive license to display it on the Platform.
           </p>
         </section>
 
@@ -110,7 +110,7 @@ const Terms = () => {
         <section>
           <h2 className='text-xl font-semibold mb-3'>11. Contact</h2>
           <p className='text-gray-700 leading-relaxed'>
-            For questions about these terms, contact us at <a href='mailto:support@CampusCrib.co.ke' className='text-indigo-600 hover:underline'>support@CampusCrib.co.ke</a>.
+            For questions about these terms, contact us at <a href='mailto:support@PataKeja.co.ke' className='text-indigo-600 hover:underline'>support@PataKeja.co.ke</a>.
           </p>
         </section>
       </div>

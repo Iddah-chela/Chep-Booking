@@ -3,11 +3,20 @@ import Title from '../components/Title'
 import { assets} from '../assets/assets'
 import { useAppContext } from '../context/AppContext'
 import { toast } from 'react-hot-toast'
+import { BookingRowSkeleton } from '../components/Skeletons'
+import { useSearchParams } from 'react-router-dom'
 
 const MyBooking = () => {
     const { axios, getToken, user } = useAppContext()
     const [bookings, setBookings] = useState([])
     const [loading, setLoading] = useState(true)
+    const [searchParams] = useSearchParams()
+
+    useEffect(() => {
+        if (searchParams.get('moved') === '1') {
+            toast.success('Move-in confirmed! Welcome home 🎉')
+        }
+    }, [])
 
     useEffect(() => {
         if (user) {
@@ -53,19 +62,21 @@ const MyBooking = () => {
         <Title title='My Bookings' subTitle='Track your active rental bookings and move-in status.' align='left'/>
 
         {loading ? (
-            <div className='text-center py-12'>Loading your bookings...</div>
+            <div className='max-w-6xl mt-8 w-full'>
+              {[...Array(3)].map((_, i) => <BookingRowSkeleton key={i} />)}
+            </div>
         ) : bookings.length === 0 ? (
             <div className='text-center py-12 text-gray-500'>No active bookings yet</div>
         ) : (
-            <div className='max-w-6xl mt-8 w-full text-gray-800'>
-                <div className='hidden md:grid md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 font-medium text-base py-3'>
+            <div className='max-w-6xl mt-8 w-full text-gray-800 dark:text-gray-200'>
+                <div className='hidden md:grid md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 dark:border-gray-700 font-medium text-base py-3'>
                     <div>Property Details</div>
                     <div>Move-In Status</div>
                     <div>Booking Status</div>
                 </div>
 
                 {bookings.map((booking)=>(
-                    <div key={booking._id} className='grid grid-cols-1 md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 py-6 first:border-t gap-4'>
+                    <div key={booking._id} className='grid grid-cols-1 md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 dark:border-gray-700 py-6 first:border-t gap-4'>
 
                         {/*Property Details*/}
                         <div className='flex flex-col md:flex-row gap-4'>
@@ -81,11 +92,11 @@ const MyBooking = () => {
                                     <span>{booking.property?.estate}, {booking.property?.place}</span>
                                 </div>
                                 <div className='flex items-center gap-2 text-sm mt-2'>
-                                    <span className='px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-medium'>
+                                    <span className='px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded text-xs font-medium'>
                                         Ksh {booking.roomDetails?.pricePerMonth?.toLocaleString()}/month
                                     </span>
                                 </div>
-                                <p className='text-sm text-gray-600 mt-1'>
+                                <p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
                                     Building: {booking.roomDetails?.buildingName}
                                 </p>
                             </div>
@@ -95,8 +106,7 @@ const MyBooking = () => {
                         <div className='flex flex-col justify-center gap-2'>
                             <div>
                                 <p className='font-medium text-sm'>Move-In Date:</p>
-                                <p className='text-gray-600 text-sm'>
-                                    {new Date(booking.moveInDate).toDateString()}
+                                <p className='text-gray-600 dark:text-gray-400 text-sm'>
                                 </p>
                             </div>
                             <div className='flex items-center gap-2 mt-1'>
@@ -105,22 +115,44 @@ const MyBooking = () => {
                                     {booking.hasMoved ? "Moved In" : "Not Moved In"}
                                 </p>
                             </div>
-                            {booking.status === 'confirmed' && !booking.hasMoved && (
-                                <button
-                                    onClick={() => handleMoveIn(booking._id)}
-                                    className='mt-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors'
-                                >
-                                    Confirm Move-In
-                                </button>
-                            )}
+                            {booking.status === 'confirmed' && !booking.hasMoved && (() => {
+                                const moveInDate = booking.moveInDate ? new Date(booking.moveInDate) : null;
+                                const isToday = moveInDate && moveInDate <= new Date();
+                                return isToday ? (
+                                    <div className='mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl'>
+                                        <p className='text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-2'>🏠 Is today your move-in day?</p>
+                                        <div className='flex gap-2'>
+                                            <button
+                                                onClick={() => handleMoveIn(booking._id)}
+                                                className='flex-1 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors'
+                                            >
+                                                ✓ I Moved In!
+                                            </button>
+                                            <button
+                                                className='flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors'
+                                                onClick={() => toast('No worries — confirm when you move in.')}
+                                            >
+                                                Not Yet
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => handleMoveIn(booking._id)}
+                                        className='mt-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors'
+                                    >
+                                        Confirm Move-In
+                                    </button>
+                                );
+                            })()}
                         </div>
 
                         {/*Booking Status*/}
                         <div className='flex flex-col justify-center'>
                             <span className={`px-3 py-1.5 rounded-full text-xs font-medium text-center ${
-                                booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-red-100 text-red-700'
+                                booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                booking.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
                             }`}>
                                 {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                             </span>
