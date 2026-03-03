@@ -42,8 +42,9 @@ app.use(helmet({
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
-    'https://patakeja.co.ke',
-    'https://www.patakeja.co.ke',
+    'https://patakejaa.co.ke',
+    'https://www.patakejaa.co.ke',
+    'https://patakejaa.vercel.app',
     process.env.CLIENT_URL,
 ].filter(Boolean);
 
