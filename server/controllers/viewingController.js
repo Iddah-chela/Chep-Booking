@@ -112,11 +112,20 @@ export const createViewingRequest = async (req, res) => {
                         </div>`
                     ).catch(e => console.warn('[Viewing] Email to landlord failed:', e.message));
 
+                    const SERVER = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 3000}`;
                     sendPushNotification(ownerId, {
-                        title: 'New Viewing Request',
+                        title: 'New Viewing Request 👁',
                         body: `${renterUser?.username || 'A tenant'} wants to view ${roomDetails.roomType} at ${property.name}`,
                         url: `/owner/viewing-requests?viewingId=${viewingRequest._id}`,
-                        tag: `viewing-${viewingRequest._id}`
+                        tag: `viewing-${viewingRequest._id}`,
+                        actions: [
+                            { action: 'bg-confirm', title: '✔ Accept' },
+                            { action: 'bg-decline', title: '✖ Decline' }
+                        ],
+                        actionUrls: {
+                            'bg-confirm': `${SERVER}/api/viewing/owner-action?token=${ownerToken}&answer=confirm&bg=1`,
+                            'bg-decline': `${SERVER}/api/viewing/owner-action?token=${ownerToken}&answer=decline&bg=1`
+                        }
                     });
                 }
             } catch (e) {
@@ -420,8 +429,8 @@ export const createDirectApply = async (req, res) => {
 // GET /api/viewing/nudge-response?token=X&answer=yes|no
 export const handleNudgeResponse = async (req, res) => {
     try {
-        const { token, answer, json: jsonFlag } = req.query;
-        const wantJson = jsonFlag === '1';
+        const { token, answer, json: jsonFlag, bg } = req.query;
+        const wantJson = jsonFlag === '1' || bg === '1';
         if (!token || !['yes', 'no'].includes(answer)) {
             if (wantJson) return res.json({ success: false, message: 'Invalid or expired link.' });
             return res.status(400).send('<h2>Invalid or expired link.</h2>');
@@ -574,8 +583,8 @@ export const handleNudgeResponse = async (req, res) => {
 // GET /api/viewing/owner-action?token=X&answer=confirm|decline
 export const handleOwnerAction = async (req, res) => {
     try {
-        const { token, answer, json: jsonFlag } = req.query;
-        const wantJson = jsonFlag === '1';
+        const { token, answer, json: jsonFlag, bg } = req.query;
+        const wantJson = jsonFlag === '1' || bg === '1';
         if (!token || !['confirm', 'decline'].includes(answer)) {
             if (wantJson) return res.json({ success: false, message: 'Invalid link.' });
             return res.status(400).send('<html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;"><h2>Invalid link.</h2></body></html>');

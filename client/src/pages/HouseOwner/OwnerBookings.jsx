@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useAppContext } from '../../context/AppContext'
 import { BookingRowSkeleton } from '../../components/Skeletons'
-import { MapPin, CalendarDays, User } from 'lucide-react'
+import { MapPin, CalendarDays, User, CheckCircle2 } from 'lucide-react'
 
 const statusColors = {
     confirmed: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
@@ -14,6 +14,7 @@ const OwnerBookings = () => {
     const [bookings, setBookings] = useState([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('all')
+    const [confirming, setConfirming] = useState(null) // bookingId being confirmed
 
     useEffect(() => {
         fetchBookings()
@@ -31,6 +32,26 @@ const OwnerBookings = () => {
             toast.error('Failed to load bookings')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const markMovedIn = async (bookingId) => {
+        setConfirming(bookingId)
+        try {
+            const token = await getToken()
+            const { data } = await axios.post('/api/bookings/move-in-as-owner', { bookingId }, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            if (data.success) {
+                toast.success('Move-in confirmed — tenant has been notified')
+                setBookings(prev => prev.map(b => b._id === bookingId ? { ...b, hasMoved: true } : b))
+            } else {
+                toast.error(data.message)
+            }
+        } catch {
+            toast.error('Failed to confirm move-in')
+        } finally {
+            setConfirming(null)
         }
     }
 
@@ -136,6 +157,18 @@ const OwnerBookings = () => {
                                             </span>
                                         )}
                                     </div>
+
+                                    {/* Owner action: mark moved in */}
+                                    {booking.status === 'confirmed' && !booking.hasMoved && (
+                                        <button
+                                            onClick={() => markMovedIn(booking._id)}
+                                            disabled={confirming === booking._id}
+                                            className='mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors'
+                                        >
+                                            <CheckCircle2 className='w-3.5 h-3.5' />
+                                            {confirming === booking._id ? 'Confirming…' : 'Confirm Tenant Moved In'}
+                                        </button>
+                                    )}
 
                                     <div className='mt-1 text-xs text-gray-400 dark:text-gray-500'>
                                         Building: {booking.roomDetails?.buildingName} · Booked {new Date(booking.createdAt).toLocaleDateString('en-KE')}

@@ -103,22 +103,51 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  if (event.action === 'dismiss') { event.notification.close(); return; }
+  if (event.action === 'dismiss') return;
 
-  // If the action has a specific URL mapped (e.g. nudge yes/no), use it
   const actionUrls = event.notification.data?.actionUrls || {};
-  const url = actionUrls[event.action] || event.notification.data?.url || '/';
+  const actionUrl  = actionUrls[event.action];
+
+  // Background actions (prefix 'bg-'): silently fetch the API, show confirmation, never open app
+  if (event.action && event.action.startsWith('bg-') && actionUrl) {
+    event.waitUntil(
+      fetch(actionUrl)
+        .then(() => {
+          const messages = {
+            'bg-yes':     { title: '✓ Done',     body: "Confirmed! We'll update your record." },
+            'bg-no':      { title: 'Noted',      body: "No worries — you can update later in the app." },
+            'bg-confirm': { title: '✓ Accepted', body: 'Viewing confirmed. The renter will be notified.' },
+            'bg-decline': { title: 'Declined',   body: 'Request declined. The renter will be notified.' },
+          };
+          const msg = messages[event.action] || { title: '✓ Done', body: 'Action recorded.' };
+          return self.registration.showNotification(msg.title, {
+            body: msg.body,
+            icon: '/icons/icon-192.png',
+            tag: 'bg-action-done',
+            vibrate: [100]
+          });
+        })
+        .catch(() => {
+          return self.registration.showNotification('Error', {
+            body: 'Could not complete the action. Please try in the app.',
+            icon: '/icons/icon-192.png'
+          });
+        })
+    );
+    return;
+  }
+
+  // Normal click / named action with URL: open/focus window
+  const url = actionUrl || event.notification.data?.url || '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // If a tab with the app is already open, focus it and navigate
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin)) {
           client.navigate(url);
           return client.focus();
         }
       }
-      // Otherwise open a new tab
       return clients.openWindow(url);
     })
   );

@@ -122,6 +122,7 @@ export const confirmMoveIn = async (req, res) => {
 export const handleMoveInAction = async (req, res) => {
     try {
         const { id, answer, token } = req.query;
+        const bg   = req.query.bg === '1'; // called silently by service worker
         const BASE = process.env.CLIENT_URL || 'http://localhost:5173';
 
         const booking = await Booking.findById(id).populate('property');
@@ -131,7 +132,10 @@ export const handleMoveInAction = async (req, res) => {
 
         if (answer === 'yes') {
             // Renter confirms move-in
-            if (booking.hasMoved) return res.redirect(`${BASE}/my-bookings`);
+            if (booking.hasMoved) {
+                if (bg) return res.json({ success: true, message: 'Already confirmed' });
+                return res.redirect(`${BASE}/my-bookings`);
+            }
             booking.hasMoved = true;
             await booking.save();
             // Update grid cell
@@ -157,11 +161,13 @@ export const handleMoveInAction = async (req, res) => {
                     }
                 }
             } catch (_) {}
+            if (bg) return res.json({ success: true, message: 'Move-in confirmed!' });
             return res.redirect(`${BASE}/my-bookings?moved=1`);
         }
 
         if (answer === 'no') {
             // Renter says not yet — just redirect to app
+            if (bg) return res.json({ success: true });
             return res.redirect(`${BASE}/my-bookings`);
         }
 
@@ -188,6 +194,7 @@ export const handleMoveInAction = async (req, res) => {
                     tag: `movein-owner-confirmed-${booking._id}`
                 });
             } catch (_) {}
+            if (bg) return res.json({ success: true });
             return res.send(`<html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;"><h2 style="color:#16a34a;">✓ Move-in recorded</h2><p>Thank you. The tenant's move-in has been confirmed.</p><a href="${BASE}/owner/bookings" style="background:#4F46E5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a></body></html>`);
         }
 
@@ -203,6 +210,7 @@ export const handleMoveInAction = async (req, res) => {
                     tag: `movein-issue-${booking._id}`
                 });
             } catch (_) {}
+            if (bg) return res.json({ success: true });
             return res.send(`<html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;"><h2 style="color:#d97706;">Noted</h2><p>We've notified the tenant to follow up. Both parties should be in contact to resolve this.</p><a href="${BASE}/owner/bookings" style="background:#4F46E5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a></body></html>`);
         }
 
@@ -210,6 +218,45 @@ export const handleMoveInAction = async (req, res) => {
     } catch (error) {
         console.error('[MoveInAction]', error.message);
         res.status(500).send('<h2>Something went wrong.</h2>');
+    }
+};
+
+// Owner marks a tenant as moved-in (from OwnerBookings page)
+export const confirmMoveInAsOwner = async (req, res) => {
+    try {
+        const { bookingId } = req.body;
+        const booking = await Booking.findById(bookingId).populate('property');
+        if (!booking) return res.json({ success: false, message: 'Booking not found' });
+        const property = booking.property;
+        if (!property || String(property.owner) !== String(req.user._id))
+            return res.json({ success: false, message: 'Unauthorized' });
+        if (booking.hasMoved) return res.json({ success: true, message: 'Already marked as moved in' });
+
+        booking.hasMoved = true;
+        await booking.save();
+
+        // Update grid cell
+        try {
+            const building = property.buildings?.find(b => b.id === booking.roomDetails.buildingId);
+            if (building?.grid?.[booking.roomDetails.row]?.[booking.roomDetails.col]) {
+                building.grid[booking.roomDetails.row][booking.roomDetails.col].isVacant = false;
+                building.grid[booking.roomDetails.row][booking.roomDetails.col].isBooked = false;
+                property.markModified('buildings');
+                await property.save();
+            }
+        } catch (_) {}
+
+        // Notify renter
+        sendPushNotification(booking.user, {
+            title: 'Move-in confirmed ✓',
+            body: `Your move-in at ${property.name} has been confirmed by the owner/caretaker`,
+            url: '/my-bookings',
+            tag: `movein-owner-confirmed-${booking._id}`
+        });
+
+        res.json({ success: true, message: 'Move-in confirmed' });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
     }
 };
 
