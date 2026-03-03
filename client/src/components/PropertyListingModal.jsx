@@ -478,7 +478,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
       }
     } catch (error) {
       console.error('Error submitting property:', error)
-      toast.error(error.message || 'Failed to submit property')
+      toast.error('Failed to submit property. Please try again.')
       setLoading(false)
     }
   }

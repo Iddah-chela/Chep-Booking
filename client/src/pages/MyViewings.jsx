@@ -62,7 +62,7 @@ const MyViewings = () => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error('Could not load viewings. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ const MyViewings = () => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error('Something went wrong. Please try again.');
     }
   };
 
@@ -133,7 +133,7 @@ const MyViewings = () => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message || 'Booking failed');
+      toast.error('Booking failed. Please try again.');
     } finally {
       setBookingLoading(false);
     }

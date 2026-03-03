@@ -45,7 +45,7 @@ const MyChats = () => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error('Could not load chats. Please try again.');
     } finally {
       setLoading(false);
     }

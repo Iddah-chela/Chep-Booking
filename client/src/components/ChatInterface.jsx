@@ -70,7 +70,7 @@ const ChatInterface = ({ room, houseOwner, propertyId, onClose, existingChatId }
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error('Could not load messages. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ const ChatInterface = ({ room, houseOwner, propertyId, onClose, existingChatId }
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error('Could not send message. Please try again.');
     } finally {
       setSending(false);
     }

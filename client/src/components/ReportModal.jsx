@@ -51,7 +51,7 @@ const ReportModal = ({ type, itemId, userId, onClose }) => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error('Could not submit report. Please try again.');
     } finally {
       setLoading(false);
     }

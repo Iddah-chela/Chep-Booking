@@ -71,6 +71,10 @@ export async function subscribeToPush(getToken) {
         } else {
             console.log('[Push] No existing subscription, creating new one...');
             console.log('[Push] VAPID key available?', !!VAPID_PUBLIC_KEY, VAPID_PUBLIC_KEY ? '(length: ' + VAPID_PUBLIC_KEY.length + ')' : '(MISSING!)');
+            if (!VAPID_PUBLIC_KEY) {
+                console.error('[Push] ❌ VITE_VAPID_PUBLIC_KEY is not set');
+                return false;
+            }
             subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
@@ -176,6 +180,10 @@ export async function resubscribeIfNeeded(getToken) {
         let subscription = await registration.pushManager.getSubscription();
         
         if (!subscription) {
+            if (!VAPID_PUBLIC_KEY) {
+                console.error('[Push] ❌ VITE_VAPID_PUBLIC_KEY is not set — cannot resubscribe');
+                return;
+            }
             subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)

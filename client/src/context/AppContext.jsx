@@ -125,7 +125,7 @@ export const AppProvider = ({children})=>{
             if (typeof data === 'string' || !data.success) {
                 console.error('? Invalid API response:', typeof data === 'string' ? 'HTML received' : data.message);
                 if (typeof data === 'string') {
-                    toast.error('Connection error. Please check if backend is running.');
+                    toast.error('Unable to connect. Please try again later.');
                 }
                 setIsOwner(false);
                 setIsAdmin(false);
@@ -220,12 +220,12 @@ export const AppProvider = ({children})=>{
             } else if (getPermissionState() === 'denied') {
                 toast.error('Notifications blocked. Please enable in browser settings.');
             } else {
-                toast.error('Could not enable notifications. Check console for details.');
+                toast.error('Could not enable notifications. Please try again.');
             }
             return ok;
         } catch (err) {
             console.error('[Push] enablePushNotifications error:', err);
-            toast.error('Notification setup failed');
+            toast.error('Could not set up notifications. Please try again.');
             return false;
         }
     }

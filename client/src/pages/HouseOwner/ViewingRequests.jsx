@@ -62,7 +62,7 @@ const ViewingRequests = () => {
         setTimeout(() => fetchRequests(retryCount + 1), 1000);
         return;
       }
-      toast.error(error.message);
+      toast.error('Could not load viewing requests. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -91,7 +91,7 @@ const ViewingRequests = () => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error('Something went wrong. Please try again.');
     }
   };
 

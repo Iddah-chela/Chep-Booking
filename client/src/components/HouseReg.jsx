@@ -60,7 +60,7 @@ const HouseReg = () => {
             //     toast.error(data.message)
             // }
         } catch (error) {
-            toast.error(error.message)
+            toast.error('Something went wrong. Please try again.')
         }
     }
 

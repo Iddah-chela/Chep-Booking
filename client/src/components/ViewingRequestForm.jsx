@@ -59,7 +59,7 @@ const ViewingRequestForm = ({ room, propertyId, ownerId, onClose, onSuccess, isD
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

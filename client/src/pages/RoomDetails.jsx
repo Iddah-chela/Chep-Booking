@@ -42,7 +42,7 @@ const RoomDetails = () => {
           //   toast.error(data.message)
           // }
         } catch (error) {
-          toast.error(error.message)
+          toast.error('Could not load room details. Please try again.')
         } finally {
           setLoading(false)
         }

@@ -401,7 +401,7 @@ const getCellDisplay = (cell, roomNum) => {
       }, 1500)
 
     } catch (error) {
-      toast.error(error.message)
+      toast.error('Failed to list property. Please try again.')
     }finally{
       setLoading(false);
     }
