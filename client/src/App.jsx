@@ -1,38 +1,40 @@
-﻿import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState, lazy, Suspense } from 'react'
 import Navbar from './components/Navbar'
 import { Route, Routes, useLocation, useSearchParams, Navigate } from 'react-router-dom'
-import Home from './pages/home'
-import About from './pages/About'
-import Footer from './components/Footer'
-import AllRooms from './pages/AllRooms'
-import PropertyDetails from './pages/PropertyDetails'
-import MyBooking from './pages/MyBooking'
-import MyChats from './pages/MyChats'
-import MyViewings from './pages/MyViewings'
-import Layout from './pages/HouseOwner/Layout'
-import Dashboard from './pages/HouseOwner/Dashboard'
-import AddRoom from './pages/HouseOwner/AddRoom'
-import ListRoom from './pages/HouseOwner/ListRoom'
-import ViewingRequests from './pages/HouseOwner/ViewingRequests'
-import AdminLayout from './pages/Admin/AdminLayout'
-import AdminDashboard from './pages/Admin/AdminDashboard'
-import AdminApplications from './pages/Admin/AdminApplications'
-import AdminReports from './pages/Admin/AdminReports'
-import AdminUsers from './pages/Admin/AdminUsers'
-import AdminListings from './pages/Admin/AdminListings'
-import AdminFeedback from './pages/Admin/AdminFeedback'
-import Terms from './pages/Terms'
-import Privacy from './pages/Privacy'
-import UnlockPolicy from './pages/UnlockPolicy'
-import Safety from './pages/Safety'
-import ManagedProperties from './pages/ManagedProperties'
-import ViewingAction from './pages/ViewingAction'
-import OwnerBookings from './pages/HouseOwner/OwnerBookings'
-import FeedbackModal from './components/FeedbackModal'
-import {Toaster} from 'react-hot-toast'
 import { useAppContext } from './context/AppContext'
 import { useClerk, useUser } from '@clerk/clerk-react'
 import { MessageSquareHeart } from 'lucide-react'
+import {Toaster} from 'react-hot-toast'
+import FeedbackModal from './components/FeedbackModal'
+import Footer from './components/Footer'
+
+// Lazy-load all pages — they won't be in the initial JS bundle
+const Home            = lazy(() => import('./pages/home'))
+const About           = lazy(() => import('./pages/About'))
+const AllRooms        = lazy(() => import('./pages/AllRooms'))
+const PropertyDetails = lazy(() => import('./pages/PropertyDetails'))
+const MyBooking       = lazy(() => import('./pages/MyBooking'))
+const MyChats         = lazy(() => import('./pages/MyChats'))
+const MyViewings      = lazy(() => import('./pages/MyViewings'))
+const Layout          = lazy(() => import('./pages/HouseOwner/Layout'))
+const Dashboard       = lazy(() => import('./pages/HouseOwner/Dashboard'))
+const AddRoom         = lazy(() => import('./pages/HouseOwner/AddRoom'))
+const ListRoom        = lazy(() => import('./pages/HouseOwner/ListRoom'))
+const ViewingRequests = lazy(() => import('./pages/HouseOwner/ViewingRequests'))
+const OwnerBookings   = lazy(() => import('./pages/HouseOwner/OwnerBookings'))
+const AdminLayout     = lazy(() => import('./pages/Admin/AdminLayout'))
+const AdminDashboard  = lazy(() => import('./pages/Admin/AdminDashboard'))
+const AdminApplications = lazy(() => import('./pages/Admin/AdminApplications'))
+const AdminReports    = lazy(() => import('./pages/Admin/AdminReports'))
+const AdminUsers      = lazy(() => import('./pages/Admin/AdminUsers'))
+const AdminListings   = lazy(() => import('./pages/Admin/AdminListings'))
+const AdminFeedback   = lazy(() => import('./pages/Admin/AdminFeedback'))
+const Terms           = lazy(() => import('./pages/Terms'))
+const Privacy         = lazy(() => import('./pages/Privacy'))
+const UnlockPolicy    = lazy(() => import('./pages/UnlockPolicy'))
+const Safety          = lazy(() => import('./pages/Safety'))
+const ManagedProperties = lazy(() => import('./pages/ManagedProperties'))
+const ViewingAction   = lazy(() => import('./pages/ViewingAction'))
 
 // Auto-open Clerk signup when landing on /sign-up?ref=...
 const SignUpRedirect = () => {
@@ -82,6 +84,11 @@ const App = () => {
       />
      {!isAdminPath && <Navbar />}
      <div className={isAdminPath ? '' : 'min-h-[70vh]'}>
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-[70vh]">
+            <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        }>
         <Routes>
           <Route path='/' element={<Home/>}/>
           <Route path='/about' element={<About/>}/>
@@ -113,6 +120,7 @@ const App = () => {
               <Route path='feedback' element={<AdminFeedback/>}/>
           </Route>
         </Routes>
+        </Suspense>
      </div>
      {!isAdminPath && <Footer/>}
 

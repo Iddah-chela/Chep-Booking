@@ -87,6 +87,7 @@ app.use(clerkMiddleware())
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.get('/', (req, res)=> res.send("Api is working"))
+app.get('/api/health', (req, res)=> res.json({ status: 'ok', ts: Date.now() }))
 
 // Auth-sensitive routes get stricter rate limit
 app.use('/api/payment', authLimiter, paymentRouter)

@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "vite build && npx firebase-tools deploy --only hosting",
+    "deploy:preview": "vite build && npx firebase-tools hosting:channel:deploy preview"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.59.4",

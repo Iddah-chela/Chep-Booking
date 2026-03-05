@@ -249,6 +249,15 @@ export const AppProvider = ({children})=>{
         }
     }, [clerkLoaded, clerkUser])
 
+    // Fire a lightweight ping immediately on app load to wake the Render backend
+    // (Render free tier cold-starts in 30-90s; this gives it a head start)
+    useEffect(() => {
+        const controller = new AbortController();
+        axios.get('/api/health', { signal: controller.signal, timeout: 90000 })
+            .catch(() => {}); // Silence errors — this is fire-and-forget
+        return () => controller.abort();
+    }, []);
+
     useEffect(()=>{
         fetchRooms()
     },[])

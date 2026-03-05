@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { assets } from '../assets/assets'
 import { Places } from '../assets/assets';
 import { useAppContext } from '../context/AppContext';
+import heroImage from '../assets/heroImage.png';
 
 const Hero = () => {
   const { navigate } = useAppContext();
@@ -20,7 +21,10 @@ const Hero = () => {
   };
 
   return (
-    <div className='flex flex-col items-start justify-center px-6 md:px-16 lg:px-24 xl:px32 text-white bg-[url("/src/assets/heroImage.png")] bg-no-repeat bg-cover bg-centre h-screen'>
+    <div
+      className='flex flex-col items-start justify-center px-6 md:px-16 lg:px-24 xl:px-32 text-white bg-no-repeat bg-cover bg-center h-screen'
+      style={{ backgroundImage: `url(${heroImage})` }}
+    >
         <div className='bg-green-600/80 px-4 py-1.5 rounded-full mt-20'>
           <p className='text-sm font-medium'>✓ Verified listings · No scams</p>
         </div>
