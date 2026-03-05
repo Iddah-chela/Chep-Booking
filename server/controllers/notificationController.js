@@ -1,4 +1,5 @@
 import PushSubscription from "../models/pushSubscription.js";
+import Notification from "../models/notification.js";
 
 // Subscribe — save push subscription for the authenticated user
 export const subscribePush = async (req, res) => {
@@ -47,4 +48,43 @@ export const getVapidPublicKey = async (req, res) => {
         success: true,
         publicKey: process.env.VAPID_PUBLIC_KEY || null
     });
+};
+
+// Get recent in-app notifications for the authenticated user
+export const getMyNotifications = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const notifications = await Notification.find({ user: userId })
+            .sort({ createdAt: -1 })
+            .limit(30)
+            .lean();
+
+        const unreadCount = notifications.filter(n => !n.read).length;
+
+        res.json({ success: true, notifications, unreadCount });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Mark notifications as read (pass ids array, or empty to mark all)
+export const markNotificationsRead = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { ids } = req.body; // optional array of specific IDs
+
+        if (ids && ids.length > 0) {
+            await Notification.updateMany(
+                { _id: { $in: ids }, user: userId },
+                { $set: { read: true } }
+            );
+        } else {
+            // Mark all as read
+            await Notification.updateMany({ user: userId, read: false }, { $set: { read: true } });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
 };

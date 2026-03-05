@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { assets } from '../assets/assets'
 import { Places } from '../assets/assets';
 import { useAppContext } from '../context/AppContext';
-import heroImage from '../assets/heroImage.png';
+import heroImage from '../assets/heroImage.jpg';
 
 const Hero = () => {
   const { navigate } = useAppContext();

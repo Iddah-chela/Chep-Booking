@@ -6,6 +6,7 @@ import ProfileModal from './ProfileModal';
 import { SignInButton, SignUpButton } from '@clerk/clerk-react';
 import PropertyListingModal from './PropertyListingModal';
 import LandlordApplicationModal from './LandlordApplicationModal';
+import NotificationBell from './NotificationBell';
 import { isPushSupported, getPermissionState } from '../utils/pushNotifications';
 
 const Navbar = () => {
@@ -54,9 +55,19 @@ const Navbar = () => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, [location.pathname]);
 
+    // hero state helpers — evaluated once per render, no dark: cascade needed
+    const heroLight = !isScrolled && !darkMode;  // on hero, light mode
+    const heroDark  = !isScrolled &&  darkMode;  // on hero, dark mode
+
     return (
         <>
-            <nav className={`fixed top-0 left-0 w-full flex items-center justify-between px-4 md:px-16 lg:px-24 xl:px-32 transition-all duration-500 z-40 overflow-visible ${isScrolled ? "bg-white/80 dark:bg-gray-900/80 shadow-md text-gray-700 dark:text-gray-200 backdrop-blur-lg py-2 md:py-2" : "py-3 md:py-4"}`}>
+            <nav className={`fixed top-0 left-0 w-full flex items-center justify-between px-4 md:px-16 lg:px-24 xl:px-32 transition-all duration-500 z-40 overflow-visible ${
+                isScrolled
+                    ? "bg-white/80 dark:bg-gray-900/80 shadow-md text-gray-700 dark:text-gray-200 backdrop-blur-lg py-2 md:py-2"
+                    : heroLight
+                        ? "py-3 md:py-4 bg-gradient-to-b from-white/50 min-[1100px]:from-white/75 to-transparent text-gray-900"
+                        : "py-3 md:py-4 bg-gradient-to-b from-black/50 to-transparent text-white"
+            }`}>
 
                 {/* Logo - overflows navbar intentionally */}
                 <Link to ="/" className="flex-shrink-0 relative z-50">
@@ -66,18 +77,18 @@ const Navbar = () => {
                 {/* Desktop Nav */}
                 <div className="hidden md:flex items-center gap-4 lg:gap-8">
                     {navLinks.map((link, i) => (
-                        <a key={i} href={link.path} className={`group flex flex-col gap-0.5 ${isScrolled ? "text-gray-700 dark:text-gray-200" : "text-[#111827]"}`}>
+                        <a key={i} href={link.path} className={`group flex flex-col gap-0.5 ${isScrolled ? "text-gray-700 dark:text-gray-200" : heroLight ? "text-gray-900" : "text-white"}`}>
                             {link.name}
-                            <div className={`${isScrolled ? "bg-gray-700 dark:bg-gray-300" : "bg-[#111827]"} h-0.5 w-0 group-hover:w-full transition-all duration-300`} />
+                            <div className={`${isScrolled ? "bg-gray-700 dark:bg-gray-300" : heroLight ? "bg-gray-900" : "bg-white"} h-0.5 w-0 group-hover:w-full transition-all duration-300`} />
                         </a>
                     ))}
 
                 {user && isOwner && (   
                     <>
-                        <button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${isScrolled ? 'text-black dark:text-gray-200 border-gray-700 dark:border-gray-500' : 'text-[#111827] border-[#111827]'} transition-all hover:bg-gray-100 dark:hover:bg-gray-700`} onClick={()=> navigate('/owner')}>
+                        <button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all ${isScrolled ? 'text-black dark:text-gray-200 border-gray-700 dark:border-gray-500 hover:bg-gray-100/60 dark:hover:bg-gray-700' : heroLight ? 'text-gray-900 border-gray-700 hover:bg-gray-100/60' : 'text-white border-white/70 hover:bg-white/10'}`} onClick={()=> navigate('/owner')}>
                             Dashboard
                         </button>
-                        <button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${isScrolled ? 'text-black dark:text-gray-200 border-gray-700 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-[#111827] border-indigo-600 bg-indigo-50'} transition-all hover:bg-indigo-100 dark:hover:bg-indigo-900/50`} onClick={() => setShowPropertyModal(true)}>
+                        <button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all ${isScrolled ? 'text-black dark:text-gray-200 border-gray-700 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50' : heroLight ? 'text-gray-900 border-indigo-600 bg-indigo-50/80 hover:bg-indigo-100/80' : 'text-white border-indigo-400 bg-indigo-900/30 hover:bg-indigo-900/50'}`} onClick={() => setShowPropertyModal(true)}>
                             + List Property
                         </button>
                     </>
@@ -85,7 +96,7 @@ const Navbar = () => {
                 
                 {user && !isOwner && (
                     <button 
-                        className={`flex items-center gap-1.5 border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${isScrolled ? 'text-black dark:text-gray-200 border-green-700 dark:border-green-500 bg-green-50 dark:bg-green-900/30' : 'text-[#111827] border-green-600 bg-green-50'} transition-all hover:bg-green-100 dark:hover:bg-green-900/50`} 
+                        className={`flex items-center gap-1.5 border px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all ${isScrolled ? 'text-black dark:text-gray-200 border-green-700 dark:border-green-500 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50' : heroLight ? 'text-gray-900 border-green-700 bg-green-50/80 hover:bg-green-100/80' : 'text-white border-green-400 bg-green-900/30 hover:bg-green-900/50'}`} 
                         onClick={() => setShowLandlordApplicationModal(true)}
                     >
                         <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5' /></svg>
@@ -99,7 +110,7 @@ const Navbar = () => {
                     {/* Dark Mode Toggle */}
                     <button
                         onClick={toggleDarkMode}
-                        className={`p-2 rounded-full transition-all hover:scale-110 ${isScrolled ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-[#374151] hover:bg-gray-100/50'}`}
+                        className={`p-2 rounded-full transition-all hover:scale-110 ${isScrolled ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' : heroLight ? 'text-gray-800 hover:bg-gray-100/60' : 'text-white hover:bg-white/10'}`}
                         title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                     >
                         {darkMode ? (
@@ -109,22 +120,13 @@ const Navbar = () => {
                         )}
                     </button>
                     <button onClick={() => navigate('/rooms')} className="focus:outline-none">
-                        <img src={assets.searchIcon} alt="search" className={`${isScrolled ? 'opacity-70' : 'opacity-90'} h-7 transition-all duration-500 cursor-pointer hover:scale-110 ${darkMode ? 'invert' : ''}`}/>
+                        <img src={assets.searchIcon} alt="search" className={`h-7 transition-all duration-500 cursor-pointer hover:scale-110 opacity-80 ${darkMode ? 'invert' : 'brightness-0'}`}/>
                     </button>
 
                 {user ? (
                     <div className="flex items-center gap-3">
-                    {/* Notification Bell — shows when push not fully set up */}
-                    {isPushSupported() && (getPermissionState() !== 'granted' || localStorage.getItem('PataKeja_push_enabled') !== 'true') && (
-                        <button
-                            onClick={async () => { setShowPushPrompt(false); await enablePushNotifications(); }}
-                            className={`relative p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all ${isScrolled ? 'text-gray-600 dark:text-gray-300' : 'text-[#374151]'}`}
-                            title="Enable notifications"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                            <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
-                    )}
+                    {/* In-app notification bell */}
+                    <NotificationBell isScrolled={isScrolled} />
                     {/* Profile Picture - Click to open modal */}
                     <img 
                         src={dbImage || user.imageUrl} 
@@ -137,12 +139,12 @@ const Navbar = () => {
                 ) : (
                     <div className="flex gap-2">
                         <SignInButton mode="modal">
-                            <button className={`px-6 py-2 rounded-full transition-all duration-500 border ${isScrolled ? "text-gray-700 dark:text-gray-200 border-gray-700 dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" : "text-[#111827] border-[#111827] hover:bg-gray-100/70"}`}>
+                            <button className={`px-6 py-2 rounded-full transition-all duration-500 border ${isScrolled ? "text-gray-700 dark:text-gray-200 border-gray-700 dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" : heroLight ? "text-gray-800 border-gray-700 hover:bg-gray-100/60" : "text-white border-white/70 hover:bg-white/10"}`}>
                                 Login
                             </button>
                         </SignInButton>
                         <SignUpButton mode="modal">
-                            <button className={`px-6 py-2 rounded-full transition-all duration-500 ${isScrolled ? "text-white bg-indigo-500 hover:bg-indigo-600" : "bg-gray-900 text-white hover:bg-gray-800"}`}>
+                            <button className={`px-6 py-2 rounded-full transition-all duration-500 ${isScrolled ? "text-white bg-indigo-500 hover:bg-indigo-600" : heroLight ? "bg-gray-900 text-white hover:bg-gray-800" : "bg-white text-gray-900 hover:bg-gray-100"}`}>
                                 Sign Up
                             </button>
                         </SignUpButton>
@@ -161,7 +163,7 @@ const Navbar = () => {
                             onError={(e) => { const fb = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'U')}&background=6366f1&color=fff&bold=true`; if (e.target.src !== fb) e.target.src = fb }}
                         />
                     )}
-                    <img onClick={() => setIsMenuOpen(!isMenuOpen)} src={assets.menuIcon} alt="" className={`h-4 transition-all${isScrolled && !darkMode ? ' brightness-0' : ''}${darkMode ? ' invert' : ''}`} />
+                    <img onClick={() => setIsMenuOpen(!isMenuOpen)} src={assets.menuIcon} alt="" className={`h-4 cursor-pointer transition-all brightness-0${darkMode ? ' invert' : ''}`} />
                 </div>
 
                 {/* Mobile Menu */}
@@ -189,7 +191,7 @@ const Navbar = () => {
                     </button>
 
                     {user && isOwner &&
-                    <button className="border dark:border-gray-600 px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all" onClick={()=> navigate('/owner')}>
+                    <button className="border dark:border-gray-600 px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all" onClick={()=> { setIsMenuOpen(false); navigate('/owner'); }}>
                         Dashboard
                     </button>}
 

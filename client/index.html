@@ -16,6 +16,29 @@
     <meta name="apple-mobile-web-app-title" content="PataKeja" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <title>PataKeja</title>
+    <!-- Prevent FOUC: set bg immediately before any CSS loads -->
+    <style>
+      html, body { margin: 0; padding: 0; background: #ffffff; }
+      html.dark, html.dark body { background: #111827; }
+      /* Skeleton placeholder so the page isn't blank during JS parse */
+      #root:empty::before {
+        content: '';
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        background: #ffffff;
+      }
+      html.dark #root:empty::before { background: #111827; }
+    </style>
+    <!-- Restore dark mode before first paint to prevent white flash -->
+    <script>
+      (function() {
+        if (localStorage.getItem('PataKeja_darkMode') === 'true') {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.background = '#111827';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

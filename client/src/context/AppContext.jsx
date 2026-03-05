@@ -39,8 +39,8 @@ export const AppProvider = ({children})=>{
     const [darkMode, setDarkMode] = useState(() => {
         const saved = localStorage.getItem('PataKeja_darkMode');
         if (saved !== null) return saved === 'true';
-        // Default to system preference
-        return window.matchMedia?.('(prefers-color-scheme: dark)').matches || false;
+        // Default to light mode
+        return false;
     });
     
     // Apply dark mode class to <html>

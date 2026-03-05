@@ -90,7 +90,7 @@ const LandlordApplicationModal = ({ onClose }) => {
 
     return (
         <div onClick={onClose} className='fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4'>
-            <div onClick={(e) => e.stopPropagation()} className='bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden'>
+            <div onClick={(e) => e.stopPropagation()} className='bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto'>
                 {/* Header */}
                 <div className='relative bg-gradient-to-r from-indigo-600 to-purple-600 p-6'>
                     <button type="button" onClick={onClose} className='absolute top-3 right-3 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors'>

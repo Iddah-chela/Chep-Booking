@@ -1,5 +1,6 @@
 ﻿import webPush from "web-push";
 import PushSubscription from "../models/pushSubscription.js";
+import Notification from "../models/notification.js";
 
 // Configure web-push with VAPID keys
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -11,27 +12,31 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 }
 
 /**
- * Send a push notification to a specific user.
- * Handles multiple subscriptions (e.g. multiple devices/browsers).
- * Silently removes expired/invalid subscriptions.
- * 
- * @param {string} userId - The user ID to send the notification to
- * @param {object} payload - { title, body, url, icon, tag }
- *   - title: notification title
- *   - body: notification body text
- *   - url: URL to open when notification is clicked
- *   - icon: optional icon URL
- *   - tag: optional tag for notification grouping / replacement
+ * Send a push notification AND save it as an in-app notification.
+ * In-app notification always saved (failsafe when push is blocked/denied).
  */
 export const sendPushNotification = async (userId, payload) => {
+    // Always save in-app notification regardless of push status
+    try {
+        await Notification.create({
+            user: userId,
+            title: payload.title || 'PataKeja',
+            body: payload.body || '',
+            url: payload.url || '/',
+            type: payload.type || 'system',
+        });
+    } catch (dbErr) {
+        console.warn('[Notification] Failed to save in-app notification:', dbErr.message);
+    }
+
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-        return; // Push not configured
+        return; // Push not configured — in-app already saved above
     }
 
     try {
         const subscriptions = await PushSubscription.find({ user: userId });
         if (!subscriptions.length) {
-            console.log(`[Push] No subscriptions found for user ${userId}`);
+            console.log(`[Push] No push subscriptions for user ${userId} (in-app saved)`);
             return;
         }
 
@@ -51,7 +56,6 @@ export const sendPushNotification = async (userId, payload) => {
                     { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } },
                     data
                 ).catch(async (err) => {
-                    // 410 Gone or 404 Not Found = subscription expired, remove it
                     if (err.statusCode === 410 || err.statusCode === 404) {
                         await PushSubscription.deleteOne({ _id: sub._id });
                         console.log(`[Push] Removed expired subscription for user ${userId}`);
@@ -64,7 +68,7 @@ export const sendPushNotification = async (userId, payload) => {
 
         const sent = results.filter(r => r.status === 'fulfilled').length;
         if (sent > 0) {
-            console.log(`[Push] Sent notification to user ${userId} (${sent}/${subscriptions.length} devices)`);
+            console.log(`[Push] Sent to user ${userId} (${sent}/${subscriptions.length} devices)`);
         }
     } catch (err) {
         console.warn('[Push] Error sending notification:', err.message);
