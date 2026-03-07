@@ -7,7 +7,7 @@ import Room from "../models/room.js";
 export const createRoom = async (req, res) =>{
     try {
         const {roomType, pricePerMonth, amenities} = req.body;
-        const house = await House.findOne({owner: req.auth.userId})
+        const house = await House.findOne({owner: req.user._id})
 
         if(!house) return res.json({success: false, message: "No House Found"});
 
@@ -29,7 +29,7 @@ export const createRoom = async (req, res) =>{
         })
         res.json({success: true, message: "Room created successfully"})
     } catch (error) {
-        res.json({success: false, message: message.error})
+        res.json({success: false, message: error.message})
     }
 }
 
@@ -77,7 +77,7 @@ export const getRoomById = async (req, res) =>{
 //api to get all rooms for a specific house owner
 export const getOwnerRooms = async (req, res) =>{
     try {
-        const { userId } = req.auth();
+        const userId = req.user._id;
         const houseData = await House.findOne({owner: userId});
         
         if(!houseData) {
@@ -95,7 +95,15 @@ export const getOwnerRooms = async (req, res) =>{
 export const toggleRoomAvailability = async (req, res) =>{
     try {
         const {roomId} = req.body;
-        const roomData = await Room.findById(roomId);
+        const ownerId = req.user._id;
+
+        // Verify the room belongs to the authenticated owner's house
+        const ownerHouse = await House.findOne({ owner: ownerId });
+        if (!ownerHouse) return res.status(403).json({success: false, message: "No house registered"});
+
+        const roomData = await Room.findOne({ _id: roomId, house: ownerHouse._id });
+        if (!roomData) return res.status(403).json({success: false, message: "Room not found or access denied"});
+
         roomData.isAvailable = !roomData.isAvailable;
         await roomData.save();
         res.json({success: true, message: "Room Availability Updated"});

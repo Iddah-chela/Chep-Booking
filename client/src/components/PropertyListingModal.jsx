@@ -39,7 +39,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
         rows: building.rows || 1,
         cols: building.cols || 5,
         grid: building.grid || Array(1).fill(null).map(() => Array(5).fill({ type: 'empty', roomType: '', pricePerMonth: 0, amenities: [], isVacant: true })),
-        gatePosition: building.gatePosition || { row: 0, col: 4 }
+        gatePosition: building.gatePosition || { row: 0, col: 4 },
       }))
     }
     // Default new building
@@ -67,6 +67,12 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
       '24/7 Security': false,
       'Water Supply': false,
       'Parking': false,
+      'Double Occupancy': false,
+      'Gate Closes 10PM': false,
+      'ELDOWAS Water': false,
+      'Borehole Water': false,
+      'Water Storage Tank': false,
+      'Electricity Tokens': false,
     },
     isVacant: true
   })
@@ -251,6 +257,16 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
     toast.success(`New building added!`)
   }
 
+  const removeBuilding = () => {
+    if (buildings.length <= 1) { toast.error('You must have at least one building'); return }
+    const newBuildings = buildings.filter((_, i) => i !== activeBuilding)
+    setBuildings(newBuildings)
+    setActiveBuilding(Math.max(0, activeBuilding - 1))
+    setSelectedCell(null)
+    setSelectedCells([])
+    toast.success('Building removed!')
+  }
+
   const handleCellClick = (rowIndex, colIndex) => {
     if (selectMode) {
       // Multi-select mode
@@ -278,6 +294,12 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
             '24/7 Security': false,
             'Water Supply': false,
             'Parking': false,
+            'Double Occupancy': false,
+            'Gate Closes 10PM': false,
+            'ELDOWAS Water': false,
+            'Borehole Water': false,
+            'Water Storage Tank': false,
+            'Electricity Tokens': false,
           }),
           isVacant: cell.isVacant
         })
@@ -291,6 +313,12 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
             '24/7 Security': false,
             'Water Supply': false,
             'Parking': false,
+            'Double Occupancy': false,
+            'Gate Closes 10PM': false,
+            'ELDOWAS Water': false,
+            'Borehole Water': false,
+            'Water Storage Tank': false,
+            'Electricity Tokens': false,
           },
           isVacant: true
         })
@@ -526,10 +554,10 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                 <span className='text-sm font-medium text-gray-700 dark:text-gray-300'>Property Location on Google Maps</span>
                 <span className='text-xs text-gray-400'>(shown to tenants after viewing is confirmed)</span>
               </div>
-              <div className='flex gap-2'>
+                <div className='flex flex-col sm:flex-row gap-2'>
                 <input
                   type='url'
-                  placeholder='Paste a Google Maps link, or use the button →'
+                  placeholder='Paste a Google Maps link, or use the button below'
                   className='flex-1 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100 text-sm'
                   value={propertyInfo.googleMapsUrl}
                   onChange={(e) => setPropertyInfo({ ...propertyInfo, googleMapsUrl: e.target.value })}
@@ -538,7 +566,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
                   type='button'
                   onClick={handleGetLocation}
                   disabled={locating}
-                  className='flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded text-sm font-medium transition-all whitespace-nowrap'
+                  className='flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded text-sm font-medium transition-all'
                 >
                   {locating ? (
                     <><span className='w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block' /> Locating...</>
@@ -665,6 +693,12 @@ const PropertyListingModal = ({ onClose, existingProperty = null }) => {
               <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5' /></svg>
               New Building
             </button>
+            {buildings.length > 1 && (
+              <button type="button" onClick={removeBuilding} className='flex items-center gap-1 bg-rose-600 dark:bg-rose-700 hover:bg-rose-700 dark:hover:bg-rose-800 text-white px-3 py-1.5 rounded font-medium'>
+                <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' /></svg>
+                Del Building
+              </button>
+            )}
             <button type="button" onClick={() => { setSelectMode(!selectMode); setSelectedCells([]) }} className={`px-3 py-1.5 rounded font-medium ${selectMode ? 'bg-yellow-500 dark:bg-yellow-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200'}`}>
               {selectMode ? 'Multi-Select ON' : 'Multi-Select'}
             </button>

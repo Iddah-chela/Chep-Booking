@@ -83,7 +83,7 @@ const App = () => {
          }}
       />
      {!isAdminPath && <Navbar />}
-     <div className={isAdminPath ? '' : 'min-h-[70vh]'}>
+     <main className={isAdminPath ? '' : 'min-h-[70vh]'}>
         <Suspense fallback={
           <div className="flex items-center justify-center min-h-[70vh]">
             <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -121,7 +121,7 @@ const App = () => {
           </Route>
         </Routes>
         </Suspense>
-     </div>
+     </main>
      {!isAdminPath && <Footer/>}
 
      {/* Floating Feedback Button */}

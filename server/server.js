@@ -3,6 +3,7 @@ import "dotenv/config";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import mongoSanitize from "express-mongo-sanitize";
 import connectDB from "./config/db.js";
 import { clerkMiddleware } from '@clerk/express'
 import clerkWebhooks from "./controllers/clerkWebhooks.js";
@@ -31,6 +32,9 @@ connectDB()
 connectCloudinary();
 
 const app = express()
+
+// Trust Railway/Render/Vercel reverse proxies so rate-limit can read real IPs
+app.set('trust proxy', 1)
 
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use(helmet({
@@ -81,6 +85,15 @@ const authLimiter = rateLimit({
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ limit: '1mb', extended: true }))
 
+// ── NoSQL injection sanitization ─────────────────────────────────────────────
+// Express 5 makes req.query a read-only getter, so we can't use mongoSanitize() globally.
+// Instead, manually sanitize only the writable fields: body and params.
+app.use((req, res, next) => {
+    if (req.body) req.body = mongoSanitize.sanitize(req.body)
+    if (req.params) req.params = mongoSanitize.sanitize(req.params)
+    next()
+})
+
 // Webhook must come before clerkMiddleware (needs raw body)
 app.use("/api/clerk", clerkWebhooks)
 app.use(clerkMiddleware())
@@ -100,7 +113,7 @@ app.use('/api/profile', express.json({ limit: '10mb' }), profileRouter)
 
 // All other routes get general rate limit
 app.use('/api/user', generalLimiter, userRouter)
-app.use('/api/houses', houseRouter)
+app.use('/api/houses', generalLimiter, houseRouter)
 app.use('/api/bookings', generalLimiter, bookingRouter)
 app.use('/api/chat', generalLimiter, chatRouter)
 app.use('/api/viewing', generalLimiter, viewingRouter)

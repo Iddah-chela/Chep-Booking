@@ -77,7 +77,7 @@ export const createProperty = async (req, res) => {
 export const getAllProperties = async (req, res) => {
   try {
     const properties = await Property.find({ vacantRooms: { $gt: 0 }, isExpired: { $ne: true } })
-      .populate('owner', 'username email image isVerified')
+      .populate('owner', 'username image isVerified')
       .sort({ createdAt: -1 });
     
     res.json({ success: true, properties });
@@ -91,7 +91,7 @@ export const getPropertyById = async (req, res) => {
   try {
     const { id } = req.params;
     const property = await Property.findById(id)
-      .populate('owner', 'username email image isVerified');
+      .populate('owner', 'username image isVerified');
     
     if (!property) {
       return res.json({ success: false, message: "Property not found" });

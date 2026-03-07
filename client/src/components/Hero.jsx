@@ -22,12 +22,22 @@ const Hero = () => {
 
   return (
     <div
-      className='flex flex-col items-start justify-center px-6 md:px-16 lg:px-24 xl:px-32 text-white bg-no-repeat bg-cover bg-center h-screen'
-      style={{ backgroundImage: `url(${heroImage})` }}
+      className='relative flex flex-col items-start justify-center px-6 md:px-16 lg:px-24 xl:px-32 text-white h-screen overflow-hidden'
     >
-        <div className='bg-green-600/80 px-4 py-1.5 rounded-full mt-20'>
+        {/* Preloaded hero image — real <img> so browser fetches it immediately, improving LCP */}
+        <img
+          src={heroImage}
+          alt=""
+          aria-hidden="true"
+          width="1920"
+          height="1080"
+          fetchPriority="high"
+          decoding="async"
+          className='absolute inset-0 w-full h-full object-cover object-center'
+        />
+        {/* Content sits above the background image */}
+        <div className='relative z-10 flex flex-col items-start w-full'>
           <p className='text-sm font-medium'>✓ Verified listings · No scams</p>
-        </div>
         <h1 className='font-medium text-3xl md:text-5xl lg:text-6xl max-w-2xl mt-6'>
           Find available houses for rent near you
         </h1>
@@ -86,6 +96,7 @@ const Hero = () => {
                 <span>Search homes</span>
             </button>
         </form>
+        </div>{/* end z-10 content wrapper */}
     </div>
   )
 }

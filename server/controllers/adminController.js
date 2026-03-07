@@ -7,7 +7,7 @@ import Property from "../models/property.js";
 // Middleware to check if user is admin
 export const isAdmin = (req, res, next) => {
     if (req.user.role !== 'admin') {
-        return res.json({ success: false, message: 'Unauthorized - Admin access required' });
+        return res.status(403).json({ success: false, message: 'Unauthorized - Admin access required' });
     }
     next();
 };

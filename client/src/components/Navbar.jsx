@@ -190,10 +190,14 @@ const Navbar = () => {
                         )}
                     </button>
 
-                    {user && isOwner &&
+                    {user && isOwner && <>
                     <button className="border dark:border-gray-600 px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all" onClick={()=> { setIsMenuOpen(false); navigate('/owner'); }}>
                         Dashboard
-                    </button>}
+                    </button>
+                    <button className="border border-indigo-500 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all hover:bg-indigo-100 dark:hover:bg-indigo-900/50" onClick={() => { setIsMenuOpen(false); setShowPropertyModal(true); }}>
+                        + List Property
+                    </button>
+                    </>}
 
                     {user && !isOwner && (
                         <button 
