@@ -64,26 +64,11 @@
       html.dark #root:empty::before { background: #111827; }
     </style>
     <!-- Restore dark mode before first paint to prevent white flash -->
-    <script>
-      (function() {
-        if (localStorage.getItem('PataKeja_darkMode') === 'true') {
-          document.documentElement.classList.add('dark');
-          document.documentElement.style.background = '#111827';
-        }
-      })();
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('[SW] Registered:', reg.scope))
-            .catch(err => console.error('[SW] Registration failed:', err));
-        });
-      }
-    </script>
+    <script src="/sw-register.js" defer></script>
   </body>
 </html>
