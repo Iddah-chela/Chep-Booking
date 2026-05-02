@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { Menu, X, Home, LayoutGrid, Bell, BarChart3, LogOut } from 'lucide-react';
-import { AppContext } from '../../context/AppContext';
+import { useAppContext } from '../../context/AppContext';
 
 export default function AgentLayout() {
-  const { isAgent, user, getToken, navigate } = useContext(AppContext);
+  const { isAgent, user, getToken, navigate } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {

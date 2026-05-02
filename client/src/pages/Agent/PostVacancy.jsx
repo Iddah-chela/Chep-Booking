@@ -1,11 +1,10 @@
-import { useContext, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AppContext } from '../../context/AppContext';
+import { useState } from 'react';
+import { useAppContext } from '../../context/AppContext';
 import { ChevronLeft, Plus, X, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function PostVacancy() {
-  const { axios, getToken, navigate } = useContext(AppContext);
+  const { axios, getToken, navigate } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [amenities, setAmenities] = useState([]);
   const [amenityInput, setAmenityInput] = useState('');

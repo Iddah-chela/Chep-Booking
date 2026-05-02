@@ -1,11 +1,11 @@
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AppContext } from '../../context/AppContext';
+import { useAppContext } from '../../context/AppContext';
 import { Plus, TrendingUp, Users, Package, MessageSquare, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AgentDashboard() {
-  const { axios, getToken } = useContext(AppContext);
+  const { axios, getToken } = useAppContext();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [vacancies, setVacancies] = useState([]);

@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from 'react';
-import { AppContext } from '../../context/AppContext';
+import { useEffect, useState } from 'react';
+import { useAppContext } from '../../context/AppContext';
 import { Loader, ChevronLeft, Check, X, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminAgentApplications() {
-  const { axios, getToken, navigate } = useContext(AppContext);
+  const { axios, getToken, navigate } = useAppContext();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('pending');

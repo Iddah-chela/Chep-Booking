@@ -1,11 +1,10 @@
-import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AppContext } from '../../context/AppContext';
+import { useEffect, useState } from 'react';
+import { useAppContext } from '../../context/AppContext';
 import { ChevronLeft, MessageSquare, Phone, Mail, Loader, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LeadInbox() {
-  const { axios, getToken, navigate } = useContext(AppContext);
+  const { axios, getToken, navigate } = useAppContext();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
