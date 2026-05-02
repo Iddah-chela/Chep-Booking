@@ -27,6 +27,8 @@ import notificationRouter from "./routes/notificationRoutes.js";
 import announcementRouter from "./routes/announcementRoutes.js";
 import utilityRouter from "./routes/utilityRoutes.js";
 import analyticsRouter from "./routes/analyticsRoutes.js";
+import agentRouter from "./routes/agentRoutes.js";
+import agentApplicationRouter from "./routes/agentApplicationRoutes.js";
 import { expireViewingRequests } from "./utils/expirationHandler.js";
 import { checkListingFreshness, checkUnlockAutoRefunds, sendPostViewingNudges, sendViewingReminders, sendMoveInNudges, sendMoveOutNudges, sendWeeklyPropertyUpdateReminders } from "./utils/cronJobs.js";
 
@@ -150,6 +152,8 @@ app.use('/api/announcements', generalLimiter, announcementRouter)
 app.use('/api/site', generalLimiter, analyticsRouter)
 app.use('/api/visit', generalLimiter, analyticsRouter)
 app.use('/api/analytics', generalLimiter, analyticsRouter)
+app.use('/api/agent', generalLimiter, agentRouter)
+app.use('/api/agent-applications', generalLimiter, agentApplicationRouter)
 
 
 const PORT = process.env.PORT || 3000;

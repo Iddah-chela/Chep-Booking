@@ -422,6 +422,8 @@ export const getDashboardStats = async (req, res) => {
 
             if (role === 'admin') {
                 acc.admin += 1;
+            } else if (role === 'agent') {
+                acc.agent += 1;
             } else if (role === 'houseowner') {
                 acc.houseOwner += 1;
             } else if (caretakerEmailSet.has(email)) {
@@ -431,7 +433,7 @@ export const getDashboardStats = async (req, res) => {
             }
 
             return acc;
-        }, { user: 0, houseOwner: 0, caretaker: 0, admin: 0 });
+        }, { user: 0, agent: 0, houseOwner: 0, caretaker: 0, admin: 0 });
 
         res.json({
             success: true,

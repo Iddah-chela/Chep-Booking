@@ -26,23 +26,24 @@ const getOrCreateId = (storage, key) => {
 
 const buildVisitEndpoints = () => {
   const base = String(import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
-  const relative = ['/api/site/visit', '/api/visit/site', '/api/analytics/visit'];
+  const relative = ['/api/site/visit'];
 
   if (!base) {
     return relative;
   }
 
-  return [
-    `${base}/api/site/visit`,
-    `${base}/api/visit/site`,
-    `${base}/api/analytics/visit`,
-  ];
+  return [`${base}/api/site/visit`];
 };
 
 const VisitTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
+    if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+      // Skip analytics in local dev to avoid noisy backend errors during setup.
+      return;
+    }
+
     if (location.pathname.startsWith('/admin')) {
       return;
     }

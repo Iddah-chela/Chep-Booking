@@ -23,6 +23,7 @@ const userSchema = mongoose.Schema({
         type: String,
         enum: [
             "user",
+            "agent",
             "houseOwner",
             "admin"
         ],

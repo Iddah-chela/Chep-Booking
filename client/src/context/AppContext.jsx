@@ -29,6 +29,7 @@ export const AppProvider = ({children})=>{
     const [isOwner, setIsOwner] = useState(false)
     const [isAdmin, setIsAdmin] = useState(false)
     const [isCaretaker, setIsCaretaker] = useState(false)
+    const [isAgent, setIsAgent] = useState(false)
     const [showHouseReg, setShowHouseReg] = useState(false)
     const [searchedPlaces, setSearchedPlaces] = useState([])
     const [rooms, setRooms] = useState([])
@@ -100,7 +101,7 @@ export const AppProvider = ({children})=>{
                 setIsOwner(false);
                 setIsAdmin(false);
                 setIsCaretaker(false);
-                setIsCaretaker(false);
+                setIsAgent(false);
                 setAuthLoading(false);
                 return;
             }
@@ -117,15 +118,18 @@ export const AppProvider = ({children})=>{
                 }
                 setIsOwner(false);
                 setIsAdmin(false);
+                setIsAgent(false);
                 setAuthLoading(false);
                 return;
             }
             
             const ownerStatus = data.role === "houseOwner" || data.role === "admin";
             const adminStatus = data.role === "admin";
+            const agentStatus = data.role === "agent";
             const caretakerStatus = !!data.isCaretaker;
             setIsOwner(ownerStatus);
             setIsAdmin(adminStatus);
+            setIsAgent(agentStatus);
             setIsCaretaker(caretakerStatus);
             setSearchedPlaces(data.recentSearchedPlaces || [])
             setDbImage(data.image || null)
@@ -262,6 +266,8 @@ export const AppProvider = ({children})=>{
         setIsOwner, 
         isAdmin, 
         setIsAdmin,
+        isAgent,
+        setIsAgent,
         isCaretaker,
         setIsCaretaker,
         authLoading, // Expose loading state

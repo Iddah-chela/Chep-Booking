@@ -34,6 +34,12 @@ const AdminReports    = lazy(() => import('./pages/Admin/AdminReports'))
 const AdminUsers      = lazy(() => import('./pages/Admin/AdminUsers'))
 const AdminListings   = lazy(() => import('./pages/Admin/AdminListings'))
 const AdminFeedback   = lazy(() => import('./pages/Admin/AdminFeedback'))
+const AdminAgentApplications = lazy(() => import('./pages/Admin/AdminAgentApplications'))
+const AgentLayout     = lazy(() => import('./pages/Agent/AgentLayout'))
+const AgentDashboard  = lazy(() => import('./pages/Agent/AgentDashboard'))
+const PostVacancy     = lazy(() => import('./pages/Agent/PostVacancy'))
+const LeadInbox       = lazy(() => import('./pages/Agent/LeadInbox'))
+const BecomeAgent     = lazy(() => import('./pages/BecomeAgent'))
 const Terms           = lazy(() => import('./pages/Terms'))
 const Privacy         = lazy(() => import('./pages/Privacy'))
 const UnlockPolicy    = lazy(() => import('./pages/UnlockPolicy'))
@@ -70,6 +76,7 @@ const App = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const isOwnerPath = useLocation().pathname.includes("owner");
   const isAdminPath = useLocation().pathname.includes("admin");
+  const isAgentPath = useLocation().pathname.includes("agent");
   const [searchParams] = useSearchParams();
 
   // Capture referral code from URL (e.g. ?ref=PS3A7F2B) and store in localStorage
@@ -114,6 +121,7 @@ const App = () => {
           <Route path='/managed-properties' element={<ManagedProperties/>}/>
           <Route path='/viewing/action' element={<ViewingAction/>}/>
           <Route path='/unsubscribe' element={<Unsubscribe/>}/>
+          <Route path='/become-agent' element={<BecomeAgent/>}/>
           <Route path='/owner' element={<Layout/>}>
               <Route index element={<Dashboard/>}/>
               <Route path='viewing-requests' element={<ViewingRequests/>}/>
@@ -125,19 +133,25 @@ const App = () => {
           <Route path='/admin' element={<AdminLayout/>}>
               <Route index element={<AdminDashboard/>}/>
               <Route path='applications' element={<AdminApplications/>}/>
+              <Route path='agent-applications' element={<AdminAgentApplications/>}/>
               <Route path='announcements' element={<AdminAnnouncements/>}/>
               <Route path='reports' element={<AdminReports/>}/>
               <Route path='users' element={<AdminUsers/>}/>
               <Route path='listings' element={<AdminListings/>}/>
               <Route path='feedback' element={<AdminFeedback/>}/>
           </Route>
+          <Route path='/agent' element={<AgentLayout/>}>
+              <Route index element={<AgentDashboard/>}/>
+              <Route path='post-vacancy' element={<PostVacancy/>}/>
+              <Route path='leads' element={<LeadInbox/>}/>
+          </Route>
         </Routes>
         </Suspense>
      </main>
-     {!isAdminPath && <Footer/>}
+     {!isAdminPath && !isAgentPath && <Footer/>}
 
      {/* Floating Feedback Button */}
-     {user && !isAdminPath && (
+     {user && !isAdminPath && !isAgentPath && (
        <button
          onClick={() => setShowFeedback(true)}
          className={`fixed z-50 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white p-3.5 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 ${isOwnerPath ? 'bottom-20 right-4 md:bottom-6 md:right-6' : 'bottom-6 right-6'}`}

@@ -32,7 +32,7 @@ const clerkWebhooks = async (req, res) =>{
         const {data, type} = req.body
 
         const incomingRole = data.public_metadata?.role
-        const hasValidIncomingRole = ["user", "houseOwner", "admin"].includes(incomingRole)
+        const hasValidIncomingRole = ["user", "agent", "houseOwner", "admin"].includes(incomingRole)
         
         
         const userData = {
