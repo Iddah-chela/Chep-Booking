@@ -134,7 +134,10 @@ export const approveAgentApplication = async (req, res) => {
     const { applicationId } = req.params;
     const adminId = req.user._id;
 
+    console.log(`[Agent Approval] Starting approval for application: ${applicationId}`);
+
     const application = await AgentApplication.findById(applicationId);
+    console.log(`[Agent Approval] Found application:`, application ? `yes, userId=${application.user}` : 'no');
 
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
@@ -147,12 +150,16 @@ export const approveAgentApplication = async (req, res) => {
     }
 
     // Update MongoDB first so the approval is not blocked by Clerk sync issues.
+    console.log(`[Agent Approval] Updating application status to approved`);
     application.status = 'approved';
     application.reviewedBy = adminId;
     application.reviewedAt = new Date();
     await application.save();
+    console.log(`[Agent Approval] Application saved successfully`);
 
-    await User.findByIdAndUpdate(application.user, { role: 'agent' });
+    console.log(`[Agent Approval] Updating user ${application.user} role to agent`);
+    const updateResult = await User.findByIdAndUpdate(application.user, { role: 'agent' });
+    console.log(`[Agent Approval] User update result:`, updateResult ? 'success' : 'failed');
 
     res.json({
       message: 'Agent application approved successfully',
@@ -160,6 +167,7 @@ export const approveAgentApplication = async (req, res) => {
     });
 
     // Keep Clerk metadata in sync without failing the approval if Clerk is slow/down.
+    console.log(`[Agent Approval] Starting background Clerk sync`);
     clerk.users.updateUser(application.user, {
       publicMetadata: {
         role: 'agent',
@@ -169,6 +177,7 @@ export const approveAgentApplication = async (req, res) => {
     });
   } catch (error) {
     console.error('Error approving application:', error);
+    console.error('Stack:', error.stack);
     res.status(500).json({
       message: 'Error approving application',
       error: error.message,

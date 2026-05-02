@@ -35,8 +35,7 @@ const agentApplicationSchema = new mongoose.Schema(
     },
     rejectionReason: String,
     reviewedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // MongoDB User reference for admin
+      type: String, // Clerk user ID of admin who reviewed
     },
     reviewedAt: Date,
     
