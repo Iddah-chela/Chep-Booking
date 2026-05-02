@@ -146,38 +146,26 @@ export const approveAgentApplication = async (req, res) => {
       });
     }
 
-    // Update user role in Clerk
-    const clerkUserId = application.user;
-    try {
-      await clerk.users.updateUserMetadata(clerkUserId, {
-        publicMetadata: {
-          role: 'agent',
-        },
-      });
-    } catch (clerkError) {
-      console.error('Clerk update failed:', clerkError);
-      return res.status(500).json({
-        message: 'Failed to update user role in Clerk',
-        error: clerkError.message,
-      });
-    }
-
-    // Update application
+    // Update MongoDB first so the approval is not blocked by Clerk sync issues.
     application.status = 'approved';
     application.reviewedBy = adminId;
     application.reviewedAt = new Date();
     await application.save();
 
-    // Update MongoDB user role if exists
-    try {
-      await User.updateOne({ _id: clerkUserId }, { role: 'agent' });
-    } catch (err) {
-      console.warn('MongoDB user update optional, Clerk already updated:', err);
-    }
+    await User.findByIdAndUpdate(application.user, { role: 'agent' });
 
     res.json({
       message: 'Agent application approved successfully',
       application,
+    });
+
+    // Keep Clerk metadata in sync without failing the approval if Clerk is slow/down.
+    clerk.users.updateUser(application.user, {
+      publicMetadata: {
+        role: 'agent',
+      },
+    }).catch((clerkError) => {
+      console.error('Clerk update failed:', clerkError);
     });
   } catch (error) {
     console.error('Error approving application:', error);
