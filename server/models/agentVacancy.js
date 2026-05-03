@@ -41,6 +41,14 @@ const agentVacancySchema = new mongoose.Schema(
         publicId: String, // Cloudinary ID for deletion
       },
     ],
+    videos: [
+      {
+        url: String,
+        publicId: String, // Cloudinary ID for deletion
+        thumbnail: String, // Thumbnail image URL
+        duration: Number, // Duration in seconds
+      },
+    ],
     moveInDate: Date,
     expiresAt: {
       type: Date,

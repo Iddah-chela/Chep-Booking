@@ -323,10 +323,10 @@ export const getAgentStats = async (req, res) => {
       isRead: false,
     });
 
-    const ledOutcomes = await AgentLead.aggregate([
+    const leadOutcomes = await AgentLead.aggregate([
       {
         $match: {
-          agent: new mongoose.Types.ObjectId(agentId),
+          agent: agentId, // Keep as string since agent field is String type
           outcome: { $exists: true, $ne: null },
         },
       },
@@ -345,7 +345,7 @@ export const getAgentStats = async (req, res) => {
       noResponse: 0,
     };
 
-    ledOutcomes.forEach((item) => {
+    leadOutcomes.forEach((item) => {
       if (item._id === 'viewed') outcomeStats.viewed = item.count;
       if (item._id === 'booked') outcomeStats.booked = item.count;
       if (item._id === 'not-fit') outcomeStats.notFit = item.count;

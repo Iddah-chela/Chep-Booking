@@ -159,6 +159,7 @@ export const AppProvider = ({children})=>{
            if (error.response?.status === 401) {
                setIsOwner(false);
                setIsAdmin(false);
+               setIsAgent(false);
                setIsCaretaker(false);
                setAuthLoading(false);
                return;
@@ -168,6 +169,7 @@ export const AppProvider = ({children})=>{
            }
            setIsOwner(false);
            setIsAdmin(false);
+           setIsAgent(false);
            setIsCaretaker(false);
            setAuthLoading(false);
         }

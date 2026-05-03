@@ -39,6 +39,7 @@ const AgentLayout     = lazy(() => import('./pages/Agent/AgentLayout'))
 const AgentDashboard  = lazy(() => import('./pages/Agent/AgentDashboard'))
 const PostVacancy     = lazy(() => import('./pages/Agent/PostVacancy'))
 const LeadInbox       = lazy(() => import('./pages/Agent/LeadInbox'))
+const AgentAnalytics  = lazy(() => import('./pages/Agent/AgentAnalytics'))
 const BecomeAgent     = lazy(() => import('./pages/BecomeAgent'))
 const Terms           = lazy(() => import('./pages/Terms'))
 const Privacy         = lazy(() => import('./pages/Privacy'))
@@ -144,6 +145,7 @@ const App = () => {
               <Route index element={<AgentDashboard/>}/>
               <Route path='post-vacancy' element={<PostVacancy/>}/>
               <Route path='leads' element={<LeadInbox/>}/>
+              <Route path='analytics' element={<AgentAnalytics/>}/>
           </Route>
         </Routes>
         </Suspense>

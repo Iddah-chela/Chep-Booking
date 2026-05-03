@@ -157,24 +157,43 @@ export const approveAgentApplication = async (req, res) => {
     await application.save();
     console.log(`[Agent Approval] Application saved successfully`);
 
+    // Verify user exists in MongoDB before updating
+    const userExists = await User.findById(application.user);
+    if (!userExists) {
+      console.error(`[Agent Approval] User ${application.user} NOT found in MongoDB!`);
+      return res.status(500).json({
+        message: 'User not found in database. User must have logged in at least once.',
+        error: 'USER_NOT_IN_DB'
+      });
+    }
+
     console.log(`[Agent Approval] Updating user ${application.user} role to agent`);
-    const updateResult = await User.findByIdAndUpdate(application.user, { role: 'agent' });
-    console.log(`[Agent Approval] User update result:`, updateResult ? 'success' : 'failed');
+    const updateResult = await User.findByIdAndUpdate(application.user, { role: 'agent' }, { new: true });
+    console.log(`[Agent Approval] User update result: role=${updateResult?.role}`);
 
     res.json({
       message: 'Agent application approved successfully',
       application,
+      updatedUser: {
+        _id: updateResult?._id,
+        role: updateResult?.role,
+        username: updateResult?.username
+      }
     });
 
-    // Keep Clerk metadata in sync without failing the approval if Clerk is slow/down.
-    console.log(`[Agent Approval] Starting background Clerk sync`);
-    clerk.users.updateUser(application.user, {
-      publicMetadata: {
-        role: 'agent',
-      },
-    }).catch((clerkError) => {
-      console.error('Clerk update failed:', clerkError);
-    });
+    // Sync Clerk metadata (block on this so role is consistent)
+    console.log(`[Agent Approval] Syncing Clerk metadata for user ${application.user}`);
+    try {
+      await clerk.users.updateUser(application.user, {
+        publicMetadata: {
+          role: 'agent',
+        },
+      });
+      console.log(`[Agent Approval] Clerk metadata synced successfully`);
+    } catch (clerkError) {
+      console.error('Clerk metadata sync failed (non-blocking):', clerkError.message);
+      // Don't fail the approval if Clerk is slow - MongoDB is already updated
+    }
   } catch (error) {
     console.error('Error approving application:', error);
     console.error('Stack:', error.stack);

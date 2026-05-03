@@ -4,14 +4,20 @@ import { Menu, X, Home, LayoutGrid, Bell, BarChart3, LogOut } from 'lucide-react
 import { useAppContext } from '../../context/AppContext';
 
 export default function AgentLayout() {
-  const { isAgent, user, getToken, navigate } = useAppContext();
+  const { isAgent, user, getToken, navigate, fetchUser, authLoading } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Refresh user data when agent layout mounts to ensure role is current
   useEffect(() => {
-    if (!isAgent) {
+    fetchUser();
+  }, []);
+
+  // Redirect if not an agent
+  useEffect(() => {
+    if (!authLoading && !isAgent) {
       navigate('/');
     }
-  }, [isAgent, navigate]);
+  }, [isAgent, authLoading, navigate]);
 
   if (!isAgent) {
     return null;

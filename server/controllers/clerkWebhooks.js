@@ -34,6 +34,8 @@ const clerkWebhooks = async (req, res) =>{
         const incomingRole = data.public_metadata?.role
         const hasValidIncomingRole = ["user", "agent", "houseOwner", "admin"].includes(incomingRole)
         
+        console.log(`[Webhook] Event: ${type}, User: ${data.id}, Role from Clerk: ${incomingRole}, Valid: ${hasValidIncomingRole}`)
+        
         
         const userData = {
             _id: data.id,
@@ -77,9 +79,13 @@ const clerkWebhooks = async (req, res) =>{
                 const updateData = { ...userData }
                 if (hasValidIncomingRole) {
                     updateData.role = incomingRole
+                    console.log(`[Webhook Update] User ${data.id} role updated to: ${incomingRole}`)
+                } else {
+                    console.log(`[Webhook Update] User ${data.id} role NOT updated (incoming role: ${incomingRole})`)
                 }
 
-                await User.findByIdAndUpdate(data.id, updateData);
+                const result = await User.findByIdAndUpdate(data.id, updateData);
+                console.log(`[Webhook Update] MongoDB update result:`, result?.role)
                  break;
             }
 
