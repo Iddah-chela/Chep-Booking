@@ -201,6 +201,36 @@ export const deleteVacancy = async (req, res) => {
   }
 };
 
+// PUT: Re-open a "contacted" vacancy back to "open"
+export const reopenVacancy = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const agentId = toUserId(req.user._id);
+
+    const vacancy = await AgentVacancy.findById(id);
+
+    if (!vacancy) {
+      return res.status(404).json({ message: 'Vacancy not found' });
+    }
+
+    if (vacancy.agent.toString() !== agentId.toString()) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    if (vacancy.status === 'contacted') {
+      vacancy.status = 'open';
+      vacancy.contactedAt = null;
+      await vacancy.save();
+      res.json({ message: 'Vacancy reopened successfully', vacancy });
+    } else {
+      res.status(400).json({ message: 'Only "contacted" vacancies can be reopened' });
+    }
+  } catch (error) {
+    console.error('Error reopening vacancy:', error);
+    res.status(500).json({ message: 'Error reopening vacancy', error: error.message });
+  }
+};
+
 // GET: Get all leads for agent
 export const getAgentLeads = async (req, res) => {
   try {
@@ -417,7 +447,14 @@ export const createLead = async (req, res) => {
 
     await lead.save();
 
-    await AgentVacancy.findByIdAndUpdate(vacancyId, { $inc: { 'stats.leadCount': 1 } });
+    // Mark vacancy as "contacted" if it's currently "open" (first lead)
+    const updatePayload = { $inc: { 'stats.leadCount': 1 } };
+    if (vacancy.status === 'open') {
+      updatePayload.status = 'contacted';
+      updatePayload.contactedAt = new Date();
+    }
+
+    await AgentVacancy.findByIdAndUpdate(vacancyId, updatePayload);
 
     res.status(201).json({
       message: 'Interest expressed successfully',

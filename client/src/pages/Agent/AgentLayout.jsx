@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
-import { Menu, X, Home, LayoutGrid, Bell } from 'lucide-react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { Home, LayoutGrid, Bell } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 export default function AgentLayout() {
   const { isAgent, navigate, fetchUser, authLoading } = useAppContext();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     let cancelled = false;
@@ -48,57 +48,56 @@ export default function AgentLayout() {
     { name: 'My Leads', path: '/agent/leads', icon: Bell },
   ];
 
+  const isActive = (path) => location.pathname === path;
+
   return (
-    <div className='flex min-h-screen bg-gray-100 dark:bg-gray-900'>
-      <div
-        className={`fixed md:relative w-64 h-screen bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 z-40 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
-      >
-        <div className='p-6 border-b border-gray-200 dark:border-gray-700'>
-          <h1 className='text-2xl font-bold text-indigo-600'>PataKeja</h1>
-          <p className='text-sm text-gray-600 dark:text-gray-400'>Agent Dashboard</p>
-        </div>
-
-        <nav className='flex-1 p-6 space-y-4'>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.name}
-                onClick={() => {
-                  navigate(item.path);
-                  setSidebarOpen(false);
-                }}
-                className='w-full flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 rounded-lg transition-colors'
-              >
-                <Icon size={20} />
-                <span>{item.name}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className='p-6 border-t border-gray-200 dark:border-gray-700'>
-          <p className='text-xs text-gray-500 dark:text-gray-400'>Use the profile menu in the main site header for logout and account actions.</p>
-        </div>
+    <div className='flex pt-20 min-h-screen'>
+      {/* Desktop Sidebar — hidden on mobile */}
+      <div className='hidden md:flex md:w-64 border-r min-h-full text-base border-gray-300 dark:border-gray-700 pt-4 flex-col dark:bg-gray-900 flex-shrink-0'>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.name}
+              onClick={() => navigate(item.path)}
+              className={`flex items-center py-3 px-4 md:px-8 gap-3 transition-colors ${
+                isActive(item.path)
+                  ? 'border-r-[6px] bg-indigo-600/10 border-indigo-600 text-indigo-600'
+                  : 'hover:bg-gray-100/90 dark:hover:bg-gray-800 border-transparent text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              <Icon size={20} className='min-w-[20px]' />
+              <span className='text-sm'>{item.name}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className='md:hidden fixed top-4 right-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg'
-      >
-        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
-
-      <div className='flex-1 overflow-auto'>
-        {sidebarOpen && (
-          <div
-            className='fixed inset-0 bg-black bg-opacity-50 md:hidden z-30'
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+      {/* Main Content */}
+      <div className='flex-1 p-4 pt-8 md:px-10 pb-24 md:pb-10 overflow-y-auto overflow-x-hidden min-w-0'>
         <Outlet />
+      </div>
+
+      {/* Mobile Bottom Tab Bar */}
+      <div className='md:hidden fixed bottom-0 left-0 right-0 z-30 flex border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]'>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.path);
+          return (
+            <button
+              key={item.name}
+              onClick={() => navigate(item.path)}
+              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 transition-colors ${
+                active
+                  ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Icon size={24} />
+              <span className='text-xs font-medium'>{item.name}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

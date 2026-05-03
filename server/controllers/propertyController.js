@@ -313,16 +313,49 @@ export const getAllProperties = async (req, res) => {
 export const getPropertyById = async (req, res) => {
   try {
     const { id } = req.params;
-    const property = await Property.findById(id)
+    
+    // Try to find as regular property first
+    let property = await Property.findById(id)
       .populate('owner', 'username image isVerified role');
     
+    // If not found, try agent vacancy
     if (!property) {
-      return res.json({ success: false, message: "Property not found" });
+      const vacancy = await AgentVacancy.findById(id).lean();
+      if (!vacancy) {
+        return res.json({ success: false, message: "Property not found" });
+      }
+      
+      // Convert agent vacancy to property-like object
+      property = {
+        _id: vacancy._id,
+        name: vacancy.title || 'Vacancy Listing',
+        images: (vacancy.photos || []).map(p => p.url).filter(Boolean),
+        place: vacancy.location?.city || '',
+        estate: vacancy.location?.area || '',
+        listedRentMin: vacancy.rent?.min ?? null,
+        listedRentMax: vacancy.rent?.max ?? null,
+        listingTier: 'agent',
+        sourceType: 'agent',
+        agentPost: true,
+        agent: vacancy.agent,
+        description: vacancy.description || '',
+        roomType: vacancy.roomType,
+        availableRooms: vacancy.availableRooms,
+        amenities: vacancy.amenities || [],
+        expiresAt: vacancy.expiresAt,
+        moveInDate: vacancy.moveInDate,
+        availabilityFrom: vacancy.availabilityFrom,
+        availabilityTo: vacancy.availabilityTo,
+        minBookingLeadDays: vacancy.minBookingLeadDays,
+        videos: vacancy.videos || [],
+        createdAt: vacancy.createdAt,
+        updatedAt: vacancy.updatedAt,
+      };
     }
 
-    const propertyObj = inferTierAndStatus(property.toObject());
+    const propertyObj = inferTierAndStatus(property.toObject ? property.toObject() : property);
 
-    const isOwner = req.user?._id && String(property.owner?._id || property.owner || '') === String(req.user._id || '');
+    const isOwner = req.user?._id && String(property.owner?._id || property.owner || property.agent || '') === String(req.user._id || '');
     const isCaretaker = !!req.user?.email && (property.caretakers || []).some((e) => String(e || '').toLowerCase() === String(req.user.email || '').toLowerCase());
     const isAdmin = req.user?.role === 'admin';
     const canSeeStewardData = isOwner || isCaretaker || isAdmin;
@@ -331,8 +364,8 @@ export const getPropertyById = async (req, res) => {
       delete propertyObj.landlordName;
     }
 
-    // Only reveal contact details to paying/authorised users
-    if (!await hasContactAccess(id, req)) {
+    // Only reveal contact details to paying/authorised users (agent vacancies don't have contact/whatsapp)
+    if (!propertyObj.agentPost && !await hasContactAccess(id, req)) {
       delete propertyObj.contact;
       delete propertyObj.whatsappNumber;
     }

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { ChevronLeft, Plus, X, Loader, Image, Video, MapPin } from 'lucide-react';
+import { ChevronLeft, Plus, X, Loader, Image, Video, MapPin, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function PostVacancy() {
   const { axios, getToken, navigate } = useAppContext();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [amenities, setAmenities] = useState([]);
   const [amenityInput, setAmenityInput] = useState('');
   const [photos, setPhotos] = useState([]);
@@ -93,6 +94,49 @@ export default function PostVacancy() {
 
     setMediaInput('');
     toast.success(`${mediaType} added successfully`);
+  };
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', file);
+        formDataUpload.append('upload_preset', 'agent_vacancies');
+
+        const response = await axios.post(
+          'https://api.cloudinary.com/v1_1/dq4zrrvge/auto/upload',
+          formDataUpload
+        );
+
+        const uploadedUrl = response.data.secure_url;
+
+        if (mediaType === 'photo') {
+          if (photos.length >= 5) {
+            toast.error('Maximum 5 photos reached');
+            break;
+          }
+          setPhotos([...photos, uploadedUrl]);
+          toast.success('Photo uploaded');
+        } else {
+          if (videos.length >= 3) {
+            toast.error('Maximum 3 videos reached');
+            break;
+          }
+          setVideos([...videos, uploadedUrl]);
+          toast.success('Video uploaded');
+        }
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload file. Please try again.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   };
 
   const removePhoto = (index) => {
@@ -278,31 +322,51 @@ export default function PostVacancy() {
         </div>
 
         <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Availability Window</h2>
+          <div className='flex items-start justify-between mb-4'>
+            <div>
+              <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>Availability Window</h2>
+              <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>When can students move in? (Optional)</p>
+            </div>
+          </div>
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-            <input
-              type='date'
-              name='availabilityFrom'
-              value={formData.availabilityFrom}
-              onChange={handleInputChange}
-              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-            />
-            <input
-              type='date'
-              name='availabilityTo'
-              value={formData.availabilityTo}
-              onChange={handleInputChange}
-              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-            />
-            <input
-              type='number'
-              min='0'
-              name='minBookingLeadDays'
-              placeholder='Min booking lead days'
-              value={formData.minBookingLeadDays}
-              onChange={handleInputChange}
-              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-            />
+            <div>
+              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Earliest Move-In</label>
+              <input
+                type='date'
+                name='availabilityFrom'
+                value={formData.availabilityFrom}
+                onChange={handleInputChange}
+                className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+                title='The earliest date a student can move in'
+              />
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Students can move in on or after this date</p>
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Latest Move-In</label>
+              <input
+                type='date'
+                name='availabilityTo'
+                value={formData.availabilityTo}
+                onChange={handleInputChange}
+                className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+                title='The latest date a student can move in'
+              />
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Latest date to secure the room</p>
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Min Days Notice</label>
+              <input
+                type='number'
+                min='0'
+                name='minBookingLeadDays'
+                placeholder='e.g. 2'
+                value={formData.minBookingLeadDays}
+                onChange={handleInputChange}
+                className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+                title='How many days in advance students must book'
+              />
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Days in advance to confirm booking</p>
+            </div>
           </div>
         </div>
 
@@ -368,9 +432,11 @@ export default function PostVacancy() {
         <div className='mb-8'>
           <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2'>
             <Image size={20} />
-            Photos ({photos.length}/5)
+            {mediaType === 'photo' ? `Photos (${photos.length}/5)` : `Videos (${videos.length}/3)`}
           </h2>
-          <div className='grid grid-cols-1 md:grid-cols-4 gap-3'>
+          
+          {/* Media Type Selector and URL Input */}
+          <div className='grid grid-cols-1 md:grid-cols-4 gap-3 mb-4'>
             <select
               value={mediaType}
               onChange={(e) => setMediaType(e.target.value)}
@@ -392,10 +458,29 @@ export default function PostVacancy() {
               className='bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors'
             >
               <Plus size={18} />
-              Add
+              Add URL
             </button>
           </div>
 
+          {/* File Upload Option */}
+          <div className='mb-4'>
+            <label className='flex items-center gap-2 px-4 py-3 border-2 border-dashed border-indigo-300 dark:border-indigo-700 rounded-lg cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors'>
+              <Upload size={18} className='text-indigo-600' />
+              <span className='text-sm font-medium text-indigo-600'>
+                {uploading ? 'Uploading...' : `Upload ${mediaType} from device`}
+              </span>
+              <input
+                type='file'
+                multiple
+                accept={mediaType === 'photo' ? 'image/*' : 'video/*'}
+                onChange={handleFileUpload}
+                disabled={uploading}
+                className='hidden'
+              />
+            </label>
+          </div>
+
+          {/* Photos Grid */}
           {photos.length > 0 && (
             <div className='grid grid-cols-2 md:grid-cols-5 gap-4 mt-4'>
               {photos.map((photo, index) => (
@@ -407,6 +492,27 @@ export default function PostVacancy() {
                     className='absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
                   >
                     <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Videos List */}
+          {videos.length > 0 && (
+            <div className='space-y-2 mt-4'>
+              {videos.map((video, index) => (
+                <div key={index} className='flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg'>
+                  <div className='flex items-center gap-2'>
+                    <Video size={18} className='text-gray-500' />
+                    <span className='text-sm text-gray-700 dark:text-gray-300 truncate'>{video.substring(0, 50)}...</span>
+                  </div>
+                  <button
+                    type='button'
+                    onClick={() => removeVideo(index)}
+                    className='text-red-500 hover:text-red-700'
+                  >
+                    <X size={18} />
                   </button>
                 </div>
               ))}

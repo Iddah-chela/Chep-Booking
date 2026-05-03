@@ -25,6 +25,9 @@ router.put('/vacancies/:id', protect, isAgent, agentController.updateVacancy);
 // Agent: Deactivate vacancy
 router.delete('/vacancies/:id', protect, isAgent, agentController.deleteVacancy);
 
+// Agent: Re-open a "contacted" vacancy back to "open"
+router.put('/vacancies/:id/reopen', protect, isAgent, agentController.reopenVacancy);
+
 // ===== LEAD ROUTES =====
 
 // Agent: Get all their leads

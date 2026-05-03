@@ -78,6 +78,16 @@ const agentVacancySchema = new mongoose.Schema(
       default: true,
       index: true,
     },
+    status: {
+      type: String,
+      enum: ['open', 'contacted', 'booked', 'expired'],
+      default: 'open',
+      index: true,
+    },
+    contactedAt: {
+      type: Date,
+      default: null,
+    },
     stats: {
       viewCount: { type: Number, default: 0 },
       leadCount: { type: Number, default: 0 },
@@ -94,11 +104,21 @@ agentVacancySchema.index({ isActive: 1, expiresAt: 1 });
 // TTL index to auto-delete expired vacancies (optional, can be handled manually)
 agentVacancySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-// Middleware to set expiresAt if not provided
+// Middleware to set expiresAt if not provided and auto-expire contacted vacancies
 agentVacancySchema.pre('save', function (next) {
   if (!this.expiresAt) {
     this.expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
   }
+
+  // Auto-expire "contacted" status after 7 days
+  if (this.status === 'contacted' && this.contactedAt) {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    if (this.contactedAt < sevenDaysAgo) {
+      this.status = 'open';
+      this.contactedAt = null;
+    }
+  }
+
   next();
 });
 
