@@ -23,13 +23,28 @@ export const submitAgentApplication = async (req, res) => {
       return res.status(400).json({ message: 'Years of experience cannot be negative' });
     }
 
-    // Check if user already has a pending/approved application
-    const existing = await AgentApplication.findOne({
-      user: userId,
-      status: { $in: ['pending', 'approved'] },
-    });
+    // Check if user already has an application
+    const existing = await AgentApplication.findOne({ user: userId });
 
     if (existing) {
+      if (existing.status === 'rejected') {
+        existing.yearsExperience = parseInt(yearsExperience);
+        existing.areasServed = areasServed;
+        existing.referenceLink = referenceLink || '';
+        existing.bio = bio || '';
+        existing.status = 'pending';
+        existing.rejectionReason = undefined;
+        existing.reviewedBy = undefined;
+        existing.reviewedAt = undefined;
+
+        await existing.save();
+
+        return res.status(200).json({
+          message: 'Application resubmitted successfully. Admin will review it shortly.',
+          application: existing,
+        });
+      }
+
       return res.status(409).json({
         message:
           existing.status === 'approved'

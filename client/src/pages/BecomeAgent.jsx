@@ -165,10 +165,12 @@ export default function BecomeAgent() {
                   'Your application did not meet our requirements at this time.'}
               </p>
               <button
-                onClick={() => checkApplicationStatus()}
+                onClick={() => {
+                  setApplicationStatus(null);
+                }}
                 className='text-red-600 hover:text-red-700 font-semibold'
               >
-                Go Back
+                Reapply
               </button>
             </div>
           </div>

@@ -19,14 +19,12 @@ export default function AgentDashboard() {
     try {
       setLoading(true);
       const token = await getToken();
-      
-      // Fetch stats
+
       const statsRes = await axios.get('/api/agent/stats', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setStats(statsRes.data);
 
-      // Fetch recent leads
       const leadsRes = await axios.get('/api/agent/leads?status=all&limit=5', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -47,13 +45,10 @@ export default function AgentDashboard() {
     );
   }
 
-  const conversionRate = stats?.totalLeads > 0 
-    ? Math.round((stats?.outcomeStats?.booked / stats?.totalLeads) * 100) 
-    : 0;
+  const conversionRate = stats?.totalLeads > 0 ? Math.round((stats?.outcomeStats?.booked / stats?.totalLeads) * 100) : 0;
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
-      {/* Header Section */}
       <div className='bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'>
         <div className='max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8'>
           <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
@@ -73,11 +68,9 @@ export default function AgentDashboard() {
       </div>
 
       <div className='max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8'>
-        {/* Key Metrics */}
         {stats && (
           <>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8'>
-              {/* Active Vacancies Card */}
               <div className='bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow'>
                 <div className='flex items-center justify-between'>
                   <div>
@@ -90,7 +83,6 @@ export default function AgentDashboard() {
                 </div>
               </div>
 
-              {/* Total Leads Card */}
               <div className='bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow'>
                 <div className='flex items-center justify-between'>
                   <div>
@@ -103,7 +95,6 @@ export default function AgentDashboard() {
                 </div>
               </div>
 
-              {/* Conversion Rate Card */}
               <div className='bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow'>
                 <div className='flex items-center justify-between'>
                   <div>
@@ -116,7 +107,6 @@ export default function AgentDashboard() {
                 </div>
               </div>
 
-              {/* Unread Leads Card */}
               <div className='bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow'>
                 <div className='flex items-center justify-between'>
                   <div>
@@ -130,7 +120,6 @@ export default function AgentDashboard() {
               </div>
             </div>
 
-            {/* Lead Outcomes Section */}
             <div className='bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8'>
               <h2 className='text-lg font-semibold text-gray-900 dark:text-white mb-6'>Lead Outcomes</h2>
               <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
@@ -170,7 +159,6 @@ export default function AgentDashboard() {
           </>
         )}
 
-        {/* Recent Leads Section */}
         <div className='bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6'>
           <div className='flex items-center justify-between mb-6'>
             <h2 className='text-lg font-semibold text-gray-900 dark:text-white'>Recent Leads</h2>
@@ -227,7 +215,7 @@ export default function AgentDashboard() {
                       </td>
                       <td className='py-3 px-4 text-center'>
                         <button
-                          onClick={() => navigate(`/agent/leads`)}
+                          onClick={() => navigate('/agent/leads')}
                           className='text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
                         >
                           View
@@ -241,7 +229,6 @@ export default function AgentDashboard() {
           )}
         </div>
 
-        {/* Quick Actions */}
         <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-8'>
           <button
             onClick={() => navigate('/agent/post-vacancy')}
@@ -287,146 +274,6 @@ export default function AgentDashboard() {
               </div>
             </div>
           </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-          <div className='bg-white dark:bg-gray-800 rounded-lg p-6 shadow'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <p className='text-gray-600 dark:text-gray-400 text-sm'>Unread</p>
-                <p className='text-3xl font-bold text-gray-900 dark:text-white mt-1'>
-                  {stats.unreadLeads}
-                </p>
-              </div>
-              <MessageSquare className='text-green-600' size={32} />
-            </div>
-          </div>
-
-          <div className='bg-white dark:bg-gray-800 rounded-lg p-6 shadow'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <p className='text-gray-600 dark:text-gray-400 text-sm'>Booked</p>
-                <p className='text-3xl font-bold text-gray-900 dark:text-white mt-1'>
-                  {stats.outcomeStats.booked}
-                </p>
-              </div>
-              <TrendingUp className='text-purple-600' size={32} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Two column layout */}
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
-        {/* Recent Vacancies */}
-        <div className='bg-white dark:bg-gray-800 rounded-lg p-6 shadow'>
-          <div className='flex justify-between items-center mb-4'>
-            <h2 className='text-xl font-bold text-gray-900 dark:text-white'>Recent Vacancies</h2>
-            <button
-              onClick={() => navigate('/agent/post-vacancy')}
-              className='text-indigo-600 hover:text-indigo-700 text-sm font-semibold'
-            >
-              View All
-            </button>
-          </div>
-
-          {vacancies.length === 0 ? (
-            <div className='text-center py-8'>
-              <Package size={40} className='mx-auto text-gray-400 mb-2' />
-              <p className='text-gray-600 dark:text-gray-400'>No vacancies posted yet</p>
-              <button
-                onClick={() => navigate('/agent/post-vacancy')}
-                className='text-indigo-600 hover:text-indigo-700 mt-2 font-semibold text-sm'
-              >
-                Post your first vacancy
-              </button>
-            </div>
-          ) : (
-            <div className='space-y-4'>
-              {vacancies.map((vacancy) => (
-                <div
-                  key={vacancy._id}
-                  className='p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow'
-                >
-                  <div className='flex justify-between items-start mb-2'>
-                    <div>
-                      <h3 className='font-semibold text-gray-900 dark:text-white'>
-                        {vacancy.roomType} • {vacancy.location.area}
-                      </h3>
-                      <p className='text-sm text-gray-600 dark:text-gray-400'>
-                        Ksh {vacancy.rent.min.toLocaleString()} - {vacancy.rent.max.toLocaleString()}
-                      </p>
-                    </div>
-                    <span className='bg-green-100 text-green-800 text-xs px-2 py-1 rounded'>
-                      Active
-                    </span>
-                  </div>
-                  <div className='flex justify-between text-sm text-gray-600 dark:text-gray-400'>
-                    <span>{vacancy.availableRooms} rooms available</span>
-                    <span>{vacancy.stats.leadCount} leads</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recent Leads */}
-        <div className='bg-white dark:bg-gray-800 rounded-lg p-6 shadow'>
-          <div className='flex justify-between items-center mb-4'>
-            <h2 className='text-xl font-bold text-gray-900 dark:text-white'>Recent Leads</h2>
-            <button
-              onClick={() => navigate('/agent/leads')}
-              className='text-indigo-600 hover:text-indigo-700 text-sm font-semibold'
-            >
-              View All
-            </button>
-          </div>
-
-          {leads.length === 0 ? (
-            <div className='text-center py-8'>
-              <Users size={40} className='mx-auto text-gray-400 mb-2' />
-              <p className='text-gray-600 dark:text-gray-400'>No new leads yet</p>
-              <p className='text-xs text-gray-500 mt-1'>Students will appear here when interested</p>
-            </div>
-          ) : (
-            <div className='space-y-4'>
-              {leads.map((lead) => (
-                <div
-                  key={lead._id}
-                  className='p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow cursor-pointer'
-                  onClick={() => navigate(`/agent/leads/${lead._id}`)}
-                >
-                  <div className='flex justify-between items-start mb-2'>
-                    <div>
-                      <h3 className='font-semibold text-gray-900 dark:text-white'>
-                        {lead.studentInfo.name}
-                      </h3>
-                      <p className='text-sm text-gray-600 dark:text-gray-400'>
-                        {lead.studentInfo.phone}
-                      </p>
-                    </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        lead.isRead
-                          ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {lead.isRead ? 'Read' : 'New'}
-                    </span>
-                  </div>
-                  <p className='text-xs text-gray-500 dark:text-gray-400'>
-                    {new Date(lead.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

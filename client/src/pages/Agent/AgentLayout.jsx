@@ -6,18 +6,45 @@ import { useAppContext } from '../../context/AppContext';
 export default function AgentLayout() {
   const { isAgent, user, getToken, navigate, fetchUser, authLoading } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
 
   // Refresh user data when agent layout mounts to ensure role is current
   useEffect(() => {
-    fetchUser();
-  }, []);
+    let cancelled = false;
+
+    const refreshUser = async () => {
+      if (authLoading) {
+        return;
+      }
+
+      await fetchUser();
+
+      if (!cancelled) {
+        setCheckingAccess(false);
+      }
+    };
+
+    refreshUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading]);
 
   // Redirect if not an agent
   useEffect(() => {
-    if (!authLoading && !isAgent) {
+    if (!checkingAccess && !authLoading && !isAgent) {
       navigate('/');
     }
-  }, [isAgent, authLoading, navigate]);
+  }, [checkingAccess, isAgent, authLoading, navigate]);
+
+  if (authLoading || checkingAccess) {
+    return (
+      <div className='flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900'>
+        <div className='w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin' />
+      </div>
+    );
+  }
 
   if (!isAgent) {
     return null;
