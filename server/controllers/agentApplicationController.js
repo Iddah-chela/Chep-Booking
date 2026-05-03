@@ -23,6 +23,14 @@ export const submitAgentApplication = async (req, res) => {
       return res.status(400).json({ message: 'Years of experience cannot be negative' });
     }
 
+    // Check if user is already an agent by role
+    const user = await User.findById(userId);
+    if (user && user.role === 'agent') {
+      return res.status(409).json({
+        message: 'You are already an agent! Access your dashboard at /agent',
+      });
+    }
+
     // Check if user already has an application
     const existing = await AgentApplication.findOne({ user: userId });
 
@@ -48,7 +56,7 @@ export const submitAgentApplication = async (req, res) => {
       return res.status(409).json({
         message:
           existing.status === 'approved'
-            ? 'You are already an agent!'
+            ? 'You are already an agent! Access your dashboard at /agent'
             : 'Application already submitted. Please wait for admin review.',
       });
     }
@@ -85,6 +93,17 @@ export const submitAgentApplication = async (req, res) => {
 export const getMyApplicationStatus = async (req, res) => {
   try {
     const userId = req.user._id;
+
+    // First check if user is already an agent by role
+    const user = await User.findById(userId);
+    if (user && user.role === 'agent') {
+      return res.json({
+        hasApplication: true,
+        status: 'approved',
+        isAgentByRole: true,
+        message: 'You are already an active agent!',
+      });
+    }
 
     const application = await AgentApplication.findOne({ user: userId });
 

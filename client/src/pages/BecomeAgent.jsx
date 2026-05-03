@@ -5,7 +5,7 @@ import { ChevronLeft, Plus, X, Loader, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function BecomeAgent() {
-  const { axios, getToken, navigate, user, authLoading } = useAppContext();
+  const { axios, getToken, navigate, user, authLoading, isAgent } = useAppContext();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [areas, setAreas] = useState([]);
@@ -23,8 +23,13 @@ export default function BecomeAgent() {
       navigate('/sign-up');
       return;
     }
+    // If user is already an agent, redirect to agent dashboard
+    if (isAgent) {
+      navigate('/agent');
+      return;
+    }
     checkApplicationStatus();
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, isAgent]);
 
   const checkApplicationStatus = async () => {
     try {
@@ -95,6 +100,15 @@ export default function BecomeAgent() {
       checkApplicationStatus();
     } catch (error) {
       console.error('Error submitting application:', error);
+      
+      // If 409 (conflict), user is already an agent
+      if (error.response?.status === 409) {
+        toast.error(error.response?.data?.message);
+        // Refresh user and redirect to agent dashboard
+        setTimeout(() => navigate('/agent'), 1500);
+        return;
+      }
+      
       toast.error(error.response?.data?.message || 'Failed to submit application');
     } finally {
       setSubmitting(false);
