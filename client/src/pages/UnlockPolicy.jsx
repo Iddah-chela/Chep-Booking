@@ -25,7 +25,7 @@ const UnlockPolicy = () => {
         <section>
           <h2 className='text-xl font-semibold mb-3'>Pass Options</h2>
           <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-6 space-y-4'>
-            <div className='flex items-start gap-4'>
+              <div className='flex items-start gap-4'>
               <div className='bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap'>Free Trial</div>
               <div>
                 <p className='text-gray-700'>New users may receive up to <strong>2 free property unlocks</strong> upon signing up. This lets you try the service before paying.</p>
@@ -40,7 +40,7 @@ const UnlockPolicy = () => {
             <div className='flex items-start gap-4'>
               <div className='bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap'>7-Day Pass</div>
               <div>
-                <p className='text-gray-700'><strong>Ksh 250</strong> - Full access for 7 days. Best for active house hunters comparing multiple properties.</p>
+                <p className='text-gray-700'><strong>Ksh 150</strong> - Full access for 7 days. Best for active house hunters comparing multiple properties.</p>
               </div>
             </div>
           </div>

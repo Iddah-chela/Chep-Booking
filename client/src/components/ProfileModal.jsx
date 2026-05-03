@@ -3,6 +3,7 @@ import { assets } from '../assets/assets'
 import { useAppContext } from '../context/AppContext'
 import { toast } from 'react-hot-toast'
 import { getAvatarFallback, onAvatarError } from '../utils/avatarFallback'
+import { LogOut, Trash2 } from 'lucide-react'
 
 // Preset cartoon avatars — DiceBear micah (reliable CDN)
 const AVATAR_OPTIONS = [
@@ -32,13 +33,34 @@ const makeFallbackUrl = (id) =>
     `https://api.dicebear.com/9.x/micah/svg?seed=${encodeURIComponent(id)}`
 
 const ProfileModal = ({ onClose }) => {
-    const { user, navigate, isOwner, isAdmin, logout, dbImage, setDbImage } = useAppContext()
+    const { user, navigate, isOwner, isAdmin, logout, dbImage, setDbImage, axios, getToken } = useAppContext()
     const [showPicker, setShowPicker] = useState(false)
     const [saving, setSaving] = useState(false)
 
     const handleLogout = () => {
         logout()
         onClose()
+    }
+
+    const handleDeleteAccount = async () => {
+        if (!window.confirm('Delete your account permanently? This cannot be undone.')) return
+
+        try {
+            const token = await getToken()
+            const { data } = await axios.delete('/api/profile/delete-account', {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+
+            if (data.success) {
+                toast.success('Account deleted')
+                await logout()
+                onClose()
+            } else {
+                toast.error(data.message || 'Failed to delete account')
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to delete account')
+        }
     }
 
     const handleNavigation = (path) => {
@@ -238,10 +260,16 @@ const ProfileModal = ({ onClose }) => {
                             onClick={handleLogout}
                             className='flex items-center gap-3 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all text-left text-red-600'
                         >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
+                            <LogOut className='w-5 h-5' />
                             <span className='font-medium'>Logout</span>
+                        </button>
+
+                        <button 
+                            onClick={handleDeleteAccount}
+                            className='flex items-center gap-3 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all text-left text-red-700'
+                        >
+                            <Trash2 className='w-5 h-5' />
+                            <span className='font-medium'>Delete account</span>
                         </button>
                     </div>
                 </div>

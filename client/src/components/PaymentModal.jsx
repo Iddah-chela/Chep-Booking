@@ -14,7 +14,7 @@ const PaymentModal = ({ property, onClose, onSuccess, freeReason, referralInfo, 
 
     const PASS_OPTIONS = [
         { value: '1day',  label: '1 Day',   price: 25, color: 'indigo' },
-        { value: '7day',  label: '7 Days',  price:250, color: 'purple' },
+        { value: '7day',  label: '7 Days',  price:150, color: 'purple' },
     ]
 
     // Claim free access (no phone needed)
@@ -182,7 +182,7 @@ const PaymentModal = ({ property, onClose, onSuccess, freeReason, referralInfo, 
                                 <p className="text-xs text-green-700 dark:text-green-300">
                                   {freeReason === 'referral' 
                                     ? `You have ${referralInfo?.referralUnlocksAvailable || 1} free day pass${(referralInfo?.referralUnlocksAvailable || 1) > 1 ? 'es' : ''} available — earned by referring friends.`
-                                    : "Get the owner's phone, WhatsApp, and address free for this property. Your first 2 properties are free; from the 3rd, Ksh 25/day or Ksh 250/week. Refer a friend to earn a free day."}
+                                    : "Get the owner's phone, WhatsApp, and address free for this property. Your first 2 properties are free; from the 3rd, Ksh 25/day or Ksh 150/week. Refer a friend to earn a free day."}
                                 </p>
                             </div>
 

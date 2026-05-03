@@ -1,40 +1,64 @@
 import AgentVacancy from '../models/agentVacancy.js';
 import AgentLead from '../models/agentLead.js';
-import User from '../models/user.js';
-import mongoose from 'mongoose';
+
+const toUserId = (value) => value?.toString?.() || String(value || '');
 
 // POST: Create a new vacancy
 export const postVacancy = async (req, res) => {
   try {
-    const { location, rent, roomType, availableRooms, description, amenities, photos, moveInDate } = req.body;
-    const agentId = req.user._id;
+    const {
+      title,
+      location,
+      rent,
+      roomType,
+      availableRooms,
+      description,
+      amenities,
+      photos,
+      videos,
+      moveInDate,
+      availabilityFrom,
+      availabilityTo,
+      minBookingLeadDays,
+    } = req.body;
 
-    // Validate required fields
+    const agentId = toUserId(req.user._id);
+
     if (!location?.area || !location?.city || !rent?.min || !rent?.max || !roomType || !availableRooms) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    if (rent.min < 0 || rent.max < 0 || rent.min > rent.max) {
+    if (Number(rent.min) < 0 || Number(rent.max) < 0 || Number(rent.min) > Number(rent.max)) {
       return res.status(400).json({ message: 'Invalid rent range' });
     }
 
-    if (availableRooms < 1) {
+    if (Number(availableRooms) < 1) {
       return res.status(400).json({ message: 'Available rooms must be at least 1' });
     }
 
     const vacancy = new AgentVacancy({
       agent: agentId,
+      title: String(title || '').trim(),
       location,
-      rent,
+      rent: {
+        min: Number(rent.min),
+        max: Number(rent.max),
+      },
       roomType,
-      availableRooms,
+      availableRooms: Number(availableRooms),
       description: description || '',
       amenities: amenities || [],
       photos: photos || [],
+      videos: videos || [],
       moveInDate: moveInDate ? new Date(moveInDate) : undefined,
+      availabilityFrom: availabilityFrom ? new Date(availabilityFrom) : undefined,
+      availabilityTo: availabilityTo ? new Date(availabilityTo) : undefined,
+      minBookingLeadDays: Number.isFinite(Number(minBookingLeadDays)) ? Number(minBookingLeadDays) : 2,
+      expiresAt: availabilityTo ? new Date(availabilityTo) : undefined,
     });
 
     await vacancy.save();
+
     res.status(201).json({
       message: 'Vacancy posted successfully',
       vacancy,
@@ -48,7 +72,7 @@ export const postVacancy = async (req, res) => {
 // GET: Get all agent's vacancies
 export const getAgentVacancies = async (req, res) => {
   try {
-    const agentId = req.user._id;
+    const agentId = toUserId(req.user._id);
     const { status = 'all', page = 1, limit = 10 } = req.query;
 
     const query = { agent: agentId };
@@ -56,21 +80,21 @@ export const getAgentVacancies = async (req, res) => {
       query.isActive = status === 'active';
     }
 
-    const skip = (page - 1) * limit;
+    const skip = (Number(page) - 1) * Number(limit);
     const vacancies = await AgentVacancy.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(Number(limit));
 
     const total = await AgentVacancy.countDocuments(query);
 
     res.json({
       vacancies,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: Number(page),
+        limit: Number(limit),
         total,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(total / Number(limit)),
       },
     });
   } catch (error) {
@@ -82,7 +106,11 @@ export const getAgentVacancies = async (req, res) => {
 // GET: Get single vacancy by ID
 export const getVacancyById = async (req, res) => {
   try {
-    const vacancy = await AgentVacancy.findById(req.params.id).populate('agent', 'firstName lastName email phone');
+    const vacancy = await AgentVacancy.findOne({
+      _id: req.params.id,
+      isActive: true,
+      expiresAt: { $gt: new Date() },
+    }).populate('agent', 'firstName lastName email phone');
 
     if (!vacancy) {
       return res.status(404).json({ message: 'Vacancy not found' });
@@ -99,8 +127,8 @@ export const getVacancyById = async (req, res) => {
 export const updateVacancy = async (req, res) => {
   try {
     const { id } = req.params;
-    const agentId = req.user._id;
-    const { location, rent, roomType, availableRooms, description, amenities, photos, moveInDate } = req.body;
+    const agentId = toUserId(req.user._id);
+    const { title, location, rent, roomType, availableRooms, description, amenities, photos, videos, moveInDate, availabilityFrom, availabilityTo, minBookingLeadDays } = req.body;
 
     const vacancy = await AgentVacancy.findById(id);
 
@@ -112,25 +140,32 @@ export const updateVacancy = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized to update this vacancy' });
     }
 
-    // Update allowed fields
     if (location) vacancy.location = location;
+    if (title !== undefined) vacancy.title = String(title || '').trim();
     if (rent) {
-      if (rent.min < 0 || rent.max < 0 || rent.min > rent.max) {
+      if (Number(rent.min) < 0 || Number(rent.max) < 0 || Number(rent.min) > Number(rent.max)) {
         return res.status(400).json({ message: 'Invalid rent range' });
       }
-      vacancy.rent = rent;
+      vacancy.rent = { min: Number(rent.min), max: Number(rent.max) };
     }
     if (roomType) vacancy.roomType = roomType;
-    if (availableRooms) {
-      if (availableRooms < 1) {
+    if (availableRooms !== undefined) {
+      if (Number(availableRooms) < 1) {
         return res.status(400).json({ message: 'Available rooms must be at least 1' });
       }
-      vacancy.availableRooms = availableRooms;
+      vacancy.availableRooms = Number(availableRooms);
     }
     if (description !== undefined) vacancy.description = description;
     if (amenities) vacancy.amenities = amenities;
     if (photos) vacancy.photos = photos;
-    if (moveInDate) vacancy.moveInDate = new Date(moveInDate);
+    if (videos) vacancy.videos = videos;
+    if (moveInDate !== undefined) vacancy.moveInDate = moveInDate ? new Date(moveInDate) : undefined;
+    if (availabilityFrom !== undefined) vacancy.availabilityFrom = availabilityFrom ? new Date(availabilityFrom) : undefined;
+    if (availabilityTo !== undefined) {
+      vacancy.availabilityTo = availabilityTo ? new Date(availabilityTo) : undefined;
+      vacancy.expiresAt = availabilityTo ? new Date(availabilityTo) : vacancy.expiresAt;
+    }
+    if (minBookingLeadDays !== undefined) vacancy.minBookingLeadDays = Number(minBookingLeadDays);
 
     await vacancy.save();
     res.json({ message: 'Vacancy updated successfully', vacancy });
@@ -144,7 +179,7 @@ export const updateVacancy = async (req, res) => {
 export const deleteVacancy = async (req, res) => {
   try {
     const { id } = req.params;
-    const agentId = req.user._id;
+    const agentId = toUserId(req.user._id);
 
     const vacancy = await AgentVacancy.findById(id);
 
@@ -169,7 +204,7 @@ export const deleteVacancy = async (req, res) => {
 // GET: Get all leads for agent
 export const getAgentLeads = async (req, res) => {
   try {
-    const agentId = req.user._id;
+    const agentId = toUserId(req.user._id);
     const { status = 'all', page = 1, limit = 10, unreadOnly = false } = req.query;
 
     const query = { agent: agentId };
@@ -180,23 +215,23 @@ export const getAgentLeads = async (req, res) => {
       query.isRead = false;
     }
 
-    const skip = (page - 1) * limit;
+    const skip = (Number(page) - 1) * Number(limit);
     const leads = await AgentLead.find(query)
       .populate('student', 'firstName lastName email phone')
-      .populate('vacancy', 'roomType rent location')
+      .populate('vacancy', 'title roomType rent location availabilityFrom availabilityTo minBookingLeadDays')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(Number(limit));
 
     const total = await AgentLead.countDocuments(query);
 
     res.json({
       leads,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: Number(page),
+        limit: Number(limit),
         total,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(total / Number(limit)),
       },
     });
   } catch (error) {
@@ -210,19 +245,17 @@ export const getLeadById = async (req, res) => {
   try {
     const lead = await AgentLead.findById(req.params.id)
       .populate('student', 'firstName lastName email phone')
-      .populate('vacancy', 'roomType rent location description amenities photos')
+      .populate('vacancy', 'title roomType rent location description amenities photos availabilityFrom availabilityTo minBookingLeadDays')
       .populate('agent', 'firstName lastName email phone');
 
     if (!lead) {
       return res.status(404).json({ message: 'Lead not found' });
     }
 
-    // Check authorization
-    if (lead.agent._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (lead.agent.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Unauthorized to view this lead' });
     }
 
-    // Mark as read
     if (!lead.isRead) {
       lead.isRead = true;
       await lead.save();
@@ -239,7 +272,7 @@ export const getLeadById = async (req, res) => {
 export const updateLead = async (req, res) => {
   try {
     const { id } = req.params;
-    const agentId = req.user._id;
+    const agentId = toUserId(req.user._id);
     const { status, agentNotes, contactMethod, lastContactedAt } = req.body;
 
     const lead = await AgentLead.findById(id);
@@ -269,7 +302,7 @@ export const updateLead = async (req, res) => {
 export const markLeadOutcome = async (req, res) => {
   try {
     const { id } = req.params;
-    const agentId = req.user._id;
+    const agentId = toUserId(req.user._id);
     const { outcome } = req.body;
 
     if (!outcome || !['viewed', 'booked', 'not-fit', 'no-response'].includes(outcome)) {
@@ -289,11 +322,10 @@ export const markLeadOutcome = async (req, res) => {
     lead.outcome = outcome;
     lead.outcomeMarkedAt = new Date();
     lead.markedBy = agentId;
-    lead.status = 'pending'; // Mark as reviewed
+    lead.status = 'pending';
 
     await lead.save();
 
-    // Update vacancy stats if booked
     if (outcome === 'booked') {
       await AgentVacancy.findByIdAndUpdate(lead.vacancy, { $inc: { 'stats.leadCount': 1 } });
     }
@@ -308,12 +340,13 @@ export const markLeadOutcome = async (req, res) => {
 // GET: Agent dashboard stats
 export const getAgentStats = async (req, res) => {
   try {
-    const agentId = req.user._id;
+    const agentId = toUserId(req.user._id);
+    const now = new Date();
 
     const activeVacancies = await AgentVacancy.countDocuments({
       agent: agentId,
       isActive: true,
-      expiresAt: { $gt: new Date() },
+      expiresAt: { $gt: now },
     });
 
     const totalLeads = await AgentLead.countDocuments({ agent: agentId });
@@ -323,40 +356,26 @@ export const getAgentStats = async (req, res) => {
       isRead: false,
     });
 
-    const leadOutcomes = await AgentLead.aggregate([
-      {
-        $match: {
-          agent: agentId, // Keep as string since agent field is String type
-          outcome: { $exists: true, $ne: null },
-        },
-      },
-      {
-        $group: {
-          _id: '$outcome',
-          count: { $sum: 1 },
-        },
-      },
+    const leadTypeCounts = await AgentLead.aggregate([
+      { $match: { agent: agentId } },
+      { $group: { _id: '$leadType', count: { $sum: 1 } } },
     ]);
 
-    const outcomeStats = {
-      viewed: 0,
-      booked: 0,
-      notFit: 0,
-      noResponse: 0,
+    const leadTypeStats = {
+      contact: 0,
+      viewing: 0,
+      booking: 0,
     };
 
-    leadOutcomes.forEach((item) => {
-      if (item._id === 'viewed') outcomeStats.viewed = item.count;
-      if (item._id === 'booked') outcomeStats.booked = item.count;
-      if (item._id === 'not-fit') outcomeStats.notFit = item.count;
-      if (item._id === 'no-response') outcomeStats.noResponse = item.count;
+    leadTypeCounts.forEach((item) => {
+      if (item._id && leadTypeStats[item._id] !== undefined) leadTypeStats[item._id] = item.count;
     });
 
     res.json({
       activeVacancies,
       totalLeads,
       unreadLeads,
-      outcomeStats,
+      leadTypeStats,
     });
   } catch (error) {
     console.error('Error fetching agent stats:', error);
@@ -367,16 +386,19 @@ export const getAgentStats = async (req, res) => {
 // POST: Create lead (user expresses interest in vacancy)
 export const createLead = async (req, res) => {
   try {
-    const { vacancyId, message, preferredMoveInDate, preferredRoomType } = req.body;
+    const { vacancyId, leadType = 'contact', message, preferredMoveInDate, preferredViewingDate, preferredRoomType } = req.body;
 
-    const vacancy = await AgentVacancy.findById(vacancyId);
+    const vacancy = await AgentVacancy.findOne({
+      _id: vacancyId,
+      isActive: true,
+      expiresAt: { $gt: new Date() },
+    });
     if (!vacancy) {
       return res.status(404).json({ message: 'Vacancy not found' });
     }
 
-    // Get student info
-    let studentInfo = {
-      name: req.user.firstName + ' ' + req.user.lastName,
+    const studentInfo = {
+      name: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Student',
       phone: req.user.phone || '',
       email: req.user.email || '',
     };
@@ -384,16 +406,17 @@ export const createLead = async (req, res) => {
     const lead = new AgentLead({
       agent: vacancy.agent,
       vacancy: vacancyId,
-      student: req.user._id,
+      student: toUserId(req.user._id),
       studentInfo,
       message: message || '',
+      leadType,
       preferredMoveInDate: preferredMoveInDate ? new Date(preferredMoveInDate) : undefined,
+      preferredViewingDate: preferredViewingDate ? new Date(preferredViewingDate) : undefined,
       preferredRoomType: preferredRoomType || '',
     });
 
     await lead.save();
 
-    // Increment vacancy lead count
     await AgentVacancy.findByIdAndUpdate(vacancyId, { $inc: { 'stats.leadCount': 1 } });
 
     res.status(201).json({

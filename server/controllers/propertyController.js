@@ -2,6 +2,7 @@ import Property from "../models/property.js";
 import User from "../models/user.js";
 import UserPass from "../models/userPass.js";
 import PropertyClaim from "../models/propertyClaim.js";
+import AgentVacancy from "../models/agentVacancy.js";
 import LandlordApplication from "../models/landlordApplication.js";
 import {v2 as cloudinary} from "cloudinary";
 import Subscriber from "../models/subscriber.js";
@@ -262,8 +263,47 @@ export const getAllProperties = async (req, res) => {
         obj.soonAvailableRooms = soon;
         return obj;
       });
-    
-    res.json({ success: true, properties });
+
+    // Include active agent vacancies in the public feed (agent name/contact intentionally omitted)
+    try {
+      const rawVacancies = await AgentVacancy.find({ isActive: true, expiresAt: { $gt: new Date() } })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const vacancyProps = rawVacancies.map(v => {
+        const obj = {
+          _id: v._id,
+          name: v.title || 'Agent listing',
+          images: (v.photos || []).map(p => p.url).filter(Boolean),
+          place: v.location?.city || '',
+          estate: v.location?.area || '',
+          listedRentMin: v.rent?.min ?? null,
+          listedRentMax: v.rent?.max ?? null,
+          listingTier: 'agent',
+          sourceType: 'agent',
+          agentPost: true,
+          agent: v.agent, // keep id for internal use but do not expose agent name
+          expiresAt: v.expiresAt,
+          createdAt: v.createdAt,
+          updatedAt: v.updatedAt,
+          roomType: v.roomType,
+          vacantRooms: v.availableRooms,
+          availableRooms: v.availableRooms,
+          amenities: v.amenities || [],
+          description: v.description || '',
+        };
+        return inferTierAndStatus(obj);
+      });
+
+      // Merge and sort by createdAt desc so agent vacancies appear alongside properties
+      const merged = [...properties, ...vacancyProps].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      return res.json({ success: true, properties: merged });
+    } catch (e) {
+      // If vacancy merge fails, still return properties
+      console.warn('[Feed] Failed to include agent vacancies:', e.message);
+      return res.json({ success: true, properties });
+    }
   } catch (error) {
     res.json({ success: false, message: error.message });
   }

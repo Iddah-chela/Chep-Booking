@@ -1,5 +1,10 @@
 import User from "../models/user.js";
 import cloudinary from "../config/cloudinary.js";
+import { createClerkClient } from '@clerk/express';
+
+const clerk = createClerkClient({
+    secretKey: process.env.CLERK_SECRET_KEY
+});
 
 // Upload/Update Profile Picture
 export const uploadProfilePicture = async (req, res) => {
@@ -84,5 +89,24 @@ export const getUserProfile = async (req, res) => {
         });
     } catch (error) {
         res.json({ success: false, message: error.message });
+    }
+};
+
+// Delete the signed-in user's account
+export const deleteMyAccount = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        await User.findByIdAndDelete(userId);
+
+        try {
+            await clerk.users.deleteUser(userId);
+        } catch (clerkError) {
+            console.warn('Clerk delete skipped or failed:', clerkError.message);
+        }
+
+        res.json({ success: true, message: 'Account deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 };

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const agentLeadSchema = new mongoose.Schema(
   {
     agent: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'User',
       required: true,
       index: true,
@@ -15,7 +15,7 @@ const agentLeadSchema = new mongoose.Schema(
       index: true,
     },
     student: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'User',
     },
     // Student contact info (in case not registered user)
@@ -28,7 +28,14 @@ const agentLeadSchema = new mongoose.Schema(
       type: String,
       maxlength: 500,
     },
+    leadType: {
+      type: String,
+      enum: ['contact', 'viewing', 'booking'],
+      default: 'contact',
+      index: true,
+    },
     preferredMoveInDate: Date,
+    preferredViewingDate: Date,
     preferredRoomType: String,
     status: {
       type: String,
@@ -46,7 +53,7 @@ const agentLeadSchema = new mongoose.Schema(
     },
     outcomeMarkedAt: Date,
     markedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'User',
     },
     // Track agent communication

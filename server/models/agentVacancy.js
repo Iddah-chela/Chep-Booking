@@ -3,10 +3,15 @@ import mongoose from 'mongoose';
 const agentVacancySchema = new mongoose.Schema(
   {
     agent: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'User',
       required: true,
       index: true,
+    },
+    title: {
+      type: String,
+      maxlength: 120,
+      default: '',
     },
     location: {
       area: { type: String, required: true },
@@ -50,6 +55,17 @@ const agentVacancySchema = new mongoose.Schema(
       },
     ],
     moveInDate: Date,
+    availabilityFrom: {
+      type: Date,
+    },
+    availabilityTo: {
+      type: Date,
+    },
+    minBookingLeadDays: {
+      type: Number,
+      default: 2,
+      min: 0,
+    },
     expiresAt: {
       type: Date,
       required: true,

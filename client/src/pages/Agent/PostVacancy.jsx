@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { ChevronLeft, Plus, X, Loader, Link2, Image, Video } from 'lucide-react';
+import { ChevronLeft, Plus, X, Loader, Image, Video, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function PostVacancy() {
@@ -13,6 +13,7 @@ export default function PostVacancy() {
   const [mediaInput, setMediaInput] = useState('');
   const [mediaType, setMediaType] = useState('photo');
   const [formData, setFormData] = useState({
+    title: '',
     location: {
       area: '',
       city: '',
@@ -25,6 +26,9 @@ export default function PostVacancy() {
     availableRooms: '1',
     description: '',
     moveInDate: '',
+    availabilityFrom: '',
+    availabilityTo: '',
+    minBookingLeadDays: '2',
   });
 
   const handleInputChange = (e) => {
@@ -38,34 +42,36 @@ export default function PostVacancy() {
           [child]: value,
         },
       }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+      return;
     }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleAddAmenity = () => {
-    if (amenityInput.trim() && !amenities.includes(amenityInput.trim())) {
-      setAmenities([...amenities, amenityInput.trim()]);
+    const value = amenityInput.trim();
+    if (value && !amenities.includes(value)) {
+      setAmenities([...amenities, value]);
       setAmenityInput('');
     }
   };
 
   const handleRemoveAmenity = (index) => {
-    setAmenities(amenities.filter((_, i) => i !== index));
+    setAmenities(amenities.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const handleAddMedia = () => {
-    if (!mediaInput.trim()) {
+    const value = mediaInput.trim();
+    if (!value) {
       toast.error('Please enter a URL');
       return;
     }
 
-    // Basic URL validation
     try {
-      new URL(mediaInput);
+      new URL(value);
     } catch {
       toast.error('Please enter a valid URL');
       return;
@@ -76,13 +82,13 @@ export default function PostVacancy() {
         toast.error('Maximum 5 photos allowed');
         return;
       }
-      setPhotos([...photos, mediaInput.trim()]);
+      setPhotos([...photos, value]);
     } else {
       if (videos.length >= 3) {
         toast.error('Maximum 3 videos allowed');
         return;
       }
-      setVideos([...videos, mediaInput.trim()]);
+      setVideos([...videos, value]);
     }
 
     setMediaInput('');
@@ -90,18 +96,22 @@ export default function PostVacancy() {
   };
 
   const removePhoto = (index) => {
-    setPhotos(photos.filter((_, i) => i !== index));
+    setPhotos(photos.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const removeVideo = (index) => {
-    setVideos(videos.filter((_, i) => i !== index));
+    setVideos(videos.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // Validation
+      if (!formData.title.trim()) {
+        toast.error('Please add a vacancy title');
+        return;
+      }
+
       if (!formData.location.area || !formData.location.city) {
         toast.error('Please fill in location details');
         return;
@@ -112,12 +122,12 @@ export default function PostVacancy() {
         return;
       }
 
-      if (parseInt(formData.rent.min) > parseInt(formData.rent.max)) {
+      if (Number(formData.rent.min) > Number(formData.rent.max)) {
         toast.error('Minimum rent cannot be greater than maximum rent');
         return;
       }
 
-      if (!formData.availableRooms || parseInt(formData.availableRooms) < 1) {
+      if (!formData.availableRooms || Number(formData.availableRooms) < 1) {
         toast.error('Available rooms must be at least 1');
         return;
       }
@@ -126,16 +136,22 @@ export default function PostVacancy() {
       const token = await getToken();
 
       const payload = {
-        ...formData,
+        title: formData.title.trim(),
+        location: formData.location,
         rent: {
-          min: parseInt(formData.rent.min),
-          max: parseInt(formData.rent.max),
+          min: Number(formData.rent.min),
+          max: Number(formData.rent.max),
         },
-        availableRooms: parseInt(formData.availableRooms),
+        roomType: formData.roomType,
+        availableRooms: Number(formData.availableRooms),
+        description: formData.description,
         amenities,
-        photos: photos.map(url => ({ url, publicId: '' })),
-        videos: videos.map(url => ({ url, publicId: '', thumbnail: '' })),
+        photos: photos.map((url) => ({ url, publicId: '' })),
+        videos: videos.map((url) => ({ url, publicId: '', thumbnail: '' })),
         moveInDate: formData.moveInDate ? new Date(formData.moveInDate).toISOString() : undefined,
+        availabilityFrom: formData.availabilityFrom ? new Date(formData.availabilityFrom).toISOString() : undefined,
+        availabilityTo: formData.availabilityTo ? new Date(formData.availabilityTo).toISOString() : undefined,
+        minBookingLeadDays: Number(formData.minBookingLeadDays) || 2,
       };
 
       const res = await axios.post('/api/agent/vacancies', payload, {
@@ -155,8 +171,7 @@ export default function PostVacancy() {
   };
 
   return (
-    <div className='max-w-4xl mx-auto p-6 md:p-8'>
-      {/* Header */}
+    <div className='max-w-5xl mx-auto p-4 md:p-8'>
       <div className='flex items-center gap-4 mb-8'>
         <button
           onClick={() => navigate('/agent')}
@@ -166,31 +181,42 @@ export default function PostVacancy() {
         </button>
         <div>
           <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Post a Vacancy</h1>
-          <p className='text-gray-600 dark:text-gray-400 mt-1'>
-            Share your room/property details with students
-          </p>
+          <p className='text-gray-600 dark:text-gray-400 mt-1'>Share the details students need to decide quickly.</p>
         </div>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className='bg-white dark:bg-gray-800 rounded-lg p-6 md:p-8 shadow'>
-        {/* Location Section */}
+      <form onSubmit={handleSubmit} className='bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 shadow-sm border border-gray-200 dark:border-gray-700'>
+        <div className='mb-8'>
+          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Title</h2>
+          <input
+            type='text'
+            name='title'
+            placeholder='e.g. Spacious bedsitter near campus'
+            value={formData.title}
+            onChange={handleInputChange}
+            className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+          />
+        </div>
+
         <div className='mb-8'>
           <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Location</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            <input
-              type='text'
-              name='location.area'
-              placeholder='Area (e.g., Westlands, Karen)'
-              value={formData.location.area}
-              onChange={handleInputChange}
-              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-              required
-            />
+            <div className='relative'>
+              <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={18} />
+              <input
+                type='text'
+                name='location.area'
+                placeholder='Area (e.g. Annex, Huruma)'
+                value={formData.location.area}
+                onChange={handleInputChange}
+                className='w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+                required
+              />
+            </div>
             <input
               type='text'
               name='location.city'
-              placeholder='City (e.g., Nairobi)'
+              placeholder='City (e.g. Eldoret)'
               value={formData.location.city}
               onChange={handleInputChange}
               className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
@@ -199,7 +225,6 @@ export default function PostVacancy() {
           </div>
         </div>
 
-        {/* Rent Section */}
         <div className='mb-8'>
           <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Rent Range</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -224,7 +249,6 @@ export default function PostVacancy() {
           </div>
         </div>
 
-        {/* Room Details */}
         <div className='mb-8'>
           <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Room Details</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -253,12 +277,40 @@ export default function PostVacancy() {
           </div>
         </div>
 
-        {/* Description */}
+        <div className='mb-8'>
+          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Availability Window</h2>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <input
+              type='date'
+              name='availabilityFrom'
+              value={formData.availabilityFrom}
+              onChange={handleInputChange}
+              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+            />
+            <input
+              type='date'
+              name='availabilityTo'
+              value={formData.availabilityTo}
+              onChange={handleInputChange}
+              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+            />
+            <input
+              type='number'
+              min='0'
+              name='minBookingLeadDays'
+              placeholder='Min booking lead days'
+              value={formData.minBookingLeadDays}
+              onChange={handleInputChange}
+              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+            />
+          </div>
+        </div>
+
         <div className='mb-8'>
           <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Description</h2>
           <textarea
             name='description'
-            placeholder='Describe the room/property (optional)'
+            placeholder='Describe the room or property'
             value={formData.description}
             onChange={handleInputChange}
             rows='5'
@@ -266,16 +318,15 @@ export default function PostVacancy() {
           />
         </div>
 
-        {/* Amenities */}
         <div className='mb-8'>
           <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Amenities</h2>
           <div className='flex gap-2 mb-4'>
             <input
               type='text'
-              placeholder='Add amenity (e.g., WiFi, Kitchen)'
+              placeholder='Add amenity (e.g. WiFi, Kitchen)'
               value={amenityInput}
               onChange={(e) => setAmenityInput(e.target.value)}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   handleAddAmenity();
@@ -314,52 +365,42 @@ export default function PostVacancy() {
           )}
         </div>
 
-        {/* Move-in Date */}
-        <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Move-in Date</h2>
-          <input
-            type='date'
-            name='moveInDate'
-            value={formData.moveInDate}
-            onChange={handleInputChange}
-            className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-          />
-        </div>
-
-        {/* Photos Upload */}
         <div className='mb-8'>
           <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2'>
             <Image size={20} />
             Photos ({photos.length}/5)
           </h2>
-          <div className='bg-gray-50 dark:bg-gray-700/50 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500 transition-colors'>
-            <label className='cursor-pointer'>
-              <div className='flex flex-col items-center gap-2'>
-                <Upload className='text-gray-400' size={32} />
-                <p className='text-sm text-gray-600 dark:text-gray-400'>Click to upload or drag & drop photos</p>
-                <p className='text-xs text-gray-500 dark:text-gray-500'>PNG, JPG, WebP up to 5MB each (Max 5 files)</p>
-              </div>
-              <input
-                type='file'
-                multiple
-                accept='image/*'
-                onChange={handlePhotoUpload}
-                disabled={uploadingMedia}
-                className='hidden'
-              />
-            </label>
+          <div className='grid grid-cols-1 md:grid-cols-4 gap-3'>
+            <select
+              value={mediaType}
+              onChange={(e) => setMediaType(e.target.value)}
+              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg'
+            >
+              <option value='photo'>Photo</option>
+              <option value='video'>Video</option>
+            </select>
+            <input
+              type='url'
+              placeholder='Paste photo or video URL'
+              value={mediaInput}
+              onChange={(e) => setMediaInput(e.target.value)}
+              className='md:col-span-2 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+            />
+            <button
+              type='button'
+              onClick={handleAddMedia}
+              className='bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors'
+            >
+              <Plus size={18} />
+              Add
+            </button>
           </div>
 
-          {/* Photo Preview */}
           {photos.length > 0 && (
             <div className='grid grid-cols-2 md:grid-cols-5 gap-4 mt-4'>
               {photos.map((photo, index) => (
                 <div key={index} className='relative group'>
-                  <img
-                    src={photo}
-                    alt={`Photo ${index + 1}`}
-                    className='w-full h-24 object-cover rounded-lg'
-                  />
+                  <img src={photo} alt={`Photo ${index + 1}`} className='w-full h-24 object-cover rounded-lg' />
                   <button
                     type='button'
                     onClick={() => removePhoto(index)}
@@ -373,40 +414,18 @@ export default function PostVacancy() {
           )}
         </div>
 
-        {/* Videos Upload */}
         <div className='mb-8'>
           <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2'>
             <Video size={20} />
             Videos ({videos.length}/3)
           </h2>
-          <div className='bg-gray-50 dark:bg-gray-700/50 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500 transition-colors'>
-            <label className='cursor-pointer'>
-              <div className='flex flex-col items-center gap-2'>
-                <Upload className='text-gray-400' size={32} />
-                <p className='text-sm text-gray-600 dark:text-gray-400'>Click to upload or drag & drop videos</p>
-                <p className='text-xs text-gray-500 dark:text-gray-500'>MP4, WebM up to 100MB each (Max 3 files)</p>
-              </div>
-              <input
-                type='file'
-                multiple
-                accept='video/*'
-                onChange={handleVideoUpload}
-                disabled={uploadingMedia}
-                className='hidden'
-              />
-            </label>
-          </div>
+          <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>Paste a direct video URL for now.</p>
 
-          {/* Video Preview */}
           {videos.length > 0 && (
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-4'>
               {videos.map((video, index) => (
                 <div key={index} className='relative group'>
-                  <video
-                    src={video}
-                    className='w-full h-32 object-cover rounded-lg bg-black'
-                    controls
-                  />
+                  <video src={video} className='w-full h-32 object-cover rounded-lg bg-black' controls />
                   <button
                     type='button'
                     onClick={() => removeVideo(index)}
@@ -420,7 +439,6 @@ export default function PostVacancy() {
           )}
         </div>
 
-        {/* Submit Button */}
         <div className='flex gap-4'>
           <button
             type='submit'
