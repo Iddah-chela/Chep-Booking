@@ -38,6 +38,7 @@ const AdminAgentApplications = lazy(() => import('./pages/Admin/AdminAgentApplic
 const AgentLayout     = lazy(() => import('./pages/Agent/AgentLayout'))
 const AgentDashboard  = lazy(() => import('./pages/Agent/AgentDashboard'))
 const PostVacancy     = lazy(() => import('./pages/Agent/PostVacancy'))
+const EditVacancy     = lazy(() => import('./pages/Agent/EditVacancy'))
 const LeadInbox       = lazy(() => import('./pages/Agent/LeadInbox'))
 const BecomeAgent     = lazy(() => import('./pages/BecomeAgent'))
 const Terms           = lazy(() => import('./pages/Terms'))
@@ -143,6 +144,7 @@ const App = () => {
           <Route path='/agent' element={<AgentLayout/>}>
               <Route index element={<AgentDashboard/>}/>
               <Route path='post-vacancy' element={<PostVacancy/>}/>
+              <Route path='vacancies/:id/edit' element={<EditVacancy/>}/>
               <Route path='leads' element={<LeadInbox/>}/>
               <Route path='analytics' element={<Navigate to='/agent' replace/>}/>
           </Route>
