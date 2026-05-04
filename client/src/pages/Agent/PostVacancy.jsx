@@ -325,12 +325,12 @@ export default function PostVacancy() {
           <div className='flex items-start justify-between mb-4'>
             <div>
               <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>Availability Window</h2>
-              <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>When can students move in? (Optional)</p>
+              <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>Use this to show when the vacancy opens and the last date someone can move in. (Optional)</p>
             </div>
           </div>
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
             <div>
-              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Earliest Move-In</label>
+              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Available From</label>
               <input
                 type='date'
                 name='availabilityFrom'
@@ -342,7 +342,7 @@ export default function PostVacancy() {
               <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Students can move in on or after this date</p>
             </div>
             <div>
-              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Latest Move-In</label>
+              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Move-In Deadline</label>
               <input
                 type='date'
                 name='availabilityTo'
@@ -351,7 +351,7 @@ export default function PostVacancy() {
                 className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
                 title='The latest date a student can move in'
               />
-              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Latest date to secure the room</p>
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Last date a student can move in before this vacancy is no longer considered current</p>
             </div>
             <div>
               <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Min Days Notice</label>

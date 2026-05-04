@@ -4,25 +4,15 @@ import { Home, LayoutGrid, Bell } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 export default function AgentLayout() {
-  const { isAgent, navigate, fetchUser, authLoading } = useAppContext();
+  const { isAgent, navigate, authLoading } = useAppContext();
   const [checkingAccess, setCheckingAccess] = useState(true);
   const location = useLocation();
 
   useEffect(() => {
-    let cancelled = false;
-
-    const refreshUser = async () => {
-      if (authLoading) return;
-      await fetchUser();
-      if (!cancelled) setCheckingAccess(false);
-    };
-
-    refreshUser();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, fetchUser]);
+    if (!authLoading) {
+      setCheckingAccess(false);
+    }
+  }, [authLoading]);
 
   useEffect(() => {
     if (!checkingAccess && !authLoading && !isAgent) {

@@ -443,6 +443,10 @@ const PropertyDetails = () => {
 
   const listingTier = String(property?.listingTier || '').toLowerCase()
   const hasRoomGrid = Array.isArray(property.buildings) && property.buildings.length > 0
+  const isAgentListing =
+    String(property?.sourceType || '').toLowerCase() === 'agent' ||
+    listingTier === 'agent' ||
+    !!property?.agentPost
   const isPartnerListing =
     String(property?.sourceType || '').toLowerCase() === 'field_list' ||
     listingTier === 'directory' ||
@@ -467,7 +471,9 @@ const PropertyDetails = () => {
     !!property?.isVerified &&
     String(property?.owner?.role || '').toLowerCase() === 'admin'
   const listingTierLabel =
-    property?.listingTier === 'live'
+    isAgentListing
+      ? 'Agent Listing'
+      : property?.listingTier === 'live'
       ? 'Live'
       : property?.listingTier === 'claimed'
         ? 'Owner Updating Details'
@@ -484,6 +490,14 @@ const PropertyDetails = () => {
   const manageRoute = userClaimRole === 'caretaker' ? '/managed-properties' : '/owner/list-room'
   const manageLabel = userClaimRole === 'caretaker' ? 'Manage Houses' : 'My Listings'
   const hasUnlockAccess = isUnlocked || isAdmin
+  const agentContactName = String(property?.agentName || property?.landlordName || property?.owner?.username || 'Agent').trim()
+  const agentContactPhone = String(property?.agentPhone || property?.contact || property?.whatsappNumber || '').trim()
+  const agentContactEmail = String(property?.agentEmail || property?.owner?.email || '').trim()
+  const agentMapsQuery = encodeURIComponent(`${property.estate || ''} ${property.place || ''}`.trim() || property.name || 'Kenya')
+  const hasAgentCoordinates = Number.isFinite(Number(property?.location?.coordinates?.latitude)) && Number.isFinite(Number(property?.location?.coordinates?.longitude))
+  const agentMapsEmbedUrl = hasAgentCoordinates
+    ? `https://www.google.com/maps?q=${property.location.coordinates.latitude},${property.location.coordinates.longitude}&z=15&output=embed`
+    : `https://www.google.com/maps?q=${agentMapsQuery}&z=15&output=embed`
   const roomPrices = []
   ;(property?.buildings || []).forEach((building) => {
     ;(building?.grid || []).forEach((row) => {
@@ -501,6 +515,19 @@ const PropertyDetails = () => {
   const propertyPriceMin = derivedMinPrice ?? fallbackMinPrice
   const propertyPriceMax = derivedMaxPrice ?? fallbackMaxPrice ?? propertyPriceMin
   const hasPropertyPrice = Number(propertyPriceMin || 0) > 0
+  const agentActionRoom = isAgentListing ? {
+    buildingId: 'agent-listing',
+    buildingName: property.name,
+    row: 0,
+    col: 0,
+    roomType: property.roomType || 'vacancy',
+    pricePerMonth: propertyPriceMin || propertyPriceMax || 0,
+    amenities: property.amenities || [],
+    isVacant: true,
+    isMoveOutSoon: !!property.availabilityFrom || !!property.moveInDate,
+    availableFrom: property.availabilityFrom || property.moveInDate || null,
+    isBooked: false,
+  } : null
   const compoundRoadSurface = String(property?.compoundRoadSurface || '').toLowerCase() === 'murram' ? 'murram' : 'tarmac'
   const isMurramRoad = compoundRoadSurface === 'murram'
   const compoundRoadBgClass = isMurramRoad ? 'bg-[#b08968] dark:bg-[#8a6a4e]' : 'bg-gray-500 dark:bg-gray-600'
@@ -509,6 +536,14 @@ const PropertyDetails = () => {
   // Informational mode fallback for directory records with no room map.
   if (!canShowRoomGrid) {
     const image = mainImage || property.images?.[0] || assets.house1
+    const availableUnits = isAgentListing ? Math.max(1, Number(property.availableRooms || property.vacantRooms || 1)) : 0
+    const unitTiles = isAgentListing
+      ? Array.from({ length: Math.min(availableUnits, 12) }, (_, index) => ({
+          id: index + 1,
+          label: `Unit ${index + 1}`,
+          status: index === 0 ? 'Available' : 'Open',
+        }))
+      : []
     return (
       <div className='py-28 md:py-35 px-4 md:px-16 lg:px-24 xl:px-32'>
         <div className='flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6'>
@@ -539,10 +574,148 @@ const PropertyDetails = () => {
 
         <img src={image} alt='' className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700' />
 
+        {isAgentListing && (
+          <div className='mt-6 space-y-4'>
+            <div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
+              <div className='lg:col-span-2 p-5 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20'>
+                <p className='text-sm font-semibold text-indigo-900 dark:text-indigo-100'>Agent listing</p>
+                <p className='text-sm text-indigo-800 dark:text-indigo-200 mt-1'>
+                  This listing works like a normal house detail page: unlock contact details, then contact the agent, book the house, or request a viewing.
+                </p>
+                <div className='mt-4 flex flex-wrap gap-2'>
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    className='px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700'
+                  >
+                    Pay to Unlock Actions
+                  </button>
+                  <a
+                    href={hasAgentCoordinates
+                      ? `https://www.google.com/maps?q=${property.location.coordinates.latitude},${property.location.coordinates.longitude}`
+                      : `https://www.google.com/maps/search/?api=1&query=${agentMapsQuery}`}
+                    target='_blank'
+                    rel='noreferrer'
+                    className='px-4 py-2 rounded-lg border border-indigo-300 text-indigo-700 dark:text-indigo-200 dark:border-indigo-700 text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
+                  >
+                    Open in Google Maps
+                  </a>
+                </div>
+              </div>
+              <div className='p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'>
+                <p className='text-sm font-semibold text-gray-900 dark:text-white mb-2'>Quick actions</p>
+                <ul className='space-y-2 text-sm text-gray-600 dark:text-gray-300'>
+                  <li>Contact agent for clarification</li>
+                  <li>Book the house directly</li>
+                  <li>Request a viewing</li>
+                </ul>
+              </div>
+            </div>
+
+            {hasAgentCoordinates && (
+              <div className='rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'>
+                <div className='p-4 border-b border-gray-200 dark:border-gray-700'>
+                  <p className='text-sm font-semibold text-gray-900 dark:text-white'>Location map</p>
+                  <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Google Maps preview for the area where this vacancy is listed.</p>
+                </div>
+                <iframe
+                  title='Agent listing location map'
+                  src={agentMapsEmbedUrl}
+                  className='w-full h-72 border-0'
+                  loading='lazy'
+                  referrerPolicy='no-referrer-when-downgrade'
+                />
+              </div>
+            )}
+
+            {unitTiles.length > 1 && (
+              <div className='rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4'>
+                <div className='flex items-center justify-between mb-4'>
+                  <div>
+                    <p className='text-sm font-semibold text-gray-900 dark:text-white'>Availability grid</p>
+                    <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Visual grid for multiple available units in this agent post.</p>
+                  </div>
+                  <span className='text-xs px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 font-medium'>
+                    {availableUnits} units
+                  </span>
+                </div>
+                <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3'>
+                  {unitTiles.map((unit) => (
+                    <button
+                      key={unit.id}
+                      onClick={() => setShowPaymentModal(true)}
+                      className='rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 p-4 text-left hover:border-indigo-400 hover:shadow-sm transition-all'
+                    >
+                      <p className='text-xs text-gray-500 dark:text-gray-400'>{unit.label}</p>
+                      <p className='font-semibold text-gray-900 dark:text-white mt-1'>{unit.status}</p>
+                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>Tap to unlock contact, booking, and viewing actions.</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className='rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4'>
+              <div className='flex items-center justify-between gap-3 mb-4'>
+                <div>
+                  <p className='text-sm font-semibold text-gray-900 dark:text-white'>Actions</p>
+                  <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Unlock first, then contact the agent, book the house, or request a viewing.</p>
+                </div>
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className='px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700'
+                >
+                  {hasUnlockAccess ? 'Unlock Details' : 'Pay to Unlock'}
+                </button>
+              </div>
+              <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                <button
+                  onClick={() => { setSelectedRoom(agentActionRoom); setShowChat(true); }}
+                  className={`px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${hasUnlockAccess ? 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900/50 text-gray-400 cursor-not-allowed'}`}
+                  disabled={!hasUnlockAccess}
+                >
+                  Contact Agent
+                </button>
+                <button
+                  onClick={() => { setSelectedRoom(agentActionRoom); setShowViewingForm(true); }}
+                  className={`px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${hasUnlockAccess ? 'border-indigo-200 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30' : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900/50 text-gray-400 cursor-not-allowed'}`}
+                  disabled={!hasUnlockAccess}
+                >
+                  Book Viewing
+                </button>
+                <button
+                  onClick={() => { setSelectedRoom(agentActionRoom); setShowDirectApplyForm(true); }}
+                  className={`px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${hasUnlockAccess ? 'border-emerald-200 text-emerald-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30' : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900/50 text-gray-400 cursor-not-allowed'}`}
+                  disabled={!hasUnlockAccess}
+                >
+                  Book House
+                </button>
+              </div>
+            </div>
+
+            <div className='rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4'>
+              <div className='flex items-center gap-4'>
+                <img
+                  src={property.agentImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(agentContactName)}&background=e5e7eb&color=111827&bold=true`}
+                  alt=''
+                  className='w-14 h-14 rounded-full object-cover border border-gray-200 dark:border-gray-700'
+                />
+                <div className='min-w-0'>
+                  <p className='text-sm font-semibold text-gray-900 dark:text-white truncate'>{agentContactName}</p>
+                  <p className='text-xs text-gray-500 dark:text-gray-400 truncate'>Agent contact</p>
+                  {agentContactPhone && <p className='text-xs text-gray-600 dark:text-gray-300 mt-1 truncate'>{agentContactPhone}</p>}
+                  {agentContactEmail && <p className='text-xs text-gray-600 dark:text-gray-300 truncate'>{agentContactEmail}</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className='mt-6 p-5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200'>
-          <p className='font-semibold'>{listingTier === 'live' ? 'Listing Details Pending Final Update' : 'Informational Listing'}</p>
+          <p className='font-semibold'>{isAgentListing ? 'Agent posting' : listingTier === 'live' ? 'Listing Details Pending Final Update' : 'Informational Listing'}</p>
           <p className='text-sm mt-1'>
-            {listingTier === 'live'
+            {isAgentListing
+              ? 'Agent-posted vacancies are public listings. Unlock them to contact, book, or request a viewing.'
+              : listingTier === 'live'
               ? 'This listing is live but full unit grid details are still being finalized. Check back soon or follow for updates.'
               : 'This listing is not live yet. Follow it to get notified when room details and availability are published.'}
           </p>
@@ -579,7 +752,7 @@ const PropertyDetails = () => {
             >
               {alertSubmitting ? 'Saving...' : 'Notify Me'}
             </button>
-            {property.listingTier === 'directory' && (
+            {(property.listingTier === 'directory' && !isAgentListing) && (
               user ? (
                 <button
                   onClick={() => setShowClaimForm((s) => !s)}
@@ -1335,7 +1508,7 @@ const PropertyDetails = () => {
                     
                     {!isPartnerListing && !isAdminManagedWithoutSteward && (
                       <button 
-                        onClick={() => setShowChat(true)}
+                        onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); setShowChat(true); }}
                         className='px-6 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium flex items-center justify-center gap-2'
                       >
                         <MessageCircle className='w-5 h-5' /> Message Owner
@@ -1353,17 +1526,40 @@ const PropertyDetails = () => {
                       </a>
                     )}
 
-                    {(isPartnerListing || isAdminManagedWithoutSteward) && property.contact && (
+                    {(isPartnerListing || isAdminManagedWithoutSteward || isAgentListing) && (agentContactPhone || property.contact) && (
                       <a
-                        href={`tel:${String(property.contact).replace(/[^0-9+]/g, '')}`}
+                        href={`tel:${String(agentContactPhone || property.contact).replace(/[^0-9+]/g, '')}`}
                         className='px-6 py-3 rounded-lg border-2 border-gray-400 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all inline-flex items-center justify-center gap-2 font-medium'
                       >
-                        <Smartphone className='w-5 h-5' /> {isAdminVerifiedNoStewardLive ? 'Call Owner (Confirm Availability)' : 'Call Owner'}
+                        <Smartphone className='w-5 h-5' /> {isAgentListing ? 'Call Agent' : (isAdminVerifiedNoStewardLive ? 'Call Owner (Confirm Availability)' : 'Call Owner')}
                       </a>
                     )}
 
-                    {(isPartnerListing || isAdminManagedWithoutSteward) && (
+                    {(isPartnerListing || isAdminManagedWithoutSteward || isAgentListing) && (
                       <p className='text-xs text-amber-700 dark:text-amber-300'>Use WhatsApp or Call to confirm current availability before requesting viewing.</p>
+                    )}
+
+                    {isAgentListing && (
+                      <>
+                        <button
+                          onClick={() => { setSelectedRoom(agentActionRoom); setShowChat(true); }}
+                          className='px-6 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all font-semibold flex items-center justify-center gap-2'
+                        >
+                          <MessageCircle className='w-5 h-5' /> Contact Agent
+                        </button>
+                        <button
+                          onClick={() => { setSelectedRoom(agentActionRoom); setShowViewingForm(true); }}
+                          className='px-6 py-3 rounded-lg border-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all font-semibold'
+                        >
+                          Book Viewing
+                        </button>
+                        <button
+                          onClick={() => { setSelectedRoom(agentActionRoom); setShowDirectApplyForm(true); }}
+                          className='px-6 py-3 rounded-lg border-2 border-emerald-600 text-emerald-700 dark:text-emerald-400 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all font-semibold'
+                        >
+                          Book House
+                        </button>
+                      </>
                     )}
 
                     {/* Share & Earn (also visible when unlocked) */}
@@ -1629,7 +1825,14 @@ const PropertyDetails = () => {
                     : (property.landlordName || property.owner?.username || 'Property Owner')}
                 </p>
               </div>
-              <p className='text-gray-600 dark:text-gray-400 text-sm mt-1'>{isPartnerListing ? 'Partner Contact' : 'Property Owner'}</p>
+              <p className='text-gray-600 dark:text-gray-400 text-sm mt-1'>
+                {isAgentListing ? 'Agent Contact' : isPartnerListing ? 'Partner Contact' : 'Property Owner'}
+              </p>
+              {isAgentListing && (
+                <p className='text-gray-500 dark:text-gray-400 text-sm mt-1'>
+                  {agentContactName}{agentContactEmail ? ` · ${agentContactEmail}` : ''}
+                </p>
+              )}
               {/* <p className='text-gray-500 text-sm mt-2'>
                 Contact: {property.contact}
               </p> */}
@@ -1642,7 +1845,7 @@ const PropertyDetails = () => {
           <ViewingRequestForm 
             room={selectedRoom}
             propertyId={property._id}
-            ownerId={property.owner._id}
+            ownerId={property.owner?._id || property.agent || property.agentId || ''}
             onClose={() => setShowViewingForm(false)}
             onSuccess={() => {
               setShowViewingForm(false)
@@ -1655,7 +1858,7 @@ const PropertyDetails = () => {
           <ViewingRequestForm 
             room={selectedRoom}
             propertyId={property._id}
-            ownerId={property.owner._id}
+            ownerId={property.owner?._id || property.agent || property.agentId || ''}
             isDirectApply={true}
             onClose={() => setShowDirectApplyForm(false)}
             onSuccess={() => {
@@ -1669,7 +1872,13 @@ const PropertyDetails = () => {
           <ChatInterface 
             room={selectedRoom}
             propertyId={property._id}
-            houseOwner={property.owner} 
+            houseOwner={property.owner || (isAgentListing ? {
+              _id: property.agent || property.agentId || '',
+              username: agentContactName,
+              image: property.agentImage || '',
+              email: agentContactEmail,
+              phoneNumber: agentContactPhone,
+            } : property.owner)} 
             onClose={() => setShowChat(false)} 
           />
         )}
@@ -1678,7 +1887,7 @@ const PropertyDetails = () => {
           <ReportModal
             type="listing"
             itemId={property._id}
-            userId={property.owner._id}
+            userId={property.owner?._id || property.agent || property.agentId || ''}
             onClose={() => setShowReportModal(false)}
           />
         )}
@@ -1699,6 +1908,59 @@ const PropertyDetails = () => {
             property={property}
             guestMode={true}
             onClose={() => setShowGuestPayment(false)}
+            onSuccess={handlePaymentSuccess}
+          />
+        )}
+
+        {showViewingForm && selectedRoom && (
+          <ViewingRequestForm 
+            room={selectedRoom}
+            propertyId={property._id}
+            ownerId={property.owner?._id || property.agent || property.agentId || ''}
+            onClose={() => setShowViewingForm(false)}
+            onSuccess={() => {
+              setShowViewingForm(false)
+              toast.success('Viewing request sent!')
+            }}
+          />
+        )}
+
+        {showDirectApplyForm && selectedRoom && (
+          <ViewingRequestForm 
+            room={selectedRoom}
+            propertyId={property._id}
+            ownerId={property.owner?._id || property.agent || property.agentId || ''}
+            isDirectApply={true}
+            onClose={() => setShowDirectApplyForm(false)}
+            onSuccess={() => {
+              setShowDirectApplyForm(false)
+              toast.success('Application submitted!')
+            }}
+          />
+        )}
+
+        {showChat && selectedRoom && (
+          <ChatInterface 
+            room={selectedRoom}
+            propertyId={property._id}
+            houseOwner={property.owner || (isAgentListing ? {
+              _id: property.agent || property.agentId || '',
+              username: agentContactName,
+              image: property.agentImage || '',
+              email: agentContactEmail,
+              phoneNumber: agentContactPhone,
+            } : property.owner)} 
+            onClose={() => setShowChat(false)} 
+          />
+        )}
+
+        {showPaymentModal && (
+          <PaymentModal
+            property={property}
+            freeReason={freeReason}
+            referralInfo={referralInfo}
+            isFreeUnlockProp={isFreeUnlock}
+            onClose={() => setShowPaymentModal(false)}
             onSuccess={handlePaymentSuccess}
           />
         )}

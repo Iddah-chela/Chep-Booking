@@ -31,7 +31,7 @@ const NotificationBell = ({ isScrolled }) => {
                 setUnread(data.unreadCount)
             }
         } catch (_) {}
-    }, [user])
+    }, [user, getToken, axios])
 
     // Poll every 30 seconds when logged in
     useEffect(() => {

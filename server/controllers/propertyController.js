@@ -324,12 +324,21 @@ export const getPropertyById = async (req, res) => {
       if (!vacancy) {
         return res.json({ success: false, message: "Property not found" });
       }
+
+      const agentUser = vacancy.agent
+        ? await User.findById(vacancy.agent).select('username image email phoneNumber').lean()
+        : null;
       
       // Convert agent vacancy to property-like object
       property = {
         _id: vacancy._id,
         name: vacancy.title || 'Vacancy Listing',
         images: (vacancy.photos || []).map(p => p.url).filter(Boolean),
+        location: {
+          area: vacancy.location?.area || '',
+          city: vacancy.location?.city || '',
+          coordinates: vacancy.location?.coordinates || {},
+        },
         place: vacancy.location?.city || '',
         estate: vacancy.location?.area || '',
         listedRentMin: vacancy.rent?.min ?? null,
@@ -338,6 +347,13 @@ export const getPropertyById = async (req, res) => {
         sourceType: 'agent',
         agentPost: true,
         agent: vacancy.agent,
+        agentName: agentUser?.username || 'Agent',
+        agentImage: agentUser?.image || '',
+        agentEmail: agentUser?.email || '',
+        agentPhone: agentUser?.phoneNumber || '',
+        contact: agentUser?.phoneNumber || '',
+        whatsappNumber: agentUser?.phoneNumber || '',
+        landlordName: agentUser?.username || 'Agent',
         description: vacancy.description || '',
         roomType: vacancy.roomType,
         availableRooms: vacancy.availableRooms,

@@ -63,7 +63,7 @@ export const AppProvider = ({children})=>{
     const toggleDarkMode = () => setDarkMode(prev => !prev);
 
     // Get token from Clerk
-    const getToken = async () => {
+    const getToken = useCallback(async () => {
         try {
             if (!clerkUser) {
                 return null;
@@ -79,7 +79,7 @@ export const AppProvider = ({children})=>{
         } catch (error) {
             return null
         }
-    }
+    }, [clerkUser, clerkGetToken])
 
     const fetchRooms = useCallback(async () =>{
         try {
@@ -93,7 +93,7 @@ export const AppProvider = ({children})=>{
         }
     }, [])
 
-    const fetchUser = async () => {
+    const fetchUser = useCallback(async () => {
         try {
             
             const token = await getToken()
@@ -173,7 +173,7 @@ export const AppProvider = ({children})=>{
            setIsCaretaker(false);
            setAuthLoading(false);
         }
-    }
+    }, [getToken, axios])
 
     // Logout function
     const logout = async () => {
