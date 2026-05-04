@@ -95,6 +95,19 @@ export const protect = async (req, res, next)=>{
                 // Non-critical, skip
             }
         }
+
+        // Keep MongoDB role aligned with Clerk metadata so dashboard access survives refreshes.
+        try {
+            const clerkUser = await clerk.users.getUser(userId);
+            const clerkRole = clerkUser?.publicMetadata?.role;
+            const validRoles = new Set(['user', 'agent', 'houseOwner', 'admin']);
+            if (validRoles.has(clerkRole) && user.role !== clerkRole) {
+                user.role = clerkRole;
+                await user.save();
+            }
+        } catch (clerkErr) {
+            // Non-critical; keep the role from MongoDB if Clerk is unavailable.
+        }
         
         const now = new Date();
         const lastSeenAt = user.lastSeenAt ? new Date(user.lastSeenAt) : null;

@@ -615,7 +615,7 @@ const PropertyDetails = () => {
               {listingTierLabel.toUpperCase()}
             </span>
             <span className='px-4 py-2 rounded-full text-sm font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300'>
-              {property.vacancyStatus === 'unknown' ? 'AVAILABILITY NOT CONFIRMED' : (property.vacancyStatus || 'available').toUpperCase()}
+              {isAgentListing ? 'AGENT LISTING' : property.vacancyStatus === 'unknown' ? 'AVAILABILITY NOT CONFIRMED' : (property.vacancyStatus || 'available').toUpperCase()}
             </span>
           </div>
         </div>
@@ -735,31 +735,33 @@ const PropertyDetails = () => {
                   className={`px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${hasUnlockAccess ? 'border-emerald-200 text-emerald-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30' : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900/50 text-gray-400 cursor-not-allowed'}`}
                   disabled={!hasUnlockAccess}
                 >
-                  Book House
+                  {isAgentListing ? 'Reserve Room' : 'Book House'}
                 </button>
               </div>
             </div>
 
-            <div className='rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4'>
-              <div className='flex items-center gap-4'>
-                <img
-                  src={property.agentImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(agentContactName)}&background=e5e7eb&color=111827&bold=true`}
-                  alt=''
-                  className='w-14 h-14 rounded-full object-cover border border-gray-200 dark:border-gray-700'
-                />
-                <div className='min-w-0'>
-                  <p className='text-sm font-semibold text-gray-900 dark:text-white truncate'>{agentContactName}</p>
-                  <p className='text-xs text-gray-500 dark:text-gray-400 truncate'>Agent contact</p>
-                  {agentContactPhone && <p className='text-xs text-gray-600 dark:text-gray-300 mt-1 truncate'>{agentContactPhone}</p>}
-                  {agentContactEmail && <p className='text-xs text-gray-600 dark:text-gray-300 truncate'>{agentContactEmail}</p>}
+            {!isAgentListing && (
+              <div className='rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4'>
+                <div className='flex items-center gap-4'>
+                  <img
+                    src={property.agentImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(agentContactName)}&background=e5e7eb&color=111827&bold=true`}
+                    alt=''
+                    className='w-14 h-14 rounded-full object-cover border border-gray-200 dark:border-gray-700'
+                  />
+                  <div className='min-w-0'>
+                    <p className='text-sm font-semibold text-gray-900 dark:text-white truncate'>{agentContactName}</p>
+                    <p className='text-xs text-gray-500 dark:text-gray-400 truncate'>Listing contact</p>
+                    {agentContactPhone && <p className='text-xs text-gray-600 dark:text-gray-300 mt-1 truncate'>{agentContactPhone}</p>}
+                    {agentContactEmail && <p className='text-xs text-gray-600 dark:text-gray-300 truncate'>{agentContactEmail}</p>}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
         <div className='mt-6 p-5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200'>
-          <p className='font-semibold'>{isAgentListing ? 'Agent posting' : listingTier === 'live' ? 'Listing Details Pending Final Update' : 'Informational Listing'}</p>
+            <p className='font-semibold'>{isAgentListing ? 'Agent posting' : listingTier === 'live' ? 'Listing Details Pending Final Update' : 'Informational Listing'}</p>
           <p className='text-sm mt-1'>
             {isAgentListing
               ? 'Agent-posted vacancies are public listings. Unlock them to contact, book, or request a viewing.'
@@ -1559,11 +1561,11 @@ const PropertyDetails = () => {
                         onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); setShowChat(true); }}
                         className='px-6 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium flex items-center justify-center gap-2'
                       >
-                        <MessageCircle className='w-5 h-5' /> Message Owner
+                        <MessageCircle className='w-5 h-5' /> {isAgentListing ? 'Contact Listing' : 'Message Owner'}
                       </button>
                     )}
                     
-                    {property.whatsappNumber && (
+                    {!isAgentListing && property.whatsappNumber && (
                       <a
                         href={`https://wa.me/${property.whatsappNumber.replace(/[^0-9]/g, '')}?text=Hi, I'm interested in your ${selectedRoom.roomType} room at ${property.name}. Please confirm if it is currently available.`}
                         target="_blank"
@@ -1579,7 +1581,7 @@ const PropertyDetails = () => {
                         href={`tel:${String(agentContactPhone || property.contact).replace(/[^0-9+]/g, '')}`}
                         className='px-6 py-3 rounded-lg border-2 border-gray-400 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all inline-flex items-center justify-center gap-2 font-medium'
                       >
-                        <Smartphone className='w-5 h-5' /> {isAgentListing ? 'Call Agent' : (isAdminVerifiedNoStewardLive ? 'Call Owner (Confirm Availability)' : 'Call Owner')}
+                        <Smartphone className='w-5 h-5' /> {isAgentListing ? 'Call Listing' : (isAdminVerifiedNoStewardLive ? 'Call Owner (Confirm Availability)' : 'Call Owner')}
                       </a>
                     )}
 
@@ -1725,7 +1727,7 @@ const PropertyDetails = () => {
                     <div className='relative'>
                       <div className='blur-sm pointer-events-none opacity-50'>
                         <button className='w-full px-6 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 font-medium flex items-center justify-center gap-2'>
-                          <MessageCircle className='w-5 h-5' /> Message Owner
+                          <MessageCircle className='w-5 h-5' /> {isAgentListing ? 'Contact Listing' : 'Message Owner'}
                         </button>
                       </div>
                       <div className='absolute inset-0 flex items-center justify-center'>
@@ -1850,14 +1852,11 @@ const PropertyDetails = () => {
                     : (property.landlordName || property.owner?.username || 'Property Owner')}
                 </p>
               </div>
-              <p className='text-gray-600 dark:text-gray-400 text-sm mt-1'>
-                {isAgentListing ? 'Agent Contact' : isPartnerListing ? 'Partner Contact' : 'Property Owner'}
-              </p>
-              {isAgentListing && (
-                <p className='text-gray-500 dark:text-gray-400 text-sm mt-1'>
-                  {agentContactName}{agentContactEmail ? ` · ${agentContactEmail}` : ''}
-                </p>
-              )}
+                {!isAgentListing && (
+                  <p className='text-gray-600 dark:text-gray-400 text-sm mt-1'>
+                    {isPartnerListing ? 'Partner Contact' : 'Property Owner'}
+                  </p>
+                )}
               {/* <p className='text-gray-500 text-sm mt-2'>
                 Contact: {property.contact}
               </p> */}

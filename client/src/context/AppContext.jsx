@@ -121,9 +121,10 @@ export const AppProvider = ({children})=>{
                 return;
             }
             
-            const ownerStatus = data.role === "houseOwner" || data.role === "admin";
-            const adminStatus = data.role === "admin";
-            const agentStatus = data.role === "agent";
+            const clerkRole = clerkUser?.publicMetadata?.role;
+            const ownerStatus = data.role === "houseOwner" || data.role === "admin" || clerkRole === "houseOwner" || clerkRole === "admin";
+            const adminStatus = data.role === "admin" || clerkRole === "admin";
+            const agentStatus = data.role === "agent" || clerkRole === "agent";
             const caretakerStatus = !!data.isCaretaker;
             setIsOwner(ownerStatus);
             setIsAdmin(adminStatus);
