@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { ChevronLeft, Plus, X, Loader, Image, Video, MapPin, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
+import GridHelper, { sampleBuildingJson } from './_gridHelper';
 
 export default function PostVacancy() {
   const { axios, getToken, navigate } = useAppContext();
@@ -60,6 +61,17 @@ export default function PostVacancy() {
     }
   };
 
+  // Prefill sample building JSON when toggling editor on first open
+  const toggleGridEditor = () => {
+    setShowGridEditor((s) => {
+      const next = !s;
+      if (next && !buildingsJson) {
+        setBuildingsJson(sampleBuildingJson);
+      }
+      return next;
+    });
+  };
+
   const handleRemoveAmenity = (index) => {
     setAmenities(amenities.filter((_, itemIndex) => itemIndex !== index));
   };
@@ -107,12 +119,19 @@ export default function PostVacancy() {
         formDataUpload.append('file', file);
         formDataUpload.append('upload_preset', 'agent_vacancies');
 
-        const response = await axios.post(
-          'https://api.cloudinary.com/v1_1/dq4zrrvge/auto/upload',
-          formDataUpload
-        );
+        // Use fetch for cross-origin upload to avoid global axios headers causing CORS preflight failures
+        const response = await fetch('https://api.cloudinary.com/v1_1/dq4zrrvge/auto/upload', {
+          method: 'POST',
+          body: formDataUpload,
+        });
 
-        const uploadedUrl = response.data.secure_url;
+        if (!response.ok) {
+          const text = await response.text().catch(() => '');
+          throw new Error(`Upload failed: ${response.status} ${text}`);
+        }
+
+        const responseData = await response.json();
+        const uploadedUrl = responseData.secure_url;
 
         if (mediaType === 'photo') {
           if (photos.length >= 5) {
@@ -147,6 +166,9 @@ export default function PostVacancy() {
     setVideos(videos.filter((_, itemIndex) => itemIndex !== index));
   };
 
+  const [showGridEditor, setShowGridEditor] = useState(false);
+  const [buildingsJson, setBuildingsJson] = useState('');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -176,6 +198,17 @@ export default function PostVacancy() {
         return;
       }
 
+      let parsedBuildings = [];
+      if (showGridEditor && buildingsJson.trim()) {
+        try {
+          parsedBuildings = JSON.parse(buildingsJson);
+          if (!Array.isArray(parsedBuildings)) throw new Error('Buildings should be an array');
+        } catch (err) {
+          toast.error('Invalid buildings JSON. Please check the format.');
+          return;
+        }
+      }
+
       setLoading(true);
       const token = await getToken();
 
@@ -192,6 +225,7 @@ export default function PostVacancy() {
         amenities,
         photos: photos.map((url) => ({ url, publicId: '' })),
         videos: videos.map((url) => ({ url, publicId: '', thumbnail: '' })),
+        buildings: parsedBuildings,
         moveInDate: formData.moveInDate ? new Date(formData.moveInDate).toISOString() : undefined,
         availabilityFrom: formData.availabilityFrom ? new Date(formData.availabilityFrom).toISOString() : undefined,
         availabilityTo: formData.availabilityTo ? new Date(formData.availabilityTo).toISOString() : undefined,
@@ -380,6 +414,32 @@ export default function PostVacancy() {
             rows='5'
             className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
           />
+        </div>
+
+        <div className='mb-8'>
+          <div className='flex items-center justify-between mb-2'>
+            <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>Advanced: House Grid</h2>
+            <button
+              type='button'
+              onClick={toggleGridEditor}
+              className='text-sm text-indigo-600 hover:underline'
+            >
+              {showGridEditor ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          <p className='text-sm text-gray-500 dark:text-gray-400 mb-2'>Paste building/grid JSON to author per-unit rooms (optional). Use the landlord listing format.</p>
+          {showGridEditor && (
+            <>
+              <textarea
+                placeholder='[ { id: "b1", name: "Main", rows: 2, cols: 3, grid: [[{ type: "room", roomType: "single", pricePerMonth: 8000 }]] } ]'
+                value={buildingsJson}
+                onChange={(e) => setBuildingsJson(e.target.value)}
+                rows={8}
+                className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+              />
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>Tip: Use the sample JSON as a starting point.</p>
+            </>
+          )}
         </div>
 
         <div className='mb-8'>

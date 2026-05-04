@@ -1,5 +1,29 @@
 import mongoose from 'mongoose';
 
+const cellSchema = new mongoose.Schema({
+  type: { type: String, enum: ['empty', 'room', 'common'], default: 'empty' },
+  roomType: String,
+  pricePerMonth: Number,
+  amenities: [String],
+  isVacant: Boolean,
+  isBooked: { type: Boolean, default: false },
+  isMoveOutSoon: { type: Boolean, default: false },
+  availableFrom: { type: Date, default: null }
+}, { _id: false });
+
+const buildingSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  name: { type: String, required: true },
+  rows: { type: Number, required: true },
+  cols: { type: Number, required: true },
+  grid: [[cellSchema]],
+  gatePosition: {
+    row: Number,
+    col: Number,
+    side: { type: String, enum: ['top', 'bottom', 'left', 'right'], default: 'bottom' }
+  }
+}, { _id: false });
+
 const agentVacancySchema = new mongoose.Schema(
   {
     agent: {
@@ -54,6 +78,10 @@ const agentVacancySchema = new mongoose.Schema(
         duration: Number, // Duration in seconds
       },
     ],
+    buildings: {
+      type: [buildingSchema],
+      default: []
+    },
     moveInDate: Date,
     availabilityFrom: {
       type: Date,

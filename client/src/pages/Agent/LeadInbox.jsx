@@ -17,8 +17,10 @@ export default function LeadInbox() {
   const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
+    // When viewing vacancies, also fetch recent leads so each vacancy can show its contacts
     if (tab === 'vacancies') {
       fetchVacancies();
+      fetchLeads();
     } else {
       fetchLeads();
     }
@@ -218,38 +220,26 @@ export default function LeadInbox() {
           </button>
         </div>
 
-        {/* Status Filters */}
-        <div className='mb-6 flex flex-wrap gap-2'>
-          {tab === 'vacancies'
-            ? ['all', 'open', 'contacted', 'booked', 'expired'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setStatusFilter(filter)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    statusFilter === filter
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </button>
-              ))
-            : ['all', 'new', 'contacted', 'viewed', 'pending', 'booked'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setStatusFilter(filter)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    statusFilter === filter
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </button>
-              ))}
-        </div>
+        {/* Status Filters (only for Leads tab). Vacancies intentionally show per-vacancy contacts instead of global filters */}
+        {tab === 'leads' && (
+          <div className='mb-6 flex flex-wrap gap-2'>
+            {['all', 'new', 'contacted', 'viewed', 'pending', 'booked'].map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setStatusFilter(filter)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  statusFilter === filter
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* VACANCIES TAB */}
+        {/* VACANCIES TAB - show vacancy details + expandable contacts per vacancy */}
         {tab === 'vacancies' && (
           <>
             {filteredVacancies.length === 0 ? (
@@ -259,72 +249,116 @@ export default function LeadInbox() {
               </div>
             ) : (
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                {filteredVacancies.map((vacancy) => (
-                  <div
-                    key={vacancy._id}
-                    className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow'
-                  >
-                    {/* Header with Status */}
-                    <div className='flex justify-between items-start mb-3'>
-                      <div>
-                        <h3 className='font-semibold text-gray-900 dark:text-white text-lg capitalize'>
-                          {vacancy.title || vacancy.roomType}
-                        </h3>
-                        <p className='text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1'>
-                          <MapPin size={12} />
-                          {vacancy.location?.area}, {vacancy.location?.city}
-                        </p>
+                {filteredVacancies.map((vacancy) => {
+                  const vacancyId = vacancy._id;
+                  const isOpen = openVacancyIds[vacancyId] ?? false;
+                  const group = vacancyGroups.find((g) => g.vacancy?._id === vacancyId) || { leads: [] };
+                  return (
+                    <div
+                      key={vacancyId}
+                      className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow'
+                    >
+                      <div className='flex justify-between items-start mb-3'>
+                        <div>
+                          <h3 className='font-semibold text-gray-900 dark:text-white text-lg capitalize'>
+                            {vacancy.title || vacancy.roomType}
+                          </h3>
+                          <p className='text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1'>
+                            <MapPin size={12} />
+                            {vacancy.location?.area}, {vacancy.location?.city}
+                          </p>
+                        </div>
+                        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getStatusColor(vacancy.status)}`}>
+                          {vacancy.status.charAt(0).toUpperCase() + vacancy.status.slice(1)}
+                        </span>
                       </div>
-                      <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getStatusColor(vacancy.status)}`}>
-                        {vacancy.status.charAt(0).toUpperCase() + vacancy.status.slice(1)}
-                      </span>
-                    </div>
 
-                    {/* Stats */}
-                    <div className='mb-4 p-3 bg-gray-50 dark:bg-gray-900/30 rounded-lg grid grid-cols-3 gap-2 text-center text-sm'>
-                      <div>
-                        <p className='font-semibold text-indigo-600'>{vacancy.stats?.leadCount || 0}</p>
-                        <p className='text-xs text-gray-600 dark:text-gray-400'>Leads</p>
+                      <div className='mb-4 p-3 bg-gray-50 dark:bg-gray-900/30 rounded-lg grid grid-cols-3 gap-2 text-center text-sm'>
+                        <div>
+                          <p className='font-semibold text-indigo-600'>{vacancy.stats?.leadCount || 0}</p>
+                          <p className='text-xs text-gray-600 dark:text-gray-400'>Leads</p>
+                        </div>
+                        <div>
+                          <p className='font-semibold text-indigo-600'>{vacancy.availableRooms}</p>
+                          <p className='text-xs text-gray-600 dark:text-gray-400'>Available</p>
+                        </div>
+                        <div>
+                          <p className='font-semibold text-indigo-600'>Ksh {vacancy.rent?.min?.toLocaleString()}</p>
+                          <p className='text-xs text-gray-600 dark:text-gray-400'>Min Rent</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className='font-semibold text-indigo-600'>{vacancy.availableRooms}</p>
-                        <p className='text-xs text-gray-600 dark:text-gray-400'>Available</p>
-                      </div>
-                      <div>
-                        <p className='font-semibold text-indigo-600'>Ksh {vacancy.rent?.min?.toLocaleString()}</p>
-                        <p className='text-xs text-gray-600 dark:text-gray-400'>Min Rent</p>
-                      </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className='space-y-2'>
-                      <button
-                        onClick={() => navigate(`/rooms/${vacancy._id}`)}
-                        className='w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors'
-                      >
-                        View Public Listing
-                      </button>
-                      {vacancy.status === 'contacted' && (
+                      <div className='space-y-2 mb-3'>
                         <button
-                          onClick={() => handleReopenVacancy(vacancy._id)}
-                          disabled={reopeningId === vacancy._id}
-                          className='w-full px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2'
+                          onClick={() => navigate(`/rooms/${vacancy._id}`)}
+                          className='w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors'
                         >
-                          <RotateCcw size={14} />
-                          {reopeningId === vacancy._id ? 'Reopening...' : 'Reopen'}
+                          View Public Listing
                         </button>
+                        <div className='flex gap-2'>
+                          <button
+                            onClick={() => setOpenVacancyIds((prev) => ({ ...prev, [vacancyId]: !isOpen }))}
+                            className='flex-1 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm'
+                          >
+                            {isOpen ? 'Hide Contacts' : `Show Contacts (${group.leads.length})`}
+                          </button>
+                          <button
+                            onClick={() => navigate(`/agent/vacancies/${vacancy._id}/edit`)}
+                            className='px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-lg text-sm'
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </div>
+
+                      {isOpen && (
+                        <div className='border-t border-gray-200 dark:border-gray-700 p-3'>
+                          {group.leads.length === 0 ? (
+                            <p className='text-sm text-gray-600 dark:text-gray-400'>No contacts yet for this vacancy.</p>
+                          ) : (
+                            <div className='space-y-3'>
+                              {group.leads.map((lead) => (
+                                <div key={lead._id} className='p-3 bg-gray-50 dark:bg-gray-900/30 rounded-lg flex items-center justify-between'>
+                                  <div className='text-left'>
+                                    <p className='font-semibold text-gray-900 dark:text-white'>{lead.studentInfo.name}</p>
+                                    <p className='text-xs text-gray-500 dark:text-gray-400'>{lead.leadType} • {lead.studentInfo.phone}</p>
+                                    {lead.message && <p className='text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2'>{lead.message}</p>}
+                                  </div>
+                                  <div className='flex flex-col items-end gap-2'>
+                                    <button
+                                      onClick={() => {
+                                        // Navigate to messages; agent can continue in My Chats
+                                        toast.success('Opening chat...');
+                                        navigate('/my-chats');
+                                      }}
+                                      className='px-3 py-1 bg-indigo-600 text-white rounded-md text-sm'
+                                    >
+                                      Open Chat
+                                    </button>
+                                    <a
+                                      href={`https://wa.me/?text=${encodeURIComponent(`Hi, I have a ${lead.leadType} request from ${lead.studentInfo.name} (${lead.studentInfo.phone}) for the vacancy "${vacancy.title}". Please advise.`)}`}
+                                      target='_blank'
+                                      rel='noreferrer'
+                                      className='px-3 py-1 bg-green-600 text-white rounded-md text-sm block'
+                                    >
+                                      WhatsApp to Caretaker
+                                    </a>
+                                    <button
+                                      onClick={() => setSelectedLead(lead)}
+                                      className='px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-sm'
+                                    >
+                                      Details
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
-                      <button
-                        onClick={() => handleDeleteVacancy(vacancy._id)}
-                        disabled={deletingId === vacancy._id}
-                        className='w-full px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-200 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2'
-                      >
-                        <Trash2 size={14} />
-                        {deletingId === vacancy._id ? 'Deactivating...' : 'Deactivate'}
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>

@@ -11,8 +11,6 @@ import { roomsDummyData } from "../assets/assets";
 import { resubscribeIfNeeded, subscribeToPush, isPushSupported, getPermissionState } from "../utils/pushNotifications";
 
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
-// In AppContext.jsx or axios config
-axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
 
 const AppContext = createContext();
 

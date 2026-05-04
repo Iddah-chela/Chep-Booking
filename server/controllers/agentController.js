@@ -16,6 +16,7 @@ export const postVacancy = async (req, res) => {
       amenities,
       photos,
       videos,
+      buildings,
       moveInDate,
       availabilityFrom,
       availabilityTo,
@@ -36,6 +37,16 @@ export const postVacancy = async (req, res) => {
       return res.status(400).json({ message: 'Available rooms must be at least 1' });
     }
 
+    // Parse buildings if provided as JSON string
+    let parsedBuildings = [];
+    if (buildings) {
+      try {
+        parsedBuildings = typeof buildings === 'string' ? (buildings.trim() ? JSON.parse(buildings) : []) : buildings;
+      } catch (e) {
+        return res.status(400).json({ message: 'Invalid buildings JSON' });
+      }
+    }
+
     const vacancy = new AgentVacancy({
       agent: agentId,
       title: String(title || '').trim(),
@@ -50,6 +61,7 @@ export const postVacancy = async (req, res) => {
       amenities: amenities || [],
       photos: photos || [],
       videos: videos || [],
+      buildings: parsedBuildings,
       moveInDate: moveInDate ? new Date(moveInDate) : undefined,
       availabilityFrom: availabilityFrom ? new Date(availabilityFrom) : undefined,
       availabilityTo: availabilityTo ? new Date(availabilityTo) : undefined,
@@ -128,7 +140,7 @@ export const updateVacancy = async (req, res) => {
   try {
     const { id } = req.params;
     const agentId = toUserId(req.user._id);
-    const { title, location, rent, roomType, availableRooms, description, amenities, photos, videos, moveInDate, availabilityFrom, availabilityTo, minBookingLeadDays } = req.body;
+    const { title, location, rent, roomType, availableRooms, description, amenities, photos, videos, buildings, moveInDate, availabilityFrom, availabilityTo, minBookingLeadDays } = req.body;
 
     const vacancy = await AgentVacancy.findById(id);
 
@@ -159,6 +171,13 @@ export const updateVacancy = async (req, res) => {
     if (amenities) vacancy.amenities = amenities;
     if (photos) vacancy.photos = photos;
     if (videos) vacancy.videos = videos;
+    if (buildings !== undefined) {
+      try {
+        vacancy.buildings = typeof buildings === 'string' ? (buildings.trim() ? JSON.parse(buildings) : []) : buildings;
+      } catch (e) {
+        return res.status(400).json({ message: 'Invalid buildings JSON' });
+      }
+    }
     if (moveInDate !== undefined) vacancy.moveInDate = moveInDate ? new Date(moveInDate) : undefined;
     if (availabilityFrom !== undefined) vacancy.availabilityFrom = availabilityFrom ? new Date(availabilityFrom) : undefined;
     if (availabilityTo !== undefined) {

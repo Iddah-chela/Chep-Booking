@@ -358,6 +358,7 @@ export const getPropertyById = async (req, res) => {
         roomType: vacancy.roomType,
         availableRooms: vacancy.availableRooms,
         amenities: vacancy.amenities || [],
+        buildings: vacancy.buildings || [],
         expiresAt: vacancy.expiresAt,
         moveInDate: vacancy.moveInDate,
         availabilityFrom: vacancy.availabilityFrom,
