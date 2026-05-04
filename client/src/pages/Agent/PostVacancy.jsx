@@ -120,7 +120,7 @@ export default function PostVacancy() {
         formDataUpload.append('upload_preset', 'agent_vacancies');
 
         // Use fetch for cross-origin upload to avoid global axios headers causing CORS preflight failures
-        const response = await fetch('https://api.cloudinary.com/v1_1/dq4zrrvge/auto/upload', {
+        const response = await fetch('https://api.cloudinary.com/v1_1/dnvlqseci/auto/upload', {
           method: 'POST',
           body: formDataUpload,
         });
@@ -207,6 +207,44 @@ export default function PostVacancy() {
           toast.error('Invalid buildings JSON. Please check the format.');
           return;
         }
+      }
+      // Auto-generate default building if empty and availableRooms > 0
+      if (parsedBuildings.length === 0 && Number(formData.availableRooms) > 0) {
+        const numRooms = Number(formData.availableRooms);
+        const cols = Math.min(4, Math.ceil(Math.sqrt(numRooms))); // 2-4 cols
+        const rows = Math.ceil(numRooms / cols);
+        
+        const grid = [];
+        let roomCount = 0;
+        for (let r = 0; r < rows; r++) {
+          const row = [];
+          for (let c = 0; c < cols; c++) {
+            if (roomCount < numRooms) {
+              row.push({
+                type: 'room',
+                roomNumber: `${r + 1}${String.fromCharCode(65 + c)}`,
+                roomType: formData.roomType,
+                pricePerMonth: Number(formData.rent.min),
+                amenities: amenities || [],
+                isVacant: true,
+                isMoveOutSoon: false,
+                isBooked: false,
+              });
+              roomCount++;
+            } else {
+              row.push(null);
+            }
+          }
+          grid.push(row);
+        }
+        
+        parsedBuildings = [{
+          id: 'main-building',
+          name: 'Main Building',
+          rows,
+          cols,
+          grid,
+        }];
       }
 
       setLoading(true);
