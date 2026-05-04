@@ -537,7 +537,8 @@ const PropertyDetails = () => {
   const showClaimStatusPanel = !!userClaimStatus
   const manageRoute = userClaimRole === 'caretaker' ? '/managed-properties' : '/owner/list-room'
   const manageLabel = userClaimRole === 'caretaker' ? 'Manage Houses' : 'My Listings'
-  const hasUnlockAccess = isUnlocked || isAdmin
+  const isCurrentUserAdmin = isAdmin || String(user?.publicMetadata?.role || '').toLowerCase() === 'admin'
+  const hasUnlockAccess = isUnlocked || isCurrentUserAdmin
   const agentContactName = String(property?.agentName || property?.landlordName || property?.owner?.username || 'Agent').trim()
   const agentContactPhone = String(property?.agentPhone || property?.contact || property?.whatsappNumber || '').trim()
   const agentContactEmail = String(property?.agentEmail || property?.owner?.email || '').trim()
@@ -963,7 +964,11 @@ const PropertyDetails = () => {
                     Verified by Admin
                   </div>
                 )}
-                {property.vacancyStatus === 'unknown' ? (
+                {isAgentListing ? (
+                  <div className='px-4 py-2 rounded-full text-sm font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300'>
+                    Agent Listing
+                  </div>
+                ) : property.vacancyStatus === 'unknown' ? (
                   <div className='px-4 py-2 rounded-full text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'>
                     Availability Not Confirmed
                   </div>

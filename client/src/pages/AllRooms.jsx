@@ -61,7 +61,10 @@ const AllRooms = () => {
     const tier = String(property?.listingTier || '').toLowerCase()
     const isPartnerListing =
       String(property?.sourceType || '').toLowerCase() === 'field_list' ||
+      String(property?.sourceType || '').toLowerCase() === 'agent' ||
+      !!property?.agentPost ||
       (String(property?.owner?.role || '').toLowerCase() === 'admin' && !!String(property?.landlordName || '').trim())
+    if (String(property?.sourceType || '').toLowerCase() === 'agent' || property?.agentPost || tier === 'agent') return 'Agent Listing'
     if (tier === 'live') return 'Live'
     if (tier === 'claimed') return 'Owner Updating'
     if (isPartnerListing) return 'Partner Listing'

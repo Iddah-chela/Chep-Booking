@@ -4,9 +4,11 @@ import { Home, LayoutGrid, Bell } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 export default function AgentLayout() {
-  const { isAgent, navigate, authLoading } = useAppContext();
+  const { isAgent, navigate, authLoading, user } = useAppContext();
   const [checkingAccess, setCheckingAccess] = useState(true);
   const location = useLocation();
+  const clerkRole = String(user?.publicMetadata?.role || '').toLowerCase();
+  const canAccessAgent = isAgent || clerkRole === 'agent';
 
   useEffect(() => {
     if (!authLoading) {
@@ -15,10 +17,10 @@ export default function AgentLayout() {
   }, [authLoading]);
 
   useEffect(() => {
-    if (!checkingAccess && !authLoading && !isAgent) {
+    if (!checkingAccess && !authLoading && !canAccessAgent) {
       navigate('/');
     }
-  }, [checkingAccess, isAgent, authLoading, navigate]);
+  }, [checkingAccess, canAccessAgent, authLoading, navigate]);
 
   if (authLoading || checkingAccess) {
     return (
@@ -28,7 +30,7 @@ export default function AgentLayout() {
     );
   }
 
-  if (!isAgent) {
+  if (!canAccessAgent) {
     return null;
   }
 
