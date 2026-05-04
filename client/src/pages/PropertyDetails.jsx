@@ -1587,29 +1587,6 @@ const PropertyDetails = () => {
                       <p className='text-xs text-amber-700 dark:text-amber-300'>Use WhatsApp or Call to confirm current availability before requesting viewing.</p>
                     )}
 
-                    {isAgentListing && (
-                      <>
-                        <button
-                          onClick={() => { setSelectedRoom(agentActionRoom); setShowChat(true); }}
-                          className='px-6 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all font-semibold flex items-center justify-center gap-2'
-                        >
-                          <MessageCircle className='w-5 h-5' /> Contact Agent
-                        </button>
-                        <button
-                          onClick={() => { setSelectedRoom(agentActionRoom); setShowViewingForm(true); }}
-                          className='px-6 py-3 rounded-lg border-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all font-semibold'
-                        >
-                          Book Viewing
-                        </button>
-                        <button
-                          onClick={() => { setSelectedRoom(agentActionRoom); setShowDirectApplyForm(true); }}
-                          className='px-6 py-3 rounded-lg border-2 border-emerald-600 text-emerald-700 dark:text-emerald-400 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all font-semibold'
-                        >
-                          Book House
-                        </button>
-                      </>
-                    )}
-
                     {/* Share & Earn (also visible when unlocked) */}
                     {referralInfo && (
                       <div className='p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg'>
