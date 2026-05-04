@@ -171,8 +171,9 @@ export const getMyApplication = async (req, res) => {
         const application = await LandlordApplication.findOne({ userId }).sort({ createdAt: -1 });
         
         if (!application) {
-            return res.status(404).json({
-                success: false,
+            return res.status(200).json({
+                success: true,
+                application: null,
                 message: 'No application found'
             });
         }

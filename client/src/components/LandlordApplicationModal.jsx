@@ -37,6 +37,9 @@ const LandlordApplicationModal = ({ onClose }) => {
                 }
             }
         } catch (error) {
+            if (error.response?.status !== 404) {
+                console.error('Failed to load landlord application status:', error)
+            }
             // No previous application is valid for first-time users.
         } finally {
             setCheckingStatus(false)

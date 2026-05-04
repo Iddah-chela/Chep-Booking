@@ -47,6 +47,47 @@ const PropertyDetails = () => {
     })
     const [claimEvidenceFiles, setClaimEvidenceFiles] = useState([])
 
+    const buildDefaultAgentBuildings = (listing) => {
+      const availableRooms = Math.max(1, Number(listing?.availableRooms || listing?.vacantRooms || 1))
+      const cols = Math.min(4, Math.ceil(Math.sqrt(availableRooms)))
+      const rows = Math.ceil(availableRooms / cols)
+      const roomType = listing?.roomType || 'vacancy'
+      const basePrice = Number(listing?.rent?.min || listing?.listedRentMin || 0)
+      const amenities = Array.isArray(listing?.amenities) ? listing.amenities : []
+
+      const grid = []
+      let roomCount = 0
+      for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+        const row = []
+        for (let colIndex = 0; colIndex < cols; colIndex++) {
+          if (roomCount < availableRooms) {
+            row.push({
+              type: 'room',
+              roomNumber: `${rowIndex + 1}${String.fromCharCode(65 + colIndex)}`,
+              roomType,
+              pricePerMonth: basePrice,
+              amenities,
+              isVacant: true,
+              isMoveOutSoon: false,
+              isBooked: false,
+            })
+            roomCount += 1
+          } else {
+            row.push(null)
+          }
+        }
+        grid.push(row)
+      }
+
+      return [{
+        id: 'agent-listing',
+        name: listing?.name || listing?.title || 'Main Building',
+        rows,
+        cols,
+        grid,
+      }]
+    }
+
     useEffect(()=>{
       const fetchProperty = async () => {
         try {
@@ -71,6 +112,13 @@ const PropertyDetails = () => {
           
           if(response.data.success) {
             const fetchedProperty = response.data.property
+            if (
+              fetchedProperty &&
+              (String(fetchedProperty.sourceType || '').toLowerCase() === 'agent' || fetchedProperty.agentPost) &&
+              (!Array.isArray(fetchedProperty.buildings) || fetchedProperty.buildings.length === 0)
+            ) {
+              fetchedProperty.buildings = buildDefaultAgentBuildings(fetchedProperty)
+            }
             setProperty(fetchedProperty)
             setMainImage(fetchedProperty.images[0])
           } else {

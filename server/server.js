@@ -10,7 +10,7 @@ import clerkWebhooks from "./controllers/clerkWebhooks.js";
 import userRouter from "./routes/userRoutes.js";
 import houseRouter from "./routes/houseRoutes.js";
 import propertyRouter from "./routes/propertyRoutes.js";
-import connectCloudinary from "./config/cloudinary.js";
+import { connectCloudinary } from "./config/cloudinary.js";
 import roomRouter from "./routes/roomRoutes.js";
 import bookingRouter from "./routes/bookingRoutes.js";
 import chatRouter from "./routes/chatRoutes.js";
