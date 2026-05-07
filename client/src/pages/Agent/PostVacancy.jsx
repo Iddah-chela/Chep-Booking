@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { ChevronLeft, Plus, X, Loader, Image, Video, MapPin, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
-import GridHelper, { sampleBuildingJson } from './_gridHelper';
 
 export default function PostVacancy() {
   const { axios, getToken, navigate } = useAppContext();
@@ -14,6 +13,18 @@ export default function PostVacancy() {
   const [videos, setVideos] = useState([]);
   const [mediaInput, setMediaInput] = useState('');
   const [mediaType, setMediaType] = useState('photo');
+  const [showGridEditor, setShowGridEditor] = useState(false);
+  const [buildings, setBuildings] = useState([
+    {
+      id: 'building_1',
+      name: 'Main Building',
+      rows: 1,
+      cols: 4,
+      grid: [Array(4).fill(null).map(() => ({ type: 'empty', roomType: '', pricePerMonth: 0, amenities: [], isVacant: true, isBooked: false, isMoveOutSoon: false }))],
+      gatePosition: { row: 0, col: 3, side: 'bottom' }
+    }
+  ]);
+  const [selectedCell, setSelectedCell] = useState({ buildingIndex: 0, rowIndex: 0, colIndex: 0 });
   const [formData, setFormData] = useState({
     title: '',
     location: {
@@ -26,6 +37,7 @@ export default function PostVacancy() {
     },
     roomType: 'single',
     availableRooms: '1',
+    googleMapsUrl: '',
     description: '',
     moveInDate: '',
     availabilityFrom: '',
@@ -61,15 +73,86 @@ export default function PostVacancy() {
     }
   };
 
-  // Prefill sample building JSON when toggling editor on first open
+  const createEmptyCell = () => ({
+    type: 'empty',
+    roomType: '',
+    pricePerMonth: Number(formData.rent.min || 0),
+    amenities: [],
+    isVacant: true,
+    isBooked: false,
+    isMoveOutSoon: false,
+  });
+
   const toggleGridEditor = () => {
-    setShowGridEditor((s) => {
-      const next = !s;
-      if (next && !buildingsJson) {
-        setBuildingsJson(sampleBuildingJson);
+    setShowGridEditor((s) => !s);
+  };
+
+  const addBuilding = () => {
+    const nextIndex = buildings.length + 1;
+    setBuildings((prev) => ([
+      ...prev,
+      {
+        id: `building_${nextIndex}`,
+        name: `Building ${nextIndex}`,
+        rows: 1,
+        cols: 4,
+        grid: [Array(4).fill(null).map(() => createEmptyCell())],
+        gatePosition: { row: 0, col: 3, side: 'bottom' }
       }
-      return next;
-    });
+    ]));
+  };
+
+  const resizeBuilding = (buildingIndex, type) => {
+    setBuildings((prev) => prev.map((b, idx) => {
+      if (idx !== buildingIndex) return b;
+      if (type === 'add-row') {
+        return { ...b, rows: b.rows + 1, grid: [...b.grid, Array(b.cols).fill(null).map(() => createEmptyCell())] };
+      }
+      if (type === 'remove-row' && b.rows > 1) {
+        return { ...b, rows: b.rows - 1, grid: b.grid.slice(0, -1) };
+      }
+      if (type === 'add-col') {
+        return {
+          ...b,
+          cols: b.cols + 1,
+          grid: b.grid.map((row) => [...row, createEmptyCell()]),
+        };
+      }
+      if (type === 'remove-col' && b.cols > 1) {
+        return {
+          ...b,
+          cols: b.cols - 1,
+          grid: b.grid.map((row) => row.slice(0, -1)),
+        };
+      }
+      return b;
+    }));
+  };
+
+  const cycleCellType = (buildingIndex, rowIndex, colIndex) => {
+    setBuildings((prev) => prev.map((b, idx) => {
+      if (idx !== buildingIndex) return b;
+      const nextGrid = b.grid.map((row, rIdx) => row.map((cell, cIdx) => {
+        if (rIdx !== rowIndex || cIdx !== colIndex) return cell;
+        if (cell.type === 'empty') return { ...cell, type: 'room', roomType: formData.roomType, pricePerMonth: Number(formData.rent.min || 0) };
+        if (cell.type === 'room') return { ...cell, type: 'common', roomType: '', pricePerMonth: 0 };
+        return createEmptyCell();
+      }));
+      return { ...b, grid: nextGrid };
+    }));
+    setSelectedCell({ buildingIndex, rowIndex, colIndex });
+  };
+
+  const updateSelectedRoom = (key, value) => {
+    const { buildingIndex, rowIndex, colIndex } = selectedCell;
+    setBuildings((prev) => prev.map((b, idx) => {
+      if (idx !== buildingIndex) return b;
+      const nextGrid = b.grid.map((row, rIdx) => row.map((cell, cIdx) => {
+        if (rIdx !== rowIndex || cIdx !== colIndex) return cell;
+        return { ...cell, [key]: value };
+      }));
+      return { ...b, grid: nextGrid };
+    }));
   };
 
   const handleRemoveAmenity = (index) => {
@@ -160,9 +243,6 @@ export default function PostVacancy() {
     setVideos(videos.filter((_, itemIndex) => itemIndex !== index));
   };
 
-  const [showGridEditor, setShowGridEditor] = useState(false);
-  const [buildingsJson, setBuildingsJson] = useState('');
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -193,13 +273,21 @@ export default function PostVacancy() {
       }
 
       let parsedBuildings = [];
-      if (showGridEditor && buildingsJson.trim()) {
-        try {
-          parsedBuildings = JSON.parse(buildingsJson);
-          if (!Array.isArray(parsedBuildings)) throw new Error('Buildings should be an array');
-        } catch (err) {
-          toast.error('Invalid buildings JSON. Please check the format.');
-          return;
+      if (showGridEditor) {
+        parsedBuildings = buildings.map((b) => ({
+          id: b.id,
+          name: b.name,
+          rows: b.rows,
+          cols: b.cols,
+          gatePosition: b.gatePosition,
+          grid: b.grid,
+        }));
+
+        const hasAnyRoom = parsedBuildings.some((b) =>
+          (b.grid || []).some((row) => (row || []).some((cell) => cell?.type === 'room'))
+        );
+        if (!hasAnyRoom) {
+          parsedBuildings = [];
         }
       }
       // Auto-generate default building if empty and availableRooms > 0
@@ -253,6 +341,7 @@ export default function PostVacancy() {
         },
         roomType: formData.roomType,
         availableRooms: Number(formData.availableRooms),
+        googleMapsUrl: formData.googleMapsUrl?.trim() || '',
         description: formData.description,
         amenities,
         photos: photos.map((url) => ({ url, publicId: '' })),
@@ -333,6 +422,24 @@ export default function PostVacancy() {
               required
             />
           </div>
+          <div className='mt-3 grid grid-cols-1 md:grid-cols-4 gap-3'>
+            <input
+              type='url'
+              name='googleMapsUrl'
+              placeholder='Optional Google Maps link'
+              value={formData.googleMapsUrl}
+              onChange={handleInputChange}
+              className='md:col-span-3 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+            />
+            <button
+              type='button'
+              onClick={() => window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(`${formData.location.area || ''} ${formData.location.city || ''}`.trim() || 'Kenya'), '_blank', 'noopener,noreferrer')}
+              className='px-4 py-2 border border-indigo-300 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-sm'
+            >
+              Open Maps
+            </button>
+          </div>
+          <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>Google Maps link is optional.</p>
         </div>
 
         <div className='mb-8'>
@@ -459,17 +566,76 @@ export default function PostVacancy() {
               {showGridEditor ? 'Hide' : 'Show'}
             </button>
           </div>
-          <p className='text-sm text-gray-500 dark:text-gray-400 mb-2'>Paste building/grid JSON to author per-unit rooms (optional). Use the landlord listing format.</p>
+          <p className='text-sm text-gray-500 dark:text-gray-400 mb-2'>Use the same visual grid workflow as landlord listings (optional). If you skip this, we auto-create a simple unit grid from available rooms.</p>
           {showGridEditor && (
             <>
-              <textarea
-                placeholder='[ { id: "b1", name: "Main", rows: 2, cols: 3, grid: [[{ type: "room", roomType: "single", pricePerMonth: 8000 }]] } ]'
-                value={buildingsJson}
-                onChange={(e) => setBuildingsJson(e.target.value)}
-                rows={8}
-                className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-              />
-              <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>Tip: Use the sample JSON as a starting point.</p>
+              <div className='flex flex-wrap gap-2 mb-3'>
+                <button type='button' onClick={addBuilding} className='px-3 py-1.5 text-sm rounded border border-indigo-300 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'>Add Building</button>
+              </div>
+              <div className='space-y-4'>
+                {buildings.map((building, bIdx) => (
+                  <div key={building.id} className='p-3 rounded-lg border border-gray-200 dark:border-gray-700'>
+                    <div className='flex flex-wrap items-center gap-2 mb-3'>
+                      <input
+                        value={building.name}
+                        onChange={(e) => setBuildings((prev) => prev.map((b, i) => i === bIdx ? { ...b, name: e.target.value } : b))}
+                        className='px-3 py-1.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded text-sm'
+                      />
+                      <button type='button' onClick={() => resizeBuilding(bIdx, 'add-row')} className='px-2 py-1 text-xs border rounded'>+ Row</button>
+                      <button type='button' onClick={() => resizeBuilding(bIdx, 'remove-row')} className='px-2 py-1 text-xs border rounded'>- Row</button>
+                      <button type='button' onClick={() => resizeBuilding(bIdx, 'add-col')} className='px-2 py-1 text-xs border rounded'>+ Col</button>
+                      <button type='button' onClick={() => resizeBuilding(bIdx, 'remove-col')} className='px-2 py-1 text-xs border rounded'>- Col</button>
+                    </div>
+                    <div className='overflow-x-auto'>
+                      {building.grid.map((row, rIdx) => (
+                        <div key={rIdx} className='flex'>
+                          {row.map((cell, cIdx) => {
+                            const type = cell?.type || 'empty';
+                            const active = selectedCell.buildingIndex === bIdx && selectedCell.rowIndex === rIdx && selectedCell.colIndex === cIdx;
+                            return (
+                              <button
+                                key={cIdx}
+                                type='button'
+                                onClick={() => cycleCellType(bIdx, rIdx, cIdx)}
+                                className={`w-12 h-12 border text-[10px] flex items-center justify-center ${active ? 'ring-2 ring-indigo-500' : ''} ${
+                                  type === 'room' ? 'bg-emerald-100 border-emerald-400' : type === 'common' ? 'bg-gray-200 border-gray-400' : 'bg-white dark:bg-gray-700 border-gray-300'
+                                }`}
+                                title='Click to cycle: Empty -> Room -> Common'
+                              >
+                                {type === 'room' ? 'ROOM' : type === 'common' ? 'COMMON' : '-'}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {(() => {
+                const b = buildings[selectedCell.buildingIndex];
+                const cell = b?.grid?.[selectedCell.rowIndex]?.[selectedCell.colIndex];
+                if (!cell || cell.type !== 'room') return null;
+                return (
+                  <div className='mt-3 p-3 rounded border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20'>
+                    <p className='text-sm font-medium mb-2'>Selected Room Settings</p>
+                    <div className='grid grid-cols-1 md:grid-cols-3 gap-2'>
+                      <select value={cell.roomType || formData.roomType} onChange={(e) => updateSelectedRoom('roomType', e.target.value)} className='px-3 py-2 border rounded dark:bg-gray-700'>
+                        <option value='single'>Single</option>
+                        <option value='double'>Double</option>
+                        <option value='shared'>Shared</option>
+                        <option value='studio'>Studio</option>
+                        <option value='bedsitter'>Bedsitter</option>
+                        <option value='apartment'>Apartment</option>
+                      </select>
+                      <input type='number' value={cell.pricePerMonth || 0} onChange={(e) => updateSelectedRoom('pricePerMonth', Number(e.target.value || 0))} className='px-3 py-2 border rounded dark:bg-gray-700' placeholder='Price/month' />
+                      <label className='flex items-center gap-2 px-3 py-2 border rounded dark:bg-gray-700'>
+                        <input type='checkbox' checked={!!cell.isVacant} onChange={(e) => updateSelectedRoom('isVacant', e.target.checked)} /> Vacant
+                      </label>
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
         </div>

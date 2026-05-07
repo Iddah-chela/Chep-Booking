@@ -54,6 +54,7 @@ export const postVacancy = async (req, res) => {
       photos,
       videos,
       buildings,
+      googleMapsUrl,
       moveInDate,
       availabilityFrom,
       availabilityTo,
@@ -99,6 +100,7 @@ export const postVacancy = async (req, res) => {
       photos: photos || [],
       videos: videos || [],
       buildings: parsedBuildings,
+      googleMapsUrl: String(googleMapsUrl || '').trim(),
       moveInDate: moveInDate ? new Date(moveInDate) : undefined,
       availabilityFrom: availabilityFrom ? new Date(availabilityFrom) : undefined,
       availabilityTo: availabilityTo ? new Date(availabilityTo) : undefined,
@@ -177,7 +179,7 @@ export const updateVacancy = async (req, res) => {
   try {
     const { id } = req.params;
     const agentId = toUserId(req.user._id);
-    const { title, location, rent, roomType, availableRooms, description, amenities, photos, videos, buildings, moveInDate, availabilityFrom, availabilityTo, minBookingLeadDays } = req.body;
+    const { title, location, rent, roomType, availableRooms, description, amenities, photos, videos, buildings, googleMapsUrl, moveInDate, availabilityFrom, availabilityTo, minBookingLeadDays } = req.body;
 
     const vacancy = await AgentVacancy.findById(id);
 
@@ -208,6 +210,7 @@ export const updateVacancy = async (req, res) => {
     if (amenities) vacancy.amenities = amenities;
     if (photos) vacancy.photos = photos;
     if (videos) vacancy.videos = videos;
+    if (googleMapsUrl !== undefined) vacancy.googleMapsUrl = String(googleMapsUrl || '').trim();
     if (buildings !== undefined) {
       try {
         vacancy.buildings = typeof buildings === 'string' ? (buildings.trim() ? JSON.parse(buildings) : []) : buildings;

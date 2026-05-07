@@ -341,6 +341,7 @@ export const getPropertyById = async (req, res) => {
         },
         place: vacancy.location?.city || '',
         estate: vacancy.location?.area || '',
+        googleMapsUrl: vacancy.googleMapsUrl || '',
         listedRentMin: vacancy.rent?.min ?? null,
         listedRentMax: vacancy.rent?.max ?? null,
         listingTier: 'agent',

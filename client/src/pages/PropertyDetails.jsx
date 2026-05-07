@@ -543,10 +543,16 @@ const PropertyDetails = () => {
   const agentContactName = String(property?.agentName || property?.landlordName || property?.owner?.username || 'Agent').trim()
   const agentContactPhone = String(property?.agentPhone || property?.contact || property?.whatsappNumber || '').trim()
   const agentContactEmail = String(property?.agentEmail || property?.owner?.email || '').trim()
+  const agentGoogleMapsUrl = String(property?.googleMapsUrl || '').trim()
   const agentMapsQuery = encodeURIComponent(`${property.estate || ''} ${property.place || ''}`.trim() || property.name || 'Kenya')
   const hasAgentCoordinates = Number.isFinite(Number(property?.location?.coordinates?.latitude)) && Number.isFinite(Number(property?.location?.coordinates?.longitude))
+  const normalizedGoogleMapsEmbed = agentGoogleMapsUrl
+    ? `${agentGoogleMapsUrl}${agentGoogleMapsUrl.includes('?') ? '&' : '?'}output=embed`
+    : ''
   const agentMapsEmbedUrl = hasAgentCoordinates
     ? `https://www.google.com/maps?q=${property.location.coordinates.latitude},${property.location.coordinates.longitude}&z=15&output=embed`
+    : normalizedGoogleMapsEmbed
+      ? normalizedGoogleMapsEmbed
     : `https://www.google.com/maps?q=${agentMapsQuery}&z=15&output=embed`
   const roomPrices = []
   ;(property?.buildings || []).forEach((building) => {

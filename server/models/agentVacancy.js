@@ -45,6 +45,10 @@ const agentVacancySchema = new mongoose.Schema(
         longitude: { type: Number },
       },
     },
+    googleMapsUrl: {
+      type: String,
+      default: '',
+    },
     rent: {
       min: { type: Number, required: true },
       max: { type: Number, required: true },
