@@ -1,7 +1,44 @@
 import AgentVacancy from '../models/agentVacancy.js';
 import AgentLead from '../models/agentLead.js';
+import cloudinary from '../config/cloudinary.js';
+import fs from 'fs/promises';
 
 const toUserId = (value) => value?.toString?.() || String(value || '');
+
+const uploadAgentMedia = async (file, folder) => {
+  if (!file) return null;
+  const result = await cloudinary.uploader.upload(file.path, {
+    folder,
+    resource_type: file.mimetype.startsWith('video/') ? 'video' : 'image',
+  });
+  await fs.unlink(file.path).catch(() => {});
+  return {
+    url: result.secure_url,
+    publicId: result.public_id,
+    thumbnail: result.resource_type === 'video' ? result.thumbnail_url || '' : '',
+    resourceType: result.resource_type,
+  };
+};
+
+export const uploadMedia = async (req, res) => {
+  try {
+    const file = req.file;
+    const mediaType = String(req.body?.mediaType || '').toLowerCase();
+    if (!file) {
+      return res.status(400).json({ message: 'No file provided' });
+    }
+
+    const folder = mediaType === 'video' || file.mimetype.startsWith('video/')
+      ? 'agent_vacancies/videos'
+      : 'agent_vacancies/photos';
+
+    const media = await uploadAgentMedia(file, folder);
+    return res.json({ success: true, media });
+  } catch (error) {
+    console.error('Agent media upload error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // POST: Create a new vacancy
 export const postVacancy = async (req, res) => {

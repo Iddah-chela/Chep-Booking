@@ -8,10 +8,10 @@ const upload = multer({
     storage: multer.diskStorage({}),
     limits: { fileSize: MAX_FILE_SIZE },
     fileFilter: (req, file, cb) => {
-        if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+        if (ALLOWED_MIME_TYPES.includes(file.mimetype) || file.mimetype.startsWith('video/')) {
             cb(null, true);
         } else {
-            cb(new Error('Only JPEG, PNG, WebP, GIF images, and PDF files are allowed'), false);
+            cb(new Error('Only JPEG, PNG, WebP, GIF images, PDF files, and video files are allowed'), false);
         }
     },
 });

@@ -258,7 +258,7 @@ const PropertyDetails = () => {
       let count = 0
       for (let r = 0; r < grid.length; r++) {
         for (let c = 0; c < grid[r].length; c++) {
-          if (grid[r][c].type === 'room') {
+          if (grid[r][c]?.type === 'room') {
             count++
             if (r === rowIndex && c === colIndex) return count
           }
@@ -270,8 +270,9 @@ const PropertyDetails = () => {
     const getCellDisplay = (building, rowIndex, colIndex, cellPx = bCellPx) => {
       const cell = building.grid[rowIndex][colIndex]
       const numSize = Math.max(8, Math.floor(cellPx * 0.22))
+      const cellType = cell?.type || 'empty'
       
-      if (cell.type === 'room') {
+      if (cellType === 'room') {
         const roomNum = getRoomNumber(building.grid, rowIndex, colIndex)
         return (
           <div className='relative w-full flex flex-col items-center justify-center h-full'>
@@ -281,8 +282,8 @@ const PropertyDetails = () => {
         )
       }
       
-      if (cell.type === 'common') {
-        return <div style={{ fontSize: fontSize + 'px' }} className='text-gray-500 font-medium'>Common</div>
+      if (cellType === 'common') {
+        return <div style={{ fontSize: numSize + 'px' }} className='text-gray-500 font-medium'>Common</div>
       }
       
       return <div className='text-gray-300 text-lg'>-</div>
@@ -290,7 +291,7 @@ const PropertyDetails = () => {
 
     const handleCellClick = (building, rowIndex, colIndex) => {
       const cell = building.grid[rowIndex][colIndex]
-      if (cell.type !== 'room') return
+      if (cell?.type !== 'room') return
       
       // Create room object from cell data
       const roomData = {
@@ -1061,7 +1062,8 @@ const PropertyDetails = () => {
                         <div key={rowIndex} className='flex'>
                           {row.map((cell, colIndex) => {
                             const isSelected = selectedRoom && selectedRoom.buildingId === bld.id && selectedRoom.row === rowIndex && selectedRoom.col === colIndex
-                            const roomNum = cell.type === 'room' ? getRoomNumber(bld.grid, rowIndex, colIndex) : 0
+                            const cellType = cell?.type || 'empty'
+                            const roomNum = cellType === 'room' ? getRoomNumber(bld.grid, rowIndex, colIndex) : 0
                             const numSz = Math.max(9, Math.floor(zCellPx * 0.22))
                             return (
                               <div
@@ -1070,22 +1072,22 @@ const PropertyDetails = () => {
                                 style={{ width: zCellPx + 'px', height: zCellPx + 'px' }}
                                 className={`group relative border border-gray-300 flex items-center justify-center transition-all text-xs ${
                                   isSelected ? 'ring-4 ring-indigo-500 bg-indigo-200 dark:bg-indigo-700 z-10' :
-                                  cell.type === 'room' && cell.isBooked ? 'bg-amber-200 dark:bg-amber-800 border-amber-400 cursor-not-allowed' :
-                                  cell.type === 'room' && cell.isMoveOutSoon ? 'bg-orange-200 dark:bg-orange-800 border-orange-400 cursor-pointer hover:bg-orange-300' :
-                                  cell.type === 'room' && cell.isVacant ? 'bg-emerald-200 dark:bg-emerald-700 border-emerald-400 hover:bg-emerald-300 cursor-pointer' :
-                                  cell.type === 'room' && !cell.isVacant ? 'bg-red-200 dark:bg-red-800 border-red-400 cursor-not-allowed' :
-                                  cell.type === 'common' ? 'bg-gray-200 dark:bg-gray-600 border-gray-400' : 'bg-gray-50'
+                                  cellType === 'room' && cell.isBooked ? 'bg-amber-200 dark:bg-amber-800 border-amber-400 cursor-not-allowed' :
+                                  cellType === 'room' && cell.isMoveOutSoon ? 'bg-orange-200 dark:bg-orange-800 border-orange-400 cursor-pointer hover:bg-orange-300' :
+                                  cellType === 'room' && cell.isVacant ? 'bg-emerald-200 dark:bg-emerald-700 border-emerald-400 hover:bg-emerald-300 cursor-pointer' :
+                                  cellType === 'room' && !cell.isVacant ? 'bg-red-200 dark:bg-red-800 border-red-400 cursor-not-allowed' :
+                                  cellType === 'common' ? 'bg-gray-200 dark:bg-gray-600 border-gray-400' : 'bg-gray-50'
                                 }`}
                               >
-                                {cell.type === 'room' && (
+                                {cellType === 'room' && (
                                   <div className='relative w-full flex flex-col items-center justify-center h-full'>
                                     {roomNum > 0 && <span style={{ fontSize: numSz + 'px', lineHeight: '1' }} className='text-gray-700 dark:text-gray-200 font-extrabold absolute top-0.5 left-1'>R{roomNum}</span>}
                                     <div className='absolute bottom-0 left-1/2 -translate-x-1/2' style={{ width: '30%', height: '22%', background: '#7c2d12', borderRadius: '3px 3px 0 0', minHeight: '6px', minWidth: '8px' }}></div>
                                   </div>
                                 )}
-                                {cell.type === 'common' && <div style={{ fontSize: Math.max(7, Math.floor(zCellPx * 0.15)) + 'px' }} className='text-gray-500 dark:text-gray-400 font-medium'>Common</div>}
-                                {cell.type !== 'room' && cell.type !== 'common' && <div className='text-gray-300'>-</div>}
-                                {cell.type === 'room' && (
+                                {cellType === 'common' && <div style={{ fontSize: Math.max(7, Math.floor(zCellPx * 0.15)) + 'px' }} className='text-gray-500 dark:text-gray-400 font-medium'>Common</div>}
+                                {cellType !== 'room' && cellType !== 'common' && <div className='text-gray-300'>-</div>}
+                                {cellType === 'room' && (
                                   <div className='hidden group-hover:flex flex-col absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none items-center'>
                                     <div className='bg-gray-900 text-white rounded-lg px-2.5 py-1.5 shadow-xl text-left max-w-xs overflow-hidden'>
                                       <div className='font-bold text-[11px] truncate'>R{roomNum} - {cell.roomType}</div>
@@ -1404,6 +1406,7 @@ const PropertyDetails = () => {
                                     selectedRoom.buildingId === building.id &&
                                     selectedRoom.row === rowIndex &&
                                     selectedRoom.col === colIndex
+                                  const cellType = cell?.type || 'empty'
                                   return (
                                     <div
                                       key={colIndex}
@@ -1411,16 +1414,16 @@ const PropertyDetails = () => {
                                       style={{ width: buildingCellPx + 'px', height: buildingCellPx + 'px' }}
                                       className={`group relative border border-gray-300 flex items-center justify-center transition-all text-xs ${
                                         isSelected ? 'ring-4 ring-indigo-500 bg-indigo-200 dark:bg-indigo-900 z-10' :
-                                        cell.type === 'room' && cell.isBooked ? 'bg-amber-200 dark:bg-amber-900 border-amber-400 cursor-not-allowed' :
-                                        cell.type === 'room' && cell.isMoveOutSoon ? 'bg-orange-200 dark:bg-orange-900 border-orange-400 cursor-pointer hover:bg-orange-300' :
-                                        cell.type === 'room' && cell.isVacant ? 'bg-emerald-200 dark:bg-emerald-900 border-emerald-400 hover:bg-emerald-300 cursor-pointer' :
-                                        cell.type === 'room' && !cell.isVacant ? 'bg-red-200 dark:bg-red-900 border-red-400 cursor-not-allowed' :
-                                        cell.type === 'common' ? 'bg-gray-200 dark:bg-gray-600 border-gray-400' :
+                                        cellType === 'room' && cell.isBooked ? 'bg-amber-200 dark:bg-amber-900 border-amber-400 cursor-not-allowed' :
+                                        cellType === 'room' && cell.isMoveOutSoon ? 'bg-orange-200 dark:bg-orange-900 border-orange-400 cursor-pointer hover:bg-orange-300' :
+                                        cellType === 'room' && cell.isVacant ? 'bg-emerald-200 dark:bg-emerald-900 border-emerald-400 hover:bg-emerald-300 cursor-pointer' :
+                                        cellType === 'room' && !cell.isVacant ? 'bg-red-200 dark:bg-red-900 border-red-400 cursor-not-allowed' :
+                                        cellType === 'common' ? 'bg-gray-200 dark:bg-gray-600 border-gray-400' :
                                         'bg-gray-50'
                                       }`}
                                     >
                                       {getCellDisplay(building, rowIndex, colIndex, buildingCellPx)}
-                                      {cell.type === 'room' && (
+                                      {cellType === 'room' && (
                                         <div className='hidden group-hover:flex flex-col absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none items-center'>
                                           <div className='bg-gray-900 text-white rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-xl text-left'>
                                             <div className='font-bold text-[11px]'>R{getRoomNumber(building.grid, rowIndex, colIndex)} - {cell.roomType}</div>

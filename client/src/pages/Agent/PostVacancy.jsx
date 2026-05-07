@@ -117,21 +117,15 @@ export default function PostVacancy() {
       for (const file of files) {
         const formDataUpload = new FormData();
         formDataUpload.append('file', file);
-        formDataUpload.append('upload_preset', 'agent_vacancies');
-
-        // Use fetch for cross-origin upload to avoid global axios headers causing CORS preflight failures
-        const response = await fetch('https://api.cloudinary.com/v1_1/dnvlqseci/auto/upload', {
-          method: 'POST',
-          body: formDataUpload,
+        formDataUpload.append('mediaType', mediaType);
+        const token = await getToken();
+        const response = await axios.post('/api/agent/upload-media', formDataUpload, {
+          headers: { Authorization: `Bearer ${token}` },
         });
-
-        if (!response.ok) {
-          const text = await response.text().catch(() => '');
-          throw new Error(`Upload failed: ${response.status} ${text}`);
+        const uploadedUrl = response.data?.media?.url;
+        if (!uploadedUrl) {
+          throw new Error('Upload failed: missing media URL');
         }
-
-        const responseData = await response.json();
-        const uploadedUrl = responseData.secure_url;
 
         if (mediaType === 'photo') {
           if (photos.length >= 5) {

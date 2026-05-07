@@ -2,6 +2,7 @@ import express from 'express';
 import * as agentController from '../controllers/agentController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/roleMiddleware.js';
+import upload from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -9,6 +10,9 @@ const router = express.Router();
 const isAgent = requireRole('agent');
 
 // ===== VACANCY ROUTES =====
+
+// Agent: Upload image/video for vacancy listings
+router.post('/upload-media', protect, isAgent, upload.single('file'), agentController.uploadMedia);
 
 // Agent: Create a new vacancy
 router.post('/vacancies', protect, isAgent, agentController.postVacancy);
