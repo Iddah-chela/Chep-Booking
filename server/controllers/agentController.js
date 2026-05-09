@@ -1,5 +1,6 @@
 import AgentVacancy from '../models/agentVacancy.js';
 import AgentLead from '../models/agentLead.js';
+import AgentChat from '../models/agentChat.js';
 import cloudinary from '../config/cloudinary.js';
 import fs from 'fs/promises';
 import { hasRole } from '../utils/roleUtils.js';
@@ -315,8 +316,40 @@ export const getAgentLeads = async (req, res) => {
 
     const total = await AgentLead.countDocuments(query);
 
+    // Also fetch anonymized agent chats and merge into the results so agents see chats alongside leads
+    const chatQuery = { agent: agentId };
+    if (unreadOnly === 'true') {
+      chatQuery['messages.read'] = false; // simplistic unread filter
+    }
+    const chats = await AgentChat.find(chatQuery)
+      .populate('tenant', 'firstName lastName email phone')
+      .populate('vacancy', 'title roomType rent location')
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    // Map chats into a unified shape similar to leads so frontend can render both
+    const chatItems = chats.map((c) => ({
+      _id: `chat_${c._id}`,
+      type: 'chat',
+      chat: c,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
+
+    const leadItems = leads.map((l) => ({
+      _id: l._id,
+      type: 'lead',
+      lead: l,
+      createdAt: l.createdAt,
+      updatedAt: l.updatedAt,
+    }));
+
+    // Merge and sort by updatedAt desc
+    const merged = [...leadItems, ...chatItems].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
     res.json({
-      leads,
+      leads: merged,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -412,18 +445,98 @@ export const markLeadOutcome = async (req, res) => {
     lead.outcome = outcome;
     lead.outcomeMarkedAt = new Date();
     lead.markedBy = agentId;
-    lead.status = 'pending';
-
-    await lead.save();
-
+    // If agent marks as booked, finalize booking: mark lead as booked and update vacancy counts/room
     if (outcome === 'booked') {
-      await AgentVacancy.findByIdAndUpdate(lead.vacancy, { $inc: { 'stats.leadCount': 1 } });
+      lead.status = 'booked';
+      lead.provisionalHoldUntil = undefined;
+      await lead.save();
+
+      try {
+        const vacancy = await AgentVacancy.findById(lead.vacancy);
+        if (vacancy) {
+          // decrement availableRooms safely
+          if (typeof vacancy.availableRooms === 'number' && vacancy.availableRooms > 0) {
+            vacancy.availableRooms = Math.max(0, vacancy.availableRooms - 1);
+          }
+
+          // If this lead had roomDetails, mark that cell as booked in the buildings grid
+          if (lead.roomDetails && vacancy.buildings && Array.isArray(vacancy.buildings)) {
+            const bIndex = vacancy.buildings.findIndex(b => String(b.id) === String(lead.roomDetails.buildingId));
+            if (bIndex !== -1) {
+              const r = Number(lead.roomDetails.row || 0);
+              const c = Number(lead.roomDetails.col || 0);
+              if (vacancy.buildings[bIndex].grid && vacancy.buildings[bIndex].grid[r] && vacancy.buildings[bIndex].grid[r][c]) {
+                vacancy.buildings[bIndex].grid[r][c].isBooked = true;
+                vacancy.buildings[bIndex].grid[r][c].isVacant = false;
+              }
+            }
+          }
+
+          // If no available rooms left, mark vacancy as booked
+          if (typeof vacancy.availableRooms === 'number' && vacancy.availableRooms <= 0) {
+            vacancy.status = 'booked';
+          }
+
+          // increment leadCount stat
+          vacancy.stats = vacancy.stats || {};
+          vacancy.stats.leadCount = (vacancy.stats.leadCount || 0) + 1;
+
+          await vacancy.save();
+        }
+      } catch (err) {
+        console.error('Error finalizing booking on vacancy:', err);
+      }
+
+      res.json({ message: 'Outcome marked successfully', lead });
+      return;
     }
 
+    // default behavior for other outcomes
+    lead.status = 'pending';
+    await lead.save();
     res.json({ message: 'Outcome marked successfully', lead });
   } catch (error) {
     console.error('Error marking outcome:', error);
     res.status(500).json({ message: 'Error marking outcome', error: error.message });
+  }
+};
+
+// PUT: Cancel a provisional hold (tenant can cancel their booking hold)
+export const cancelProvisionalHold = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = toUserId(req.user._id);
+
+    const lead = await AgentLead.findById(id);
+    if (!lead) return res.status(404).json({ message: 'Lead not found' });
+
+    const isTenant = String(lead.student) === String(userId);
+    const isAgent = String(lead.agent) === String(userId);
+    if (!isTenant && !isAgent && !hasRole(req.user, 'admin')) {
+      return res.status(403).json({ message: 'Unauthorized to cancel this hold' });
+    }
+
+    if (lead.leadType !== 'booking' || !lead.provisionalHoldUntil) {
+      return res.status(400).json({ message: 'No active provisional hold to cancel' });
+    }
+
+    lead.provisionalHoldUntil = undefined;
+    lead.status = 'no-response';
+    await lead.save();
+
+    // Optionally notify other users via AgentChat
+    try {
+      const chat = await AgentChat.findOne({ tenant: lead.student, vacancy: lead.vacancy });
+      if (chat) {
+        chat.messages.push({ sender: 'system', content: 'Your reservation was cancelled.', timestamp: new Date(), read: false });
+        await chat.save();
+      }
+    } catch (_) {}
+
+    res.json({ success: true, message: 'Provisional hold cancelled', lead });
+  } catch (error) {
+    console.error('Error cancelling provisional hold:', error);
+    res.status(500).json({ message: 'Error cancelling hold', error: error.message });
   }
 };
 
@@ -487,11 +600,45 @@ export const createLead = async (req, res) => {
       return res.status(404).json({ message: 'Vacancy not found' });
     }
 
+    // Accept phone from request body (frontend) or fall back to authenticated user
+    const providedPhone = (req.body?.phone) || (req.body?.studentInfo?.phone) || req.user.phone || '';
+    if (!providedPhone || String(providedPhone).trim() === '') {
+      return res.status(400).json({ message: 'Phone number is required to contact the agent' });
+    }
+
     const studentInfo = {
-      name: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Student',
-      phone: req.user.phone || '',
-      email: req.user.email || '',
+      name: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || (req.body?.studentInfo?.name || 'Student'),
+      phone: String(providedPhone).trim(),
+      email: req.user.email || (req.body?.studentInfo?.email || ''),
     };
+
+    // Include optional roomDetails for booking/reserve flows
+    const roomDetails = req.body?.roomDetails || undefined;
+
+    // If booking/reserve, enforce roomDetails and check existing provisional holds
+    const HOLD_MS = 2 * 60 * 60 * 1000; // 2 hours provisional hold
+    let provisionalHoldUntil = undefined;
+    if (leadType === 'booking') {
+      if (!roomDetails || !roomDetails.buildingId) {
+        return res.status(400).json({ message: 'Room details required to reserve a room' });
+      }
+
+      // Check for existing active provisional holds on this vacancy + room
+      const now = new Date();
+      const conflict = await AgentLead.findOne({
+        vacancy: vacancyId,
+        'roomDetails.buildingId': String(roomDetails.buildingId),
+        'roomDetails.row': Number(roomDetails.row || 0),
+        'roomDetails.col': Number(roomDetails.col || 0),
+        provisionalHoldUntil: { $gt: now },
+        leadType: 'booking',
+      });
+      if (conflict) {
+        return res.status(409).json({ message: 'Room is currently held by another reservation. Try again later.' });
+      }
+
+      provisionalHoldUntil = new Date(Date.now() + HOLD_MS);
+    }
 
     const lead = new AgentLead({
       agent: vacancy.agent,
@@ -503,6 +650,13 @@ export const createLead = async (req, res) => {
       preferredMoveInDate: preferredMoveInDate ? new Date(preferredMoveInDate) : undefined,
       preferredViewingDate: preferredViewingDate ? new Date(preferredViewingDate) : undefined,
       preferredRoomType: preferredRoomType || '',
+      roomDetails: roomDetails ? {
+        buildingId: String(roomDetails.buildingId),
+        row: Number.isFinite(Number(roomDetails.row)) ? Number(roomDetails.row) : undefined,
+        col: Number.isFinite(Number(roomDetails.col)) ? Number(roomDetails.col) : undefined,
+        roomType: roomDetails.roomType || (preferredRoomType || ''),
+      } : undefined,
+      provisionalHoldUntil,
     });
 
     await lead.save();

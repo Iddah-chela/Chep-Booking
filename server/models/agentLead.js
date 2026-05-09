@@ -37,6 +37,14 @@ const agentLeadSchema = new mongoose.Schema(
     preferredMoveInDate: Date,
     preferredViewingDate: Date,
     preferredRoomType: String,
+    roomDetails: {
+      buildingId: { type: String },
+      row: { type: Number },
+      col: { type: Number },
+      roomType: { type: String },
+    },
+    // Provisional hold expires at this time for booking/reserve leads
+    provisionalHoldUntil: { type: Date },
     status: {
       type: String,
       enum: ['new', 'contacted', 'viewed', 'pending', 'booked', 'not-fit', 'no-response'],

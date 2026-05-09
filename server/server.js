@@ -31,6 +31,7 @@ import analyticsRouter from "./routes/analyticsRoutes.js";
 import agentRouter from "./routes/agentRoutes.js";
 import agentApplicationRouter from "./routes/agentApplicationRoutes.js";
 import { expireViewingRequests } from "./utils/expirationHandler.js";
+import { expireProvisionalHolds } from "./utils/expirationHandler.js";
 import { checkListingFreshness, checkUnlockAutoRefunds, sendPostViewingNudges, sendViewingReminders, sendMoveInNudges, sendMoveOutNudges, sendWeeklyPropertyUpdateReminders } from "./utils/cronJobs.js";
 
 
@@ -180,6 +181,11 @@ setInterval(async () => {
     await sendPostViewingNudges();
 }, 5 * 60 * 1000);
 
+// Every 5 min: expire provisional booking holds
+setInterval(async () => {
+    await expireProvisionalHolds();
+}, 5 * 60 * 1000);
+
 // Every 6 hours: move-in confirmation nudges
 setInterval(async () => {
     await sendMoveInNudges();
@@ -210,6 +216,7 @@ setTimeout(async () => {
     await sendMoveInNudges();
     await sendMoveOutNudges();
     await sendWeeklyPropertyUpdateReminders();
+    await expireProvisionalHolds();
 }, 5000);
 
 

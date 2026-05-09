@@ -49,6 +49,9 @@ router.put('/leads/:id/outcome', protect, isAgent, agentController.markLeadOutco
 // Authenticated user: Express interest in a vacancy (create lead)
 router.post('/leads', protect, agentController.createLead);
 
+// Cancel provisional hold (tenant or agent)
+router.put('/leads/:id/cancel-hold', protect, agentController.cancelProvisionalHold);
+
 // ===== STATS ROUTES =====
 
 // Agent: Get dashboard stats

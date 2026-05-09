@@ -1,6 +1,45 @@
 import ViewingRequest from "../models/viewingRequest.js";
 import Room from "../models/room.js";
 import Chat from "../models/chat.js";
+import AgentLead from "../models/agentLead.js";
+import AgentChat from "../models/agentChat.js";
+
+// Expire provisional booking holds older than now
+export const expireProvisionalHolds = async () => {
+    try {
+        const now = new Date();
+        const expiredLeads = await AgentLead.find({
+            leadType: 'booking',
+            provisionalHoldUntil: { $lt: now }
+        });
+
+        for (const lead of expiredLeads) {
+            // Remove provisional hold and mark as no-response
+            lead.provisionalHoldUntil = undefined;
+            lead.status = 'no-response';
+            await lead.save();
+
+            // Send an in-app agent chat message to tenant if exists
+            try {
+                const chat = await AgentChat.findOne({ tenant: lead.student, vacancy: lead.vacancy });
+                if (chat) {
+                    chat.messages.push({
+                        sender: 'system',
+                        content: 'Your provisional reservation has expired. You may try reserving again.',
+                        timestamp: new Date(),
+                        read: false
+                    });
+                    await chat.save();
+                }
+            } catch (_) {}
+        }
+
+        return { expired: expiredLeads.length };
+    } catch (error) {
+        console.error('Error expiring provisional holds:', error);
+        return { error: error.message };
+    }
+};
 
 // Auto-expire viewing requests older than 48 hours
 export const expireViewingRequests = async () => {

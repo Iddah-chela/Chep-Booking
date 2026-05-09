@@ -50,7 +50,45 @@ export default function LeadInbox() {
         `/api/agent/leads?status=${statusFilter === 'all' ? 'all' : statusFilter}&limit=100`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setLeads(res.data.leads || []);
+      const raw = res.data.leads || [];
+      // Normalize server-side merged items (leads + chats) into a consistent shape
+      const normalized = raw.map((item) => {
+        if (!item) return null;
+        // Server returns merged items with `type: 'lead'|'chat'` and containers
+        if (item.type === 'chat' && item.chat) {
+          const c = item.chat;
+          const lastMsg = c.messages && c.messages.length ? c.messages[c.messages.length - 1].content : '';
+          return {
+            _id: item._id || `chat_${c._id}`,
+            leadType: 'chat',
+            studentInfo: {
+              name: (c.tenant?.firstName || '') + (c.tenant?.lastName ? ' ' + c.tenant.lastName : ''),
+              phone: c.tenant?.phone || '',
+              email: c.tenant?.email || '',
+            },
+            message: lastMsg,
+            vacancy: c.vacancy,
+            chatId: c._id,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+          };
+        }
+
+        // If item.type === 'lead' or legacy lead object
+        const leadObj = item.type === 'lead' && item.lead ? item.lead : item.lead ? item.lead : item;
+        return {
+          _id: leadObj._id,
+          leadType: leadObj.leadType || 'contact',
+          studentInfo: leadObj.studentInfo || { name: '', phone: '', email: '' },
+          message: leadObj.message || '',
+          vacancy: leadObj.vacancy || {},
+          createdAt: leadObj.createdAt,
+          updatedAt: leadObj.updatedAt,
+          raw: leadObj,
+        };
+      }).filter(Boolean);
+
+      setLeads(normalized);
     } catch (error) {
       console.error('Error fetching leads:', error);
       toast.error('Failed to load leads');
