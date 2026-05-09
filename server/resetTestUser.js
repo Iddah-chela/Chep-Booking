@@ -33,8 +33,8 @@ const resetTestUser = async () => {
 
         // Reset test user role to 'user'
         const updatedUser = await User.findByIdAndUpdate(
-            testUserId, 
-            { role: 'user' },
+            testUserId,
+            { role: 'user', roles: ['user'] },
             { new: true }
         );
         

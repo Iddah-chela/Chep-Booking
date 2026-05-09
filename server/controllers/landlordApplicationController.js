@@ -2,6 +2,7 @@ import LandlordApplication from '../models/landlordApplication.js';
 import User from '../models/user.js';
 import { clerkClient } from '@clerk/express';
 import cloudinary from '../config/cloudinary.js';
+import { derivePrimaryRole, hasRole, mergeRoles } from '../utils/roleUtils.js';
 
 // Helper: upload a file from multer to cloudinary
 const uploadToCloudinary = async (file, folder) => {
@@ -17,7 +18,7 @@ export const instantSignup = async (req, res) => {
         const user = req.user;
 
         // Already a landlord?
-        if (user.role === 'houseOwner' || user.role === 'admin') {
+        if (hasRole(user, 'houseOwner') || hasRole(user, 'admin')) {
             return res.status(400).json({ success: false, message: 'You are already a landlord!' });
         }
 
@@ -66,8 +67,11 @@ export const instantSignup = async (req, res) => {
         );
 
         // Promote user to houseOwner
+        const existingRoles = mergeRoles(user.roles, user.role);
+        const mergedRoles = mergeRoles(existingRoles, 'houseOwner');
         await User.findByIdAndUpdate(userId, {
-            role: 'houseOwner',
+            role: derivePrimaryRole(mergedRoles, user.role),
+            roles: mergedRoles,
             phoneNumber
         });
 
@@ -80,7 +84,7 @@ export const instantSignup = async (req, res) => {
 
         // Update Clerk metadata in background
         clerkClient.users.updateUser(userId, {
-            publicMetadata: { role: 'houseOwner' }
+            publicMetadata: { role: 'houseOwner', roles: mergedRoles }
         }).catch(err => console.error('Clerk metadata update error:', err.message));
 
     } catch (error) {
@@ -249,8 +253,12 @@ export const approveApplication = async (req, res) => {
         await application.save();
         
         // Update user role in MongoDB
+        const targetUser = await User.findById(application.userId).select('role roles');
+        const existingRoles = mergeRoles(targetUser?.roles, targetUser?.role);
+        const mergedRoles = mergeRoles(existingRoles, 'houseOwner');
         await User.findByIdAndUpdate(application.userId, {
-            role: 'houseOwner',
+            role: derivePrimaryRole(mergedRoles, targetUser?.role),
+            roles: mergedRoles,
             phoneNumber: application.phoneNumber,
             idDocument: application.idDocument,
             isPhoneVerified: true,
@@ -266,7 +274,7 @@ export const approveApplication = async (req, res) => {
 
         // Update Clerk metadata in background (non-blocking)
         clerkClient.users.updateUser(application.userId, {
-            publicMetadata: { role: 'houseOwner' }
+            publicMetadata: { role: 'houseOwner', roles: mergedRoles }
         })
             .catch((err) => console.error('❌ Error updating Clerk metadata:', err.message));
         

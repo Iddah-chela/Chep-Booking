@@ -4,6 +4,7 @@ import Property from "../models/property.js";
 import Room from "../models/room.js";
 import { sendEmail } from "../utils/mailer.js";
 import { sendPushNotification } from "../utils/pushNotifier.js";
+import { hasRole } from '../utils/roleUtils.js';
 
 // Create a report
 export const createReport = async (req, res) => {
@@ -38,7 +39,7 @@ export const createReport = async (req, res) => {
 // Get all reports (admin only)
 export const getAllReports = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
+        if (!hasRole(req.user, 'admin')) {
             return res.json({ success: false, message: "Unauthorized" });
         }
 
@@ -81,7 +82,7 @@ export const getAllReports = async (req, res) => {
 // Update report status (admin only)
 export const updateReportStatus = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
+        if (!hasRole(req.user, 'admin')) {
             return res.json({ success: false, message: "Unauthorized" });
         }
 
@@ -111,7 +112,7 @@ export const updateReportStatus = async (req, res) => {
 // Suspend a user
 export const suspendUser = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
+        if (!hasRole(req.user, 'admin')) {
             return res.json({ success: false, message: "Unauthorized" });
         }
 
@@ -159,7 +160,7 @@ export const suspendUser = async (req, res) => {
 // Unsuspend a user
 export const unsuspendUser = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
+        if (!hasRole(req.user, 'admin')) {
             return res.json({ success: false, message: "Unauthorized" });
         }
 
@@ -180,7 +181,7 @@ export const unsuspendUser = async (req, res) => {
 // Remove a listing (property or room)
 export const removeListing = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
+        if (!hasRole(req.user, 'admin')) {
             return res.json({ success: false, message: "Unauthorized" });
         }
 
@@ -237,7 +238,7 @@ export const removeListing = async (req, res) => {
 // Unverify a listing
 export const unverifyListing = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
+        if (!hasRole(req.user, 'admin')) {
             return res.json({ success: false, message: "Unauthorized" });
         }
 
@@ -268,7 +269,7 @@ export const unverifyListing = async (req, res) => {
 // Warn a user (email only, no suspension)
 export const warnUser = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
+        if (!hasRole(req.user, 'admin')) {
             return res.json({ success: false, message: "Unauthorized" });
         }
 

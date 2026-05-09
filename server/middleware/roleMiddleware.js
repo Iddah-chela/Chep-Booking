@@ -1,3 +1,5 @@
+import { hasRole } from '../utils/roleUtils.js';
+
 // Middleware to require admin role
 export const requireAdmin = (req, res, next) => {
     if (!req.user) {
@@ -7,7 +9,7 @@ export const requireAdmin = (req, res, next) => {
         });
     }
     
-    if (req.user.role !== 'admin') {
+    if (!hasRole(req.user, 'admin')) {
         return res.status(403).json({
             success: false,
             message: 'Access denied. Admin privileges required.'
@@ -26,7 +28,7 @@ export const requireOwner = (req, res, next) => {
         });
     }
     
-    if (req.user.role !== 'houseOwner' && req.user.role !== 'admin') {
+    if (!hasRole(req.user, 'houseOwner') && !hasRole(req.user, 'admin')) {
         return res.status(403).json({
             success: false,
             message: 'Access denied. House owner privileges required.'
@@ -46,7 +48,7 @@ export const requireRole = (requiredRole) => {
             });
         }
         
-        if (req.user.role !== requiredRole && req.user.role !== 'admin') {
+        if (!hasRole(req.user, requiredRole) && !hasRole(req.user, 'admin')) {
             return res.status(403).json({
                 success: false,
                 message: `Access denied. ${requiredRole} privileges required.`

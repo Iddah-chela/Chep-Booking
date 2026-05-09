@@ -121,10 +121,36 @@ export const AppProvider = ({children})=>{
                 return;
             }
             
+            const roleSet = new Set();
+            const normalizeRole = (value) => {
+                const raw = String(value || '').trim();
+                const lowered = raw.toLowerCase();
+                if (lowered === 'houseowner') return 'houseOwner';
+                if (lowered === 'admin') return 'admin';
+                if (lowered === 'agent') return 'agent';
+                if (lowered === 'user') return 'user';
+                return raw;
+            };
+            const addRole = (value) => {
+                const role = normalizeRole(value);
+                if (role) roleSet.add(role);
+            };
+            const addRoles = (values) => {
+                if (!Array.isArray(values)) return;
+                values.forEach(addRole);
+            };
+            addRole(data.role);
+            addRoles(data.roles);
+
             const clerkRole = clerkUser?.publicMetadata?.role;
-            const ownerStatus = data.role === "houseOwner" || data.role === "admin" || clerkRole === "houseOwner" || clerkRole === "admin";
-            const adminStatus = data.role === "admin" || clerkRole === "admin";
-            const agentStatus = data.role === "agent" || clerkRole === "agent";
+            const clerkRoles = Array.isArray(clerkUser?.publicMetadata?.roles)
+                ? clerkUser.publicMetadata.roles
+                : (clerkRole ? [clerkRole] : []);
+            addRoles(clerkRoles);
+
+            const ownerStatus = roleSet.has("houseOwner") || roleSet.has("admin");
+            const adminStatus = roleSet.has("admin");
+            const agentStatus = roleSet.has("agent");
             const caretakerStatus = !!data.isCaretaker;
             setIsOwner(ownerStatus);
             setIsAdmin(adminStatus);

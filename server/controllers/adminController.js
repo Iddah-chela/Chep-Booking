@@ -12,10 +12,11 @@ import { applyAutoListingLifecycle, evaluateListingReadiness } from "../utils/li
 import { sendEmail } from "../utils/mailer.js";
 import { sendPushNotification } from "../utils/pushNotifier.js";
 import { deleteUserCascade } from '../utils/deleteUserCascade.js';
+import { derivePrimaryRole, hasRole, mergeRoles } from '../utils/roleUtils.js';
 
 // Middleware to check if user is admin
 export const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
+    if (!hasRole(req.user, 'admin')) {
         return res.status(403).json({ success: false, message: 'Unauthorized - Admin access required' });
     }
     next();
@@ -81,7 +82,10 @@ export const revokeHouseOwner = async (req, res) => {
         const { userId } = req.body;
         const user = await User.findById(userId);
         if (!user) return res.json({ success: false, message: 'User not found' });
-        user.role = 'user';
+        const existingRoles = mergeRoles(user.roles, user.role);
+        const nextRoles = existingRoles.filter((role) => role !== 'houseOwner');
+        user.roles = nextRoles;
+        user.role = derivePrimaryRole(nextRoles, 'user');
         await user.save();
         // Delist all their properties
         await Property.updateMany({ owner: userId }, { isExpired: true });
@@ -109,8 +113,10 @@ export const transferProperty = async (req, res) => {
         );
         if (!property) return res.json({ success: false, message: 'Property not found' });
         // Upgrade user to houseOwner if they aren't already
-        if (!['houseOwner', 'admin'].includes(newOwner.role)) {
-            newOwner.role = 'houseOwner';
+        if (!hasRole(newOwner, 'houseOwner')) {
+            const mergedRoles = mergeRoles(newOwner.roles, newOwner.role, 'houseOwner');
+            newOwner.roles = mergedRoles;
+            newOwner.role = derivePrimaryRole(mergedRoles, newOwner.role);
             await newOwner.save();
         }
         res.json({ success: true, message: `Property transferred to ${newOwner.username} (${newOwner.email})` });
@@ -367,7 +373,7 @@ export const getDashboardStats = async (req, res) => {
             visitsByHourRows,
         ] = await Promise.all([
             User.countDocuments(),
-            User.countDocuments({ role: 'houseOwner' }),
+            User.countDocuments({ $or: [{ role: 'houseOwner' }, { roles: 'houseOwner' }] }),
             Property.countDocuments(),
             Property.countDocuments({ isExpired: { $ne: true } }),
             Property.countDocuments({ isVerified: true }),
@@ -606,7 +612,7 @@ const buildReportRows = async ({ dataset, from, to }) => {
 
 export const exportAdminReport = async (req, res) => {
     try {
-        if (req.user.role !== 'admin') {
+        if (!hasRole(req.user, 'admin')) {
             return res.status(403).json({ success: false, message: 'Unauthorized' });
         }
 
@@ -766,8 +772,10 @@ export const approvePropertyClaim = async (req, res) => {
         const lifecycle = applyAutoListingLifecycle(property);
         await property.save();
 
-        if (claim.claimRole === 'owner' && !['houseOwner', 'admin'].includes(claimantUser.role)) {
-            claimantUser.role = 'houseOwner';
+        if (claim.claimRole === 'owner' && !hasRole(claimantUser, 'houseOwner')) {
+            const mergedRoles = mergeRoles(claimantUser.roles, claimantUser.role, 'houseOwner');
+            claimantUser.roles = mergedRoles;
+            claimantUser.role = derivePrimaryRole(mergedRoles, claimantUser.role);
             await claimantUser.save();
         }
 

@@ -5,6 +5,7 @@ import Property from "../models/property.js";
 export const getUserData = async (req, res) => {
     try {
         const role = req.user.role || 'user';
+        const roles = req.user.roles || [];
         const recentSearchedPlaces = req.user.recentSearchedPlaces || [];
         const image = req.user.image || null;
         const email = req.user.email || '';
@@ -18,7 +19,7 @@ export const getUserData = async (req, res) => {
             isCaretaker = !!managed;
         }
 
-        res.json({success: true, role, recentSearchedPlaces, image, isCaretaker})
+        res.json({success: true, role, roles, recentSearchedPlaces, image, isCaretaker})
     } catch (error) {
         res.json({success: false, message: error.message})
     }

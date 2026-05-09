@@ -1,6 +1,7 @@
 import AgentApplication from '../models/agentApplication.js';
 import User from '../models/user.js';
 import { createClerkClient } from '@clerk/express';
+import { derivePrimaryRole, mergeRoles } from '../utils/roleUtils.js';
 
 const clerk = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
@@ -25,7 +26,8 @@ export const submitAgentApplication = async (req, res) => {
 
     // Check if user is already an agent by role
     const user = await User.findById(userId);
-    if (user && user.role === 'agent') {
+    const userRoles = mergeRoles(user?.roles, user?.role);
+    if (user && userRoles.includes('agent')) {
       return res.status(409).json({
         message: 'You are already an agent! Access your dashboard at /agent',
       });
@@ -35,8 +37,7 @@ export const submitAgentApplication = async (req, res) => {
     const existing = await AgentApplication.findOne({ user: userId });
 
     if (existing) {
-      const userRole = String(user?.role || '').toLowerCase();
-      const currentlyAgent = userRole === 'agent';
+      const currentlyAgent = userRoles.includes('agent');
 
       if (existing.status === 'approved' && !currentlyAgent) {
         existing.yearsExperience = parseInt(yearsExperience);
@@ -117,7 +118,8 @@ export const getMyApplicationStatus = async (req, res) => {
 
     // First check if user is already an agent by role
     const user = await User.findById(userId);
-    if (user && user.role === 'agent') {
+    const userRoles = mergeRoles(user?.roles, user?.role);
+    if (user && userRoles.includes('agent')) {
       return res.json({
         hasApplication: true,
         status: 'approved',
@@ -128,7 +130,7 @@ export const getMyApplicationStatus = async (req, res) => {
 
     const application = await AgentApplication.findOne({ user: userId });
 
-    if (application?.status === 'approved' && user && user.role !== 'agent') {
+    if (application?.status === 'approved' && user && !userRoles.includes('agent')) {
       return res.json({
         hasApplication: false,
         status: null,
@@ -231,8 +233,18 @@ export const approveAgentApplication = async (req, res) => {
       });
     }
 
-    console.log(`[Agent Approval] Updating user ${application.user} role to agent`);
-    const updateResult = await User.findByIdAndUpdate(application.user, { role: 'agent' }, { new: true });
+    console.log(`[Agent Approval] Updating user ${application.user} roles to include agent`);
+    const existingUser = await User.findById(application.user).select('role roles');
+    const existingRoles = mergeRoles(existingUser?.roles, existingUser?.role);
+    const mergedRoles = mergeRoles(existingRoles, 'agent');
+    const updateResult = await User.findByIdAndUpdate(
+      application.user,
+      {
+        role: derivePrimaryRole(mergedRoles, existingUser?.role),
+        roles: mergedRoles
+      },
+      { new: true }
+    );
     console.log(`[Agent Approval] User update result: role=${updateResult?.role}`);
 
     res.json({
@@ -251,6 +263,7 @@ export const approveAgentApplication = async (req, res) => {
       await clerk.users.updateUser(application.user, {
         publicMetadata: {
           role: 'agent',
+          roles: mergedRoles,
         },
       });
       console.log(`[Agent Approval] Clerk metadata synced successfully`);

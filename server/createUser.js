@@ -49,7 +49,8 @@ async function createUser(clerkId, email, username) {
       email,
       username,
       image: 'https://via.placeholder.com/150', // Default placeholder image
-      role: 'user'
+      role: 'user',
+      roles: ['user']
     });
 
     console.log('✅ Successfully created user!');

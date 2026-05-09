@@ -21,7 +21,8 @@ const createTestUser = async () => {
             name: 'Test User',
             email: 'test@example.com',
             image: 'https://avatar.iran.liara.run/public',
-            role: 'user'
+            role: 'user',
+            roles: ['user']
         });
 
         console.log('Test user created successfully:', user);

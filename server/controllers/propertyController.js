@@ -7,6 +7,7 @@ import LandlordApplication from "../models/landlordApplication.js";
 import {v2 as cloudinary} from "cloudinary";
 import Subscriber from "../models/subscriber.js";
 import { sendEmail, sendNewListingAlert } from "../utils/mailer.js";
+import { hasRole } from '../utils/roleUtils.js';
 import {
   applyAutoListingLifecycle,
   evaluateListingReadiness,
@@ -54,17 +55,15 @@ const inferTierAndStatus = (property) => {
 const hasContactAccess = async (propertyId, req) => {
   const userId = req.user?._id;
   const userEmail = req.user?.email;
-  const role = req.user?.role;
-
   const prop = await Property.findById(propertyId).select('owner caretakers listingTier sourceType landlordName claimedBy').lean();
   if (!prop) return false;
 
-  if (role === 'admin') return true;
+  if (hasRole(req.user, 'admin')) return true;
 
-  const ownerUser = await User.findById(prop.owner).select('role').lean();
+  const ownerUser = await User.findById(prop.owner).select('role roles').lean();
   const noInAppStewardLive =
     String(prop.listingTier || '').toLowerCase() === 'live' &&
-    String(ownerUser?.role || '').toLowerCase() === 'admin' &&
+    hasRole(ownerUser, 'admin') &&
     !String(prop.claimedBy || '').trim() &&
     (!Array.isArray(prop.caretakers) || prop.caretakers.length === 0);
 
@@ -140,7 +139,7 @@ export const createProperty = async (req, res) => {
       landlordName
     } = req.body;
     const owner = req.user._id;
-    const isAdmin = req.user?.role === 'admin';
+    const isAdmin = hasRole(req.user, 'admin');
 
 
     // Upload images to Cloudinary
@@ -375,7 +374,7 @@ export const getPropertyById = async (req, res) => {
 
     const isOwner = req.user?._id && String(property.owner?._id || property.owner || property.agent || '') === String(req.user._id || '');
     const isCaretaker = !!req.user?.email && (property.caretakers || []).some((e) => String(e || '').toLowerCase() === String(req.user.email || '').toLowerCase());
-    const isAdmin = req.user?.role === 'admin';
+    const isAdmin = hasRole(req.user, 'admin');
     const canSeeStewardData = isOwner || isCaretaker || isAdmin;
 
     if (String(propertyObj.listingTier || '').toLowerCase() !== 'live' && !canSeeStewardData) {
@@ -788,7 +787,7 @@ export const submitPropertyClaim = async (req, res) => {
     }
 
     if (normalizedClaimRole === 'owner') {
-      const isAlreadyQualified = ['houseowner', 'admin'].includes(String(req.user?.role || '').toLowerCase());
+      const isAlreadyQualified = hasRole(req.user, 'houseOwner') || hasRole(req.user, 'admin');
       if (!isAlreadyQualified) {
         const approvedLandlordApplication = await LandlordApplication.findOne({
           userId: req.user._id,

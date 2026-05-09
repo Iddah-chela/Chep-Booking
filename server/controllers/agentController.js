@@ -2,6 +2,7 @@ import AgentVacancy from '../models/agentVacancy.js';
 import AgentLead from '../models/agentLead.js';
 import cloudinary from '../config/cloudinary.js';
 import fs from 'fs/promises';
+import { hasRole } from '../utils/roleUtils.js';
 
 const toUserId = (value) => value?.toString?.() || String(value || '');
 
@@ -341,7 +342,7 @@ export const getLeadById = async (req, res) => {
       return res.status(404).json({ message: 'Lead not found' });
     }
 
-    if (lead.agent.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (lead.agent.toString() !== req.user._id.toString() && !hasRole(req.user, 'admin')) {
       return res.status(403).json({ message: 'Unauthorized to view this lead' });
     }
 

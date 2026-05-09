@@ -14,6 +14,7 @@ import { connectCloudinary } from "./config/cloudinary.js";
 import roomRouter from "./routes/roomRoutes.js";
 import bookingRouter from "./routes/bookingRoutes.js";
 import chatRouter from "./routes/chatRoutes.js";
+import agentChatRouter from "./routes/agentChatRoutes.js";
 import viewingRouter from "./routes/viewingRoutes.js";
 import reportRouter from "./routes/reportRoutes.js";
 import feedbackRouter from "./routes/feedbackRoutes.js";
@@ -141,6 +142,7 @@ app.use('/api/user', generalLimiter, userRouter)
 app.use('/api/houses', generalLimiter, houseRouter)
 app.use('/api/bookings', generalLimiter, bookingRouter)
 app.use('/api/chat', generalLimiter, chatRouter)
+app.use('/api/agent-chat', generalLimiter, agentChatRouter)
 app.use('/api/viewing', generalLimiter, viewingRouter)
 app.use('/api/reports', authLimiter, reportRouter)
 app.use('/api/feedback', generalLimiter, feedbackRouter)

@@ -1,5 +1,6 @@
 import User from "../models/user.js";
 import { createClerkClient, verifyToken } from '@clerk/express'
+import { derivePrimaryRole, getRolesFromClerkUser, mergeRoles } from '../utils/roleUtils.js';
 
 const LOGIN_ACTIVITY_WINDOW_MS = 30 * 60 * 1000;
 
@@ -64,20 +65,25 @@ export const protect = async (req, res, next)=>{
                 const realName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'User';
                 const realImage = clerkUser.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(realName)}&background=6366f1&color=fff&bold=true`;
 
+                const clerkRoles = getRolesFromClerkUser(clerkUser);
+                const mergedRoles = mergeRoles(clerkRoles);
                 user = await upsertUserSafely(userId, {
                     username: realName,
                     email: realEmail,
                     image: realImage,
-                    role: clerkUser.publicMetadata?.role || 'user'
+                    role: derivePrimaryRole(mergedRoles),
+                    roles: mergedRoles
                 });
             } catch (clerkErr) {
                 // Clerk API failed — last resort fallback
                 console.warn('[Auth] Clerk API fetch failed for new user:', clerkErr.message);
+                const mergedRoles = mergeRoles('user');
                 user = await upsertUserSafely(userId, {
                     username: 'User',
                     email: `${userId}@temp.clerk.dev`,
                     image: `https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&bold=true`,
-                    role: 'user'
+                    role: 'user',
+                    roles: mergedRoles
                 });
             }
         } else if (user.email?.endsWith('@temp.clerk.dev')) {
@@ -99,14 +105,30 @@ export const protect = async (req, res, next)=>{
         // Keep MongoDB role aligned with Clerk metadata so dashboard access survives refreshes.
         try {
             const clerkUser = await clerk.users.getUser(userId);
-            const clerkRole = clerkUser?.publicMetadata?.role;
-            const validRoles = new Set(['user', 'agent', 'houseOwner', 'admin']);
-            if (validRoles.has(clerkRole) && user.role !== clerkRole) {
-                user.role = clerkRole;
+            const clerkRoles = getRolesFromClerkUser(clerkUser);
+            const existingRoles = mergeRoles(user.roles, user.role);
+            const mergedRoles = mergeRoles(existingRoles, clerkRoles);
+            const nextRole = derivePrimaryRole(mergedRoles, user.role);
+            const storedRoles = Array.isArray(user.roles) ? user.roles : [];
+            const rolesChanged = JSON.stringify([...mergedRoles].sort()) !== JSON.stringify([...storedRoles].sort());
+            const roleChanged = user.role !== nextRole;
+            if (rolesChanged || roleChanged) {
+                user.roles = mergedRoles;
+                user.role = nextRole;
                 await user.save();
             }
         } catch (clerkErr) {
             // Non-critical; keep the role from MongoDB if Clerk is unavailable.
+            const existingRoles = mergeRoles(user.roles, user.role);
+            const nextRole = derivePrimaryRole(existingRoles, user.role);
+            const storedRoles = Array.isArray(user.roles) ? user.roles : [];
+            const rolesChanged = JSON.stringify([...existingRoles].sort()) !== JSON.stringify([...storedRoles].sort());
+            const roleChanged = user.role !== nextRole;
+            if (rolesChanged || roleChanged) {
+                user.roles = existingRoles;
+                user.role = nextRole;
+                await user.save();
+            }
         }
         
         const now = new Date();

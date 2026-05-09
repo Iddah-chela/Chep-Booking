@@ -1,9 +1,7 @@
 import User from "../models/user.js";
 import { Webhook } from "svix";
-
-
-
 import crypto from 'crypto';
+import { derivePrimaryRole, getRolesFromMetadata, mergeRoles } from '../utils/roleUtils.js';
 
 // Generate a short unique referral code from userId
 const generateReferralCode = (userId) => {
@@ -31,10 +29,9 @@ const clerkWebhooks = async (req, res) =>{
         // Getting data from request body
         const {data, type} = req.body
 
-        const incomingRole = data.public_metadata?.role
-        const hasValidIncomingRole = ["user", "agent", "houseOwner", "admin"].includes(incomingRole)
+        const incomingRoles = getRolesFromMetadata(data.public_metadata)
         
-        console.log(`[Webhook] Event: ${type}, User: ${data.id}, Role from Clerk: ${incomingRole}, Valid: ${hasValidIncomingRole}`)
+        console.log(`[Webhook] Event: ${type}, User: ${data.id}, Roles from Clerk: ${incomingRoles.join(', ') || 'none'}`)
         
         
         const userData = {
@@ -47,9 +44,9 @@ const clerkWebhooks = async (req, res) =>{
         // switch case for different events
         switch (type) {
             case "user.created": {
-                // Apply role only when explicitly present in Clerk metadata.
-                // Otherwise default new records to regular user.
-                userData.role = hasValidIncomingRole ? incomingRole : 'user'
+                const mergedRoles = mergeRoles(incomingRoles)
+                userData.roles = mergedRoles
+                userData.role = derivePrimaryRole(mergedRoles)
 
                 // Generate unique referral code
                 userData.referralCode = generateReferralCode(data.id)
@@ -74,18 +71,19 @@ const clerkWebhooks = async (req, res) =>{
             }
 
             case "user.updated": {
-                // Do not default role to "user" on updates.
-                // This prevents accidental admin demotion when Clerk metadata has no role.
-                const updateData = { ...userData }
-                if (hasValidIncomingRole) {
-                    updateData.role = incomingRole
-                    console.log(`[Webhook Update] User ${data.id} role updated to: ${incomingRole}`)
-                } else {
-                    console.log(`[Webhook Update] User ${data.id} role NOT updated (incoming role: ${incomingRole})`)
-                }
+                const existingUser = await User.findById(data.id).select('role roles');
+                const existingRoles = mergeRoles(existingUser?.roles, existingUser?.role);
+                const mergedRoles = incomingRoles.length
+                    ? mergeRoles(existingRoles, incomingRoles)
+                    : existingRoles;
+                const updateData = {
+                    ...userData,
+                    roles: mergedRoles,
+                    role: derivePrimaryRole(mergedRoles, existingUser?.role)
+                };
 
                 const result = await User.findByIdAndUpdate(data.id, updateData);
-                console.log(`[Webhook Update] MongoDB update result:`, result?.role)
+                console.log(`[Webhook Update] MongoDB update role:`, result?.role)
                  break;
             }
 

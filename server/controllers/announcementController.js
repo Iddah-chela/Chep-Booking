@@ -7,6 +7,7 @@ import Report from '../models/report.js';
 import cloudinary from '../config/cloudinary.js';
 import { sendEmail } from '../utils/mailer.js';
 import { sendPushNotification } from '../utils/pushNotifier.js';
+import { hasRole } from '../utils/roleUtils.js';
 
 const uploadToCloudinary = async (file, folder) => {
   if (!file) return '';
@@ -108,11 +109,15 @@ const resolveRecipients = async ({ audience, recipientTokens }) => {
   }
 
   if (normalizedAudience === 'houseOwner') {
-    return await User.find({ role: 'houseOwner' }).select('_id username email role image').lean();
+    return await User.find({ $or: [{ role: 'houseOwner' }, { roles: 'houseOwner' }] })
+      .select('_id username email role image')
+      .lean();
   }
 
   if (normalizedAudience === 'admin') {
-    return await User.find({ role: 'admin' }).select('_id username email role image').lean();
+    return await User.find({ $or: [{ role: 'admin' }, { roles: 'admin' }] })
+      .select('_id username email role image')
+      .lean();
   }
 
   if (normalizedAudience === 'caretaker') {
@@ -220,7 +225,7 @@ export const getActiveAnnouncements = async (req, res) => {
 
 export const getAnnouncements = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!hasRole(req.user, 'admin')) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -236,7 +241,7 @@ export const getAnnouncements = async (req, res) => {
 
 export const createAnnouncement = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!hasRole(req.user, 'admin')) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -292,7 +297,7 @@ export const createAnnouncement = async (req, res) => {
 
 export const updateAnnouncement = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!hasRole(req.user, 'admin')) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -373,7 +378,7 @@ export const updateAnnouncement = async (req, res) => {
 
 export const deleteAnnouncement = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!hasRole(req.user, 'admin')) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -402,7 +407,7 @@ export const deleteAnnouncement = async (req, res) => {
 
 export const deleteAnnouncementForever = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!hasRole(req.user, 'admin')) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -423,7 +428,7 @@ export const deleteAnnouncementForever = async (req, res) => {
 
 export const previewAnnouncementRecipients = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!hasRole(req.user, 'admin')) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 

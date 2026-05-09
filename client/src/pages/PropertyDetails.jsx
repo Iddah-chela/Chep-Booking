@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom'
 import { assets, facilityIcons } from '../assets/assets'
 import ChatInterface from '../components/ChatInterface'
 import ViewingRequestForm from '../components/ViewingRequestForm'
+import AgentLeadModal from '../components/AgentLeadModal'
+import AgentChatInterface from '../components/AgentChatInterface'
 import ReportModal from '../components/ReportModal'
 import VerificationBadge from '../components/VerificationBadge'
 import PaymentModal from '../components/PaymentModal'
@@ -21,6 +23,8 @@ const PropertyDetails = () => {
     const [selectedRoom, setSelectedRoom] = useState(null)
     const [mainImage, setMainImage] = useState(null)
     const [showChat, setShowChat] = useState(false)
+    const [showAgentLeadModal, setShowAgentLeadModal] = useState(false)
+    const [agentLeadType, setAgentLeadType] = useState('contact')
     const [showViewingForm, setShowViewingForm] = useState(false)
     const [showDirectApplyForm, setShowDirectApplyForm] = useState(false)
     const [showReportModal, setShowReportModal] = useState(false)
@@ -482,6 +486,11 @@ const PropertyDetails = () => {
       }
     }
 
+    const openAgentLeadModal = (type) => {
+      setAgentLeadType(type)
+      setShowAgentLeadModal(true)
+    }
+
   if (loading) {
     return <PropertyDetailSkeleton />
   }
@@ -732,14 +741,14 @@ const PropertyDetails = () => {
                   Contact Agent
                 </button>
                 <button
-                  onClick={() => { setSelectedRoom(agentActionRoom); setShowViewingForm(true); }}
+                  onClick={() => { setSelectedRoom(agentActionRoom); openAgentLeadModal('viewing'); }}
                   className={`px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${hasUnlockAccess ? 'border-indigo-200 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30' : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900/50 text-gray-400 cursor-not-allowed'}`}
                   disabled={!hasUnlockAccess}
                 >
                   Book Viewing
                 </button>
                 <button
-                  onClick={() => { setSelectedRoom(agentActionRoom); setShowDirectApplyForm(true); }}
+                  onClick={() => { setSelectedRoom(agentActionRoom); openAgentLeadModal('booking'); }}
                   className={`px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${hasUnlockAccess ? 'border-emerald-200 text-emerald-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30' : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900/50 text-gray-400 cursor-not-allowed'}`}
                   disabled={!hasUnlockAccess}
                 >
@@ -1570,7 +1579,7 @@ const PropertyDetails = () => {
                       </div>
                     )}
                     
-                    {!isPartnerListing && !isAdminManagedWithoutSteward && (
+                    {!isPartnerListing && !isAdminManagedWithoutSteward && !isAgentListing && (
                       <button 
                         onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); setShowChat(true); }}
                         className='px-6 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium flex items-center justify-center gap-2'
@@ -1737,7 +1746,7 @@ const PropertyDetails = () => {
                     </div>
                     
                     {/* Blurred contact buttons */}
-                    {!isPartnerListing && (
+                    {!isPartnerListing && !isAgentListing && (
                     <div className='relative'>
                       <div className='blur-sm pointer-events-none opacity-50'>
                         <button className='w-full px-6 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 font-medium flex items-center justify-center gap-2'>
@@ -1834,14 +1843,14 @@ const PropertyDetails = () => {
                       <MessageCircle className='w-5 h-5' /> Contact Agent
                     </button>
                     <button
-                      onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); setShowViewingForm(true); }}
+                      onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); openAgentLeadModal('viewing'); }}
                       disabled={!hasUnlockAccess}
                       className='px-6 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold disabled:bg-gray-400'
                     >
                       Request Viewing
                     </button>
                     <button
-                      onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); setShowDirectApplyForm(true); }}
+                      onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); openAgentLeadModal('booking'); }}
                       disabled={!hasUnlockAccess}
                       className='px-6 py-3 rounded-lg border-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed'
                     >
@@ -1931,7 +1940,7 @@ const PropertyDetails = () => {
           />
         )}
 
-        {showChat && selectedRoom && !isPartnerListing && !isAdminManagedWithoutSteward && (
+        {showChat && selectedRoom && !isPartnerListing && !isAdminManagedWithoutSteward && !isAgentListing && (
           <ChatInterface 
             room={selectedRoom}
             propertyId={property._id}
@@ -2002,7 +2011,7 @@ const PropertyDetails = () => {
           />
         )}
 
-        {showChat && selectedRoom && (
+        {showChat && selectedRoom && !isAgentListing && (
           <ChatInterface 
             room={selectedRoom}
             propertyId={property._id}
@@ -2014,6 +2023,24 @@ const PropertyDetails = () => {
               phoneNumber: agentContactPhone,
             } : property.owner)} 
             onClose={() => setShowChat(false)} 
+          />
+        )}
+
+        {showChat && (selectedRoom || agentActionRoom) && isAgentListing && (
+          <AgentChatInterface
+            room={selectedRoom || agentActionRoom}
+            vacancyId={property._id}
+            onClose={() => setShowChat(false)}
+          />
+        )}
+
+        {showAgentLeadModal && isAgentListing && (
+          <AgentLeadModal
+            vacancyId={property._id}
+            leadType={agentLeadType}
+            room={selectedRoom || agentActionRoom}
+            onClose={() => setShowAgentLeadModal(false)}
+            onSuccess={() => setShowAgentLeadModal(false)}
           />
         )}
 
