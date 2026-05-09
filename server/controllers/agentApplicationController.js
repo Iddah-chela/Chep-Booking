@@ -35,6 +35,27 @@ export const submitAgentApplication = async (req, res) => {
     const existing = await AgentApplication.findOne({ user: userId });
 
     if (existing) {
+      const userRole = String(user?.role || '').toLowerCase();
+      const currentlyAgent = userRole === 'agent';
+
+      if (existing.status === 'approved' && !currentlyAgent) {
+        existing.yearsExperience = parseInt(yearsExperience);
+        existing.areasServed = areasServed;
+        existing.referenceLink = referenceLink || '';
+        existing.bio = bio || '';
+        existing.status = 'pending';
+        existing.rejectionReason = undefined;
+        existing.reviewedBy = undefined;
+        existing.reviewedAt = undefined;
+
+        await existing.save();
+
+        return res.status(200).json({
+          message: 'Previous approval is no longer active on your account. Application re-opened and sent for review.',
+          application: existing,
+        });
+      }
+
       if (existing.status === 'rejected') {
         existing.yearsExperience = parseInt(yearsExperience);
         existing.areasServed = areasServed;
@@ -106,6 +127,15 @@ export const getMyApplicationStatus = async (req, res) => {
     }
 
     const application = await AgentApplication.findOne({ user: userId });
+
+    if (application?.status === 'approved' && user && user.role !== 'agent') {
+      return res.json({
+        hasApplication: false,
+        status: null,
+        canReapply: true,
+        message: 'Your previous approval is not active on your current account role. You can apply again.',
+      });
+    }
 
     if (!application) {
       return res.json({

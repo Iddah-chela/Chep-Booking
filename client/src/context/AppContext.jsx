@@ -180,6 +180,7 @@ export const AppProvider = ({children})=>{
             await signOut()
             setIsOwner(false)
             setIsAdmin(false)
+            setIsAgent(false)
             setIsCaretaker(false)
             navigate('/')
             toast.success('Logged out successfully')
@@ -220,6 +221,7 @@ export const AppProvider = ({children})=>{
                 // User not logged in - reset states
                 setIsOwner(false);
                 setIsAdmin(false);
+                setIsAgent(false);
                 setIsCaretaker(false);
                 setAuthLoading(false); // Done loading - no user
             }

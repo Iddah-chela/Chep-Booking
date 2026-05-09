@@ -43,11 +43,13 @@ const ProfileModal = ({ onClose }) => {
     }
 
     const handleDeleteAccount = async () => {
-        if (!window.confirm('Delete your account permanently? This cannot be undone.')) return
+        const warning = 'Delete your account permanently? This will delete ALL your houses/listings and related data. This cannot be undone.'
+        if (!window.confirm(warning)) return
 
         try {
             const token = await getToken()
             const { data } = await axios.delete('/api/profile/delete-account', {
+                data: { confirmDeleteOwnedHousing: true },
                 headers: { Authorization: `Bearer ${token}` },
             })
 
@@ -281,7 +283,7 @@ const ProfileModal = ({ onClose }) => {
                             className='flex items-center gap-3 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all text-left text-red-700'
                         >
                             <Trash2 className='w-5 h-5' />
-                            <span className='font-medium'>Delete account</span>
+                            <span className='font-medium'>Delete account and houses</span>
                         </button>
                     </div>
                 </div>

@@ -320,7 +320,7 @@ const PropertyDetails = () => {
         toast('This listing has no landlord/caretaker account active in-app yet. Please call or WhatsApp first to confirm availability.')
         return
       }
-      if (property?.actionability !== 'full_transaction') {
+      if (!isAgentListing && property?.actionability !== 'full_transaction') {
         toast('This is an informational listing. Save it and wait for a live vacancy update.')
         return
       }
@@ -348,7 +348,7 @@ const PropertyDetails = () => {
         toast('Direct apply is disabled until a landlord/caretaker account is active in-app. Please call or WhatsApp first.')
         return
       }
-      if (property?.actionability !== 'full_transaction') {
+      if (!isAgentListing && property?.actionability !== 'full_transaction') {
         toast('This listing is not accepting direct applications yet.')
         return
       }
@@ -1590,7 +1590,7 @@ const PropertyDetails = () => {
                       </a>
                     )}
 
-                    {(isPartnerListing || isAdminManagedWithoutSteward || isAgentListing) && (agentContactPhone || property.contact) && (
+                    {(isPartnerListing || isAdminManagedWithoutSteward) && (agentContactPhone || property.contact) && (
                       <a
                         href={`tel:${String(agentContactPhone || property.contact).replace(/[^0-9+]/g, '')}`}
                         className='px-6 py-3 rounded-lg border-2 border-gray-400 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all inline-flex items-center justify-center gap-2 font-medium'
@@ -1599,12 +1599,12 @@ const PropertyDetails = () => {
                       </a>
                     )}
 
-                    {(isPartnerListing || isAdminManagedWithoutSteward || isAgentListing) && (
+                    {(isPartnerListing || isAdminManagedWithoutSteward) && (
                       <p className='text-xs text-amber-700 dark:text-amber-300'>Use WhatsApp or Call to confirm current availability before requesting viewing.</p>
                     )}
 
                     {/* Share & Earn (also visible when unlocked) */}
-                    {referralInfo && (
+                    {!isAgentListing && referralInfo && (
                       <div className='p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg'>
                         <div className='flex items-center gap-2 mb-1.5'>
                           <Share2 className='w-4 h-4 text-amber-600 dark:text-amber-400' />
@@ -1674,7 +1674,7 @@ const PropertyDetails = () => {
 
                             {/* Option B: pay without login via M-Pesa */}
                             <div className='p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg'>
-                              <p className='text-xs font-bold text-indigo-700 dark:text-indigo-300 mb-0.5 flex items-center gap-1'><Lock className='w-3.5 h-3.5' /> Ksh 25/day or Ksh 150/week - via M-Pesa</p>
+                              <p className='text-xs font-bold text-indigo-700 dark:text-indigo-300 mb-0.5 flex items-center gap-1'><Lock className='w-3.5 h-3.5' /> Ksh 50/day or Ksh 200/week - via M-Pesa</p>
                               <p className='text-xs text-indigo-600 dark:text-indigo-400 mb-2'>Pay directly, no account needed</p>
                               <button
                                 onClick={() => setShowGuestPayment(true)}
@@ -1708,8 +1708,8 @@ const PropertyDetails = () => {
                                   <div className='h-8 w-32 mx-auto bg-gray-200 rounded animate-pulse' />
                                 ) : (
                                   <>
-                                    <div className='text-2xl font-bold text-indigo-600'>from Ksh 25</div>
-                                    <p className='text-xs text-indigo-500'>Ksh 25/day or Ksh 150/week</p>
+                                    <div className='text-2xl font-bold text-indigo-600'>from Ksh 50</div>
+                                    <p className='text-xs text-indigo-500'>Ksh 50/day or Ksh 200/week</p>
                                   </>
                                 )}
                               </div>
@@ -1729,7 +1729,7 @@ const PropertyDetails = () => {
                                 ? <span className='flex items-center justify-center gap-2 animate-pulse'>Loading...</span>
                                 : showFree 
                                   ? <span className='flex items-center justify-center gap-2'><Gift className='w-4 h-4' /> Claim Free Access</span> 
-                                      : <span className='flex items-center justify-center gap-2'><Unlock className='w-4 h-4' /> Unlock - from Ksh 25</span>}
+                                      : <span className='flex items-center justify-center gap-2'><Unlock className='w-4 h-4' /> Unlock - from Ksh 50</span>}
                             </button>
                           </>
                         )})()}
@@ -1751,7 +1751,7 @@ const PropertyDetails = () => {
                     )}
 
                     {/* Share & Earn Referral Section */}
-                    {user && (referralInfo ? (
+                    {!isAgentListing && user && (referralInfo ? (
                       <div className='p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg'>
                         <div className='flex items-center gap-2 mb-2'>
                           <Share2 className='w-4 h-4 text-amber-600 dark:text-amber-400' />
@@ -1809,20 +1809,45 @@ const PropertyDetails = () => {
                   </>
                 )}
                 
-                <button 
+                {!isAgentListing && <button 
                   onClick={handleRequestViewing}
                   disabled={isAdminManagedWithoutSteward || ((!selectedRoom.isVacant && !selectedRoom.isMoveOutSoon) || selectedRoom.isBooked)}
                   className='px-6 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold disabled:bg-gray-400'
                 >
                   {isAdminManagedWithoutSteward ? 'Viewing Disabled (No Steward Yet)' : selectedRoom.isBooked ? 'Room Booked' : (selectedRoom.isVacant || selectedRoom.isMoveOutSoon) ? 'Request Viewing' : 'Room Occupied'}
-                </button>
-                {(selectedRoom.isVacant || selectedRoom.isMoveOutSoon) && !selectedRoom.isBooked && !isAdminManagedWithoutSteward && (
+                </button>}
+                {!isAgentListing && (selectedRoom.isVacant || selectedRoom.isMoveOutSoon) && !selectedRoom.isBooked && !isAdminManagedWithoutSteward && (
                   <button
                     onClick={handleDirectApply}
                     className='px-6 py-3 rounded-lg border-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all font-semibold'
                   >
                     {selectedRoom.isMoveOutSoon ? 'Apply for Move-In Date' : 'Apply Directly'}
                   </button>
+                )}
+                {isAgentListing && (
+                  <>
+                    <button
+                      onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); setShowChat(true); }}
+                      disabled={!hasUnlockAccess}
+                      className='px-6 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'
+                    >
+                      <MessageCircle className='w-5 h-5' /> Contact Agent
+                    </button>
+                    <button
+                      onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); setShowViewingForm(true); }}
+                      disabled={!hasUnlockAccess}
+                      className='px-6 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold disabled:bg-gray-400'
+                    >
+                      Request Viewing
+                    </button>
+                    <button
+                      onClick={() => { setSelectedRoom(selectedRoom || agentActionRoom); setShowDirectApplyForm(true); }}
+                      disabled={!hasUnlockAccess}
+                      className='px-6 py-3 rounded-lg border-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed'
+                    >
+                      Reserve Room
+                    </button>
+                  </>
                 )}
               </div>
             </div>

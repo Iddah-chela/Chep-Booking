@@ -45,7 +45,7 @@ export const evaluateListingReadiness = (property) => {
 };
 
 export const normalizeListingActionability = (listingTier) => {
-  if (listingTier === 'live') return 'full_transaction';
+  if (listingTier === 'live' || listingTier === 'agent') return 'full_transaction';
   return 'info_only';
 };
 

@@ -45,7 +45,7 @@ const AdminUsers = () => {
   };
 
   const handleDelete = async (userId, username) => {
-    if (!confirm(`Permanently delete account for "${username}"? This cannot be undone.`)) return;
+    if (!confirm(`Permanently delete account for "${username}"? This will also delete all their houses/listings and related data. This cannot be undone.`)) return;
     try {
       const token = await getToken();
       const { data } = await axios.post('/api/admin/delete-user', { userId }, { headers: { Authorization: `Bearer ${token}` } });

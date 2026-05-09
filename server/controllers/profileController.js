@@ -1,10 +1,8 @@
 import User from "../models/user.js";
 import cloudinary from "../config/cloudinary.js";
-import { createClerkClient } from '@clerk/express';
-
-const clerk = createClerkClient({
-    secretKey: process.env.CLERK_SECRET_KEY
-});
+import { deleteUserCascade } from '../utils/deleteUserCascade.js';
+import House from '../models/house.js';
+import Property from '../models/property.js';
 
 // Upload/Update Profile Picture
 export const uploadProfilePicture = async (req, res) => {
@@ -96,16 +94,34 @@ export const getUserProfile = async (req, res) => {
 export const deleteMyAccount = async (req, res) => {
     try {
         const userId = req.user._id;
+        const { confirmDeleteOwnedHousing } = req.body || {};
 
-        await User.findByIdAndDelete(userId);
+        if (!confirmDeleteOwnedHousing) {
+            const [ownedHouses, ownedProperties] = await Promise.all([
+                House.countDocuments({ owner: String(userId) }),
+                Property.countDocuments({ owner: String(userId) }),
+            ]);
 
-        try {
-            await clerk.users.deleteUser(userId);
-        } catch (clerkError) {
-            console.warn('Clerk delete skipped or failed:', clerkError.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Please confirm account deletion. This will permanently delete your account and owned houses/listings.',
+                warning: {
+                    ownedHouses,
+                    ownedProperties,
+                },
+            });
         }
 
-        res.json({ success: true, message: 'Account deleted successfully' });
+        const result = await deleteUserCascade({
+            userId: String(userId),
+            requireClerkDeletion: true,
+        });
+
+        if (!result.success) {
+            return res.status(404).json({ success: false, message: result.message });
+        }
+
+        res.json({ success: true, message: 'Account deleted permanently from Clerk and database', summary: result.summary });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

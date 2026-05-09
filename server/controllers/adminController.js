@@ -11,6 +11,7 @@ import ExcelJS from "exceljs";
 import { applyAutoListingLifecycle, evaluateListingReadiness } from "../utils/listingLifecycle.js";
 import { sendEmail } from "../utils/mailer.js";
 import { sendPushNotification } from "../utils/pushNotifier.js";
+import { deleteUserCascade } from '../utils/deleteUserCascade.js';
 
 // Middleware to check if user is admin
 export const isAdmin = (req, res, next) => {
@@ -44,10 +45,11 @@ export const suspendUser = async (req, res) => {
 export const deleteUser = async (req, res) => {
     try {
         const { userId } = req.body;
-        const user = await User.findById(userId);
-        if (!user) return res.json({ success: false, message: 'User not found' });
-        await User.findByIdAndDelete(userId);
-        res.json({ success: true, message: 'User account deleted' });
+        const result = await deleteUserCascade({ userId: String(userId), requireClerkDeletion: true });
+        if (!result.success) {
+            return res.json({ success: false, message: result.message });
+        }
+        res.json({ success: true, message: 'User account deleted from Clerk and MongoDB', summary: result.summary });
     } catch (error) {
         res.json({ success: false, message: error.message });
     }
