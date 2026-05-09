@@ -125,6 +125,18 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
               </div>
             )}
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
+              <input
+                autoFocus
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Enter phone number"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 outline-none focus:border-primary dark:bg-gray-700 dark:text-gray-100"
+              />
+            </div>
+
             {needsMoveInDate && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -151,17 +163,6 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
                 placeholder="Share any details with the agent..."
                 rows="4"
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 outline-none focus:border-primary dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 resize-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter phone number"
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 outline-none focus:border-primary dark:bg-gray-700 dark:text-gray-100"
               />
             </div>
 

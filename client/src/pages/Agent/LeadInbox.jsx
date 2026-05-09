@@ -136,6 +136,14 @@ export default function LeadInbox() {
   };
 
   const handleUpdateLeadStatus = async (leadId, newStatus) => {
+    // If this is a chat item (merged from chats), don't call lead endpoints
+    if (String(leadId).startsWith('chat_')) {
+      toast('This item is a chat. Open messages to manage conversations.');
+      setUpdatingLead(null);
+      navigate('/my-chats');
+      return;
+    }
+
     try {
       setUpdatingLead(leadId);
       const token = await getToken();
@@ -155,6 +163,13 @@ export default function LeadInbox() {
   };
 
   const handleMarkOutcome = async (leadId, outcome) => {
+    // Avoid marking outcome on chat items
+    if (String(leadId).startsWith('chat_')) {
+      toast('Open the chat to continue the conversation.');
+      navigate('/my-chats');
+      return;
+    }
+
     try {
       setUpdatingLead(leadId);
       const token = await getToken();
@@ -506,90 +521,28 @@ export default function LeadInbox() {
             {/* Lead Details Panel */}
             <div className='lg:col-span-1'>
               {selectedLead ? (
-                <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-6'>
-                  <h3 className='font-bold text-lg text-gray-900 dark:text-white mb-4'>Lead Details</h3>
-
-                  <div className='mb-6'>
-                    <h4 className='font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm'>Student</h4>
-                    <p className='text-gray-900 dark:text-white font-medium'>{selectedLead.studentInfo.name}</p>
-                    <p className='text-sm text-gray-600 dark:text-gray-400'>{selectedLead.studentInfo.phone}</p>
-                    <p className='text-sm text-gray-600 dark:text-gray-400'>{selectedLead.studentInfo.email}</p>
-                  </div>
-
-                  <div className='mb-6 pb-6 border-b border-gray-200 dark:border-gray-700'>
-                    <h4 className='font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm'>Vacancy</h4>
-                    <p className='text-gray-900 dark:text-white font-medium capitalize'>
-                      {selectedLead.vacancy?.title || selectedLead.vacancy?.roomType}
-                    </p>
-                    <p className='text-sm text-gray-600 dark:text-gray-400'>
-                      {selectedLead.vacancy?.location.area}, {selectedLead.vacancy?.location.city}
-                    </p>
-                  </div>
-
-                  <div className='mb-6 pb-6 border-b border-gray-200 dark:border-gray-700'>
-                    <h4 className='font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm'>Intent</h4>
-                    <p className='text-sm text-gray-600 dark:text-gray-400 capitalize'>{selectedLead.leadType || 'contact'}</p>
-                  </div>
-
-                  {selectedLead.message && (
-                    <div className='mb-6 pb-6 border-b border-gray-200 dark:border-gray-700'>
-                      <h4 className='font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm'>Message</h4>
-                      <p className='text-sm text-gray-600 dark:text-gray-400'>{selectedLead.message}</p>
+                selectedLead.leadType === 'chat' ? (
+                  <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-6'>
+                    <h3 className='font-bold text-lg text-gray-900 dark:text-white mb-4'>Chat</h3>
+                    <div className='mb-4'>
+                      <h4 className='font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm'>Participant</h4>
+                      <p className='text-gray-900 dark:text-white font-medium'>{selectedLead.studentInfo?.name || 'Tenant'}</p>
+                      <p className='text-sm text-gray-600 dark:text-gray-400'>{selectedLead.studentInfo?.phone}</p>
                     </div>
-                  )}
-
-                  <div className='mb-6 pb-6 border-b border-gray-200 dark:border-gray-700'>
-                    <h4 className='font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm'>Status</h4>
-                    <select
-                      value={selectedLead.status}
-                      onChange={(e) => handleUpdateLeadStatus(selectedLead._id, e.target.value)}
-                      disabled={updatingLead === selectedLead._id}
-                      className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm dark:text-gray-200'
-                    >
-                      <option value='new'>New</option>
-                      <option value='contacted'>Contacted</option>
-                      <option value='viewed'>Viewed</option>
-                      <option value='pending'>Pending</option>
-                    </select>
-                  </div>
-
-                  <div className='mb-6 pb-6 border-b border-gray-200 dark:border-gray-700'>
-                    <h4 className='font-semibold text-gray-700 dark:text-gray-300 mb-3 text-sm'>Mark Outcome</h4>
+                    <div className='mb-4'>
+                      <h4 className='font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm'>Listing</h4>
+                      <p className='text-gray-900 dark:text-white font-medium'>{selectedLead.vacancy?.title || selectedLead.vacancy?.roomType}</p>
+                    </div>
+                    <div className='mb-4'>
+                      <h4 className='font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm'>Latest Message</h4>
+                      <p className='text-sm text-gray-600 dark:text-gray-400 line-clamp-3'>{selectedLead.message || ''}</p>
+                    </div>
                     <div className='space-y-2'>
-                      {['viewed', 'booked', 'not-fit', 'no-response'].map((outcome) => (
-                        <button
-                          key={outcome}
-                          onClick={() => handleMarkOutcome(selectedLead._id, outcome)}
-                          disabled={updatingLead === selectedLead._id}
-                          className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                            selectedLead.outcome === outcome
-                              ? 'bg-green-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          {selectedLead.outcome === outcome && <Check size={16} />}
-                          {outcome.charAt(0).toUpperCase() + outcome.slice(1)}
-                        </button>
-                      ))}
+                      <button onClick={() => navigate(`/chat/agent/${selectedLead.chatId || ''}`)} className='w-full px-4 py-2 bg-indigo-600 text-white rounded-lg'>Open Chat</button>
+                      <button onClick={() => navigate('/my-chats')} className='w-full px-4 py-2 bg-white border border-gray-300 rounded-lg'>My Chats</button>
                     </div>
                   </div>
-
-                  <a
-                    href={`https://wa.me/${selectedLead.studentInfo.phone.replace(/\D/g, '')}?text=Hi%20${encodeURIComponent(
-                      selectedLead.studentInfo.name
-                    )},%20I'm%20responding%20to%20your%20${encodeURIComponent(
-                      selectedLead.leadType || 'contact'
-                    )}%20request%20for%20the%20${encodeURIComponent(
-                      selectedLead.vacancy?.title || selectedLead.vacancy?.roomType
-                    )}%20vacancy.`}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-center font-semibold transition-colors block text-sm'
-                  >
-                    Contact on WhatsApp
-                  </a>
-                </div>
-              ) : (
+                ) : (
                 <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 text-center'>
                   <MessageSquare size={40} className='mx-auto text-gray-400 mb-2' />
                   <p className='text-gray-600 dark:text-gray-400 text-sm'>Select a lead to view details</p>
