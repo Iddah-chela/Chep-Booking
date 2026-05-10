@@ -2,6 +2,7 @@ import express from 'express';
 import * as agentController from '../controllers/agentController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/roleMiddleware.js';
+import validateLeadId from '../middleware/validateLeadId.js';
 import upload from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
@@ -38,19 +39,19 @@ router.put('/vacancies/:id/reopen', protect, isAgent, agentController.reopenVaca
 router.get('/leads', protect, isAgent, agentController.getAgentLeads);
 
 // Agent: Get single lead
-router.get('/leads/:id', protect, isAgent, agentController.getLeadById);
+router.get('/leads/:id', protect, isAgent, validateLeadId, agentController.getLeadById);
 
 // Agent: Update lead (status, notes, contact method)
-router.put('/leads/:id', protect, isAgent, agentController.updateLead);
+router.put('/leads/:id', protect, isAgent, validateLeadId, agentController.updateLead);
 
 // Agent: Mark lead outcome (viewed, booked, not-fit, no-response)
-router.put('/leads/:id/outcome', protect, isAgent, agentController.markLeadOutcome);
+router.put('/leads/:id/outcome', protect, isAgent, validateLeadId, agentController.markLeadOutcome);
 
 // Authenticated user: Express interest in a vacancy (create lead)
 router.post('/leads', protect, agentController.createLead);
 
 // Cancel provisional hold (tenant or agent)
-router.put('/leads/:id/cancel-hold', protect, agentController.cancelProvisionalHold);
+router.put('/leads/:id/cancel-hold', protect, validateLeadId, agentController.cancelProvisionalHold);
 
 // ===== STATS ROUTES =====
 

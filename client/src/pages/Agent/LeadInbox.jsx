@@ -9,7 +9,7 @@ export default function LeadInbox() {
   const [vacancies, setVacancies] = useState([]);
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [leadFilter, setLeadFilter] = useState('all'); // 'all' | 'contacts' | 'viewing' | 'bookings'
   const [selectedLead, setSelectedLead] = useState(null);
   const [updatingLead, setUpdatingLead] = useState(null);
   const [openVacancyIds, setOpenVacancyIds] = useState({});
@@ -24,7 +24,7 @@ export default function LeadInbox() {
     } else {
       fetchLeads();
     }
-  }, [tab, statusFilter]);
+  }, [tab, leadFilter]);
 
   const fetchVacancies = async () => {
     try {
@@ -46,8 +46,9 @@ export default function LeadInbox() {
     try {
       setLoading(true);
       const token = await getToken();
+      // Always fetch all leads and filter client-side for richer categories
       const res = await axios.get(
-        `/api/agent/leads?status=${statusFilter === 'all' ? 'all' : statusFilter}&limit=100`,
+        `/api/agent/leads?status=all&limit=100`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const raw = res.data.leads || [];
@@ -96,6 +97,15 @@ export default function LeadInbox() {
       setLoading(false);
     }
   };
+
+  const filteredLeads = useMemo(() => {
+    if (!leads) return [];
+    if (leadFilter === 'all') return leads;
+    if (leadFilter === 'contacts') return leads.filter((l) => Boolean(l.message));
+    if (leadFilter === 'viewing') return leads.filter((l) => l.leadType === 'viewing');
+    if (leadFilter === 'bookings') return leads.filter((l) => l.leadType === 'booking' || l.leadType === 'reserve');
+    return leads;
+  }, [leads, leadFilter]);
 
   const handleReopenVacancy = async (vacancyId) => {
     if (!window.confirm('Re-open this vacancy? Students can view it again.')) return;
@@ -204,8 +214,14 @@ export default function LeadInbox() {
     return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200';
   };
 
+  const formatDate = (v) => {
+    try {
+      return v ? new Date(v).toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+    } catch (_) { return '—'; }
+  };
+
   const vacancyGroups = useMemo(() => {
-    const grouped = leads.reduce((acc, lead) => {
+    const grouped = filteredLeads.reduce((acc, lead) => {
       const key = lead.vacancy?._id || 'unknown';
       if (!acc[key]) {
         acc[key] = {
@@ -218,12 +234,10 @@ export default function LeadInbox() {
     }, {});
 
     return Object.values(grouped);
-  }, [leads]);
+  }, [filteredLeads]);
 
-  const filteredVacancies = vacancies.filter((v) => {
-    if (statusFilter === 'all') return true;
-    return v.status === statusFilter;
-  });
+
+  const filteredVacancies = vacancies;
 
   if (loading && (tab === 'vacancies' ? vacancies.length === 0 : leads.length === 0)) {
     return (
@@ -276,17 +290,22 @@ export default function LeadInbox() {
         {/* Status Filters (only for Leads tab). Vacancies intentionally show per-vacancy contacts instead of global filters */}
         {tab === 'leads' && (
           <div className='mb-6 flex flex-wrap gap-2'>
-            {['all', 'new', 'contacted', 'viewed', 'pending', 'booked'].map((filter) => (
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'contacts', label: 'Contacts' },
+              { key: 'viewing', label: 'Viewing Requests' },
+              { key: 'bookings', label: 'Bookings' },
+            ].map((f) => (
               <button
-                key={filter}
-                onClick={() => setStatusFilter(filter)}
+                key={f.key}
+                onClick={() => setLeadFilter(f.key)}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  statusFilter === filter
+                  leadFilter === f.key
                     ? 'bg-indigo-600 text-white'
                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                {f.label}
               </button>
             ))}
           </div>
@@ -380,9 +399,12 @@ export default function LeadInbox() {
                                   <div className='flex flex-col items-end gap-2'>
                                     <button
                                       onClick={() => {
-                                        // Navigate to messages; agent can continue in My Chats
                                         toast.success('Opening chat...');
-                                        navigate('/my-chats');
+                                        if (lead.leadType === 'chat' && lead.chatId) {
+                                          navigate(`/chat/agent/${lead.chatId}`);
+                                        } else {
+                                          navigate('/my-chats');
+                                        }
                                       }}
                                       className='px-3 py-1 bg-indigo-600 text-white rounded-md text-sm'
                                     >
@@ -520,7 +542,7 @@ export default function LeadInbox() {
 
             {/* Lead Details Panel */}
             <div className='lg:col-span-1'>
-              {selectedLead && (
+              {selectedLead ? (
                 selectedLead.leadType === 'chat' ? (
                   <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-6'>
                     <h3 className='font-bold text-lg text-gray-900 dark:text-white mb-4'>Chat</h3>
@@ -542,12 +564,84 @@ export default function LeadInbox() {
                       <button onClick={() => navigate('/my-chats')} className='w-full px-4 py-2 bg-white border border-gray-300 rounded-lg'>My Chats</button>
                     </div>
                   </div>
+                ) : selectedLead.leadType === 'viewing' ? (
+                  <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-6 text-sm'>
+                    <h3 className='font-bold text-lg text-gray-900 dark:text-white mb-4'>Viewing Request</h3>
+                    <div className='mb-3'>
+                      <p className='font-semibold'>{selectedLead.studentInfo?.name || 'Tenant'}</p>
+                      <p className='text-xs text-gray-600 dark:text-gray-400'>{selectedLead.studentInfo?.phone}</p>
+                    </div>
+                    <div className='mb-3'>
+                      <p className='font-medium'>Listing</p>
+                      <p className='text-gray-900 dark:text-white'>{selectedLead.vacancy?.title || selectedLead.vacancy?.roomType}</p>
+                    </div>
+                    <div className='mb-2'>
+                      <p className='font-medium'>Requested Date</p>
+                      <p className='text-gray-700 dark:text-gray-300'>{formatDate(selectedLead.raw?.viewingDate || selectedLead.raw?.viewingDateTime)}</p>
+                    </div>
+                    <div className='mb-2'>
+                      <p className='font-medium'>Requested Time</p>
+                      <p className='text-gray-700 dark:text-gray-300'>{selectedLead.raw?.viewingTimeRange || selectedLead.raw?.viewingTime || 'Any'}</p>
+                    </div>
+                    {selectedLead.message && (
+                      <div className='mb-3'>
+                        <p className='font-medium'>Message</p>
+                        <p className='text-gray-700 dark:text-gray-300'>{selectedLead.message}</p>
+                      </div>
+                    )}
+                    <div className='space-y-2'>
+                      <button onClick={() => navigate(`/owner/viewing-requests?viewingId=${selectedLead.raw?._id || ''}`)} className='w-full px-4 py-2 bg-indigo-600 text-white rounded-lg'>Open Viewing</button>
+                      <button onClick={() => navigate('/my-viewings')} className='w-full px-4 py-2 bg-white border border-gray-300 rounded-lg'>My Viewings</button>
+                    </div>
+                  </div>
+                ) : (selectedLead.leadType === 'booking' || selectedLead.leadType === 'reserve') ? (
+                  <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-6 text-sm'>
+                    <h3 className='font-bold text-lg text-gray-900 dark:text-white mb-4'>Booking / Reserve</h3>
+                    <div className='mb-3'>
+                      <p className='font-semibold'>{selectedLead.studentInfo?.name || 'Tenant'}</p>
+                      <p className='text-xs text-gray-600 dark:text-gray-400'>{selectedLead.studentInfo?.phone}</p>
+                    </div>
+                    <div className='mb-3'>
+                      <p className='font-medium'>Listing</p>
+                      <p className='text-gray-900 dark:text-white'>{selectedLead.vacancy?.title || selectedLead.vacancy?.roomType}</p>
+                    </div>
+                    <div className='mb-2'>
+                      <p className='font-medium'>Preferred Move-in</p>
+                      <p className='text-gray-700 dark:text-gray-300'>{formatDate(selectedLead.raw?.preferredMoveInDate || selectedLead.raw?.moveInDate)}</p>
+                    </div>
+                    <div className='mb-2'>
+                      <p className='font-medium'>Provisional Hold Until</p>
+                      <p className='text-gray-700 dark:text-gray-300'>{formatDate(selectedLead.raw?.provisionalHoldUntil)}</p>
+                    </div>
+                    {selectedLead.message && (
+                      <div className='mb-3'>
+                        <p className='font-medium'>Message</p>
+                        <p className='text-gray-700 dark:text-gray-300'>{selectedLead.message}</p>
+                      </div>
+                    )}
+                    <div className='space-y-2'>
+                      <a
+                        className='block w-full text-center px-4 py-2 bg-green-600 text-white rounded-lg'
+                        href={`https://wa.me/?text=${encodeURIComponent(`${selectedLead.studentInfo?.name || 'Tenant'} is ready to book the house and move in on ${formatDate(selectedLead.raw?.preferredMoveInDate || selectedLead.raw?.moveInDate)}.`)}`}
+                        target='_blank'
+                        rel='noreferrer'
+                      >
+                        WhatsApp to Caretaker
+                      </a>
+                      <button onClick={() => navigate('/agent/bookings')} className='w-full px-4 py-2 bg-indigo-600 text-white rounded-lg'>Manage Bookings</button>
+                    </div>
+                  </div>
                 ) : (
+                  <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 text-center'>
+                    <MessageSquare size={40} className='mx-auto text-gray-400 mb-2' />
+                    <p className='text-gray-600 dark:text-gray-400 text-sm'>Select a lead to view details</p>
+                  </div>
+                )
+              ) : (
                 <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 text-center'>
                   <MessageSquare size={40} className='mx-auto text-gray-400 mb-2' />
                   <p className='text-gray-600 dark:text-gray-400 text-sm'>Select a lead to view details</p>
                 </div>
-                )
               )}
             </div>
           </div>
