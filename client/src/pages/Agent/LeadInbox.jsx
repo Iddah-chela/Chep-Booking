@@ -227,16 +227,16 @@ export default function LeadInbox() {
         acc[key] = {
           vacancy: lead.vacancy,
           leads: [],
-          hasProvisionalHold: false,
+          hasTemporaryHold: false,
         };
       }
       acc[key].leads.push(lead);
-      // detect active provisional hold on booking-type leads
+      // detect active temporary hold on booking-type leads
       try {
-        const ph = lead.raw?.provisionalHoldUntil || lead.provisionalHoldUntil;
-        if (lead.leadType === 'booking' && ph) {
-          const until = new Date(ph);
-          if (!isNaN(until) && until > new Date()) acc[key].hasProvisionalHold = true;
+        const th = lead.raw?.provisionalHoldUntil || lead.provisionalHoldUntil;
+        if (lead.leadType === 'booking' && th) {
+          const until = new Date(th);
+          if (!isNaN(until) && until > new Date()) acc[key].hasTemporaryHold = true;
         }
       } catch (_) {}
       return acc;
@@ -349,8 +349,8 @@ export default function LeadInbox() {
                             {vacancy.location?.area}, {vacancy.location?.city}
                           </p>
                         </div>
-                        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${group.hasProvisionalHold ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200' : getStatusColor(group.vacancy?.status)}`}>
-                          {group.hasProvisionalHold ? 'Reserved' : (group.vacancy?.status ? (group.vacancy.status.charAt(0).toUpperCase() + group.vacancy.status.slice(1)) : 'Status')}
+                        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${group.hasTemporaryHold ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200' : getStatusColor(group.vacancy?.status)}`}>
+                          {group.hasTemporaryHold ? 'Reserved' : (group.vacancy?.status ? (group.vacancy.status.charAt(0).toUpperCase() + group.vacancy.status.slice(1)) : 'Status')}
                         </span>
                       </div>
 
@@ -521,9 +521,14 @@ export default function LeadInbox() {
                                       <h4 className='font-semibold text-gray-900 dark:text-white'>{lead.studentInfo.name}</h4>
                                       <p className='text-sm text-gray-600 dark:text-gray-400 capitalize'>{lead.leadType}</p>
                                     </div>
-                                    <span className={`text-xs px-2 py-1 rounded font-medium ${getStatusColor(lead.status)}`}>
-                                      {lead.status}
-                                    </span>
+                                    <div className='flex flex-col items-end'>
+                                      <span className={`text-xs px-2 py-1 rounded font-medium ${getStatusColor(lead.status)}`}>
+                                        {lead.status}
+                                      </span>
+                                      {lead.leadType === 'booking' && (lead.raw?.provisionalHoldUntil || lead.provisionalHoldUntil) && (
+                                        <span className='text-[10px] mt-1 px-2 py-0.5 rounded bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200'>Temp Hold</span>
+                                      )}
+                                    </div>
                                   </div>
                                   <div className='flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400'>
                                     <div className='flex items-center gap-1'>
@@ -618,7 +623,7 @@ export default function LeadInbox() {
                       <p className='text-gray-700 dark:text-gray-300'>{formatDate(selectedLead.raw?.preferredMoveInDate || selectedLead.raw?.moveInDate)}</p>
                     </div>
                     <div className='mb-2'>
-                      <p className='font-medium'>Provisional Hold Until</p>
+                      <p className='font-medium'>Temporary Hold Until</p>
                       <p className='text-gray-700 dark:text-gray-300'>{formatDate(selectedLead.raw?.provisionalHoldUntil)}</p>
                     </div>
                     {selectedLead.message && (

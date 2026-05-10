@@ -17,6 +17,8 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
   const [phone, setPhone] = useState(user?.phone || '');
   const [loading, setLoading] = useState(false);
   const [reservedLead, setReservedLead] = useState(null);
+  const [roomHeld, setRoomHeld] = useState(false);
+  const [holdMessage, setHoldMessage] = useState('');
 
   const needsViewingDate = leadType === 'viewing';
   const needsMoveInDate = leadType !== 'contact';
@@ -80,7 +82,7 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
         // If booking/reserve, keep modal open and show hold info + cancel option
         if (leadType === 'booking' && data.lead) {
           setReservedLead(data.lead);
-          toast.success('Room provisionally held. Confirm with the agent in your leads.');
+          toast.success('Room temporarily held. Confirm with the agent in your leads.');
           onSuccess && onSuccess(data);
         } else {
           toast.success('Agent notified. You will be contacted soon.');
@@ -91,7 +93,13 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
         toast.error('Unable to send request. Please try again.');
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Unable to send request. Please try again.');
+      const msg = error?.response?.data?.message || '';
+      // If backend reports the room is held, surface that in the modal so user sees it
+      if (error?.response?.status === 409 || /hold/i.test(msg)) {
+        setRoomHeld(true);
+        setHoldMessage(msg || 'Room is currently held by another reservation.');
+      }
+      toast.error(msg || 'Unable to send request. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -134,6 +142,20 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
                   required
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 outline-none focus:border-primary dark:bg-gray-700 dark:text-gray-100"
                 />
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preferred Viewing Time</label>
+                  <select
+                    value={preferredViewingTimeRange}
+                    onChange={(e) => setPreferredViewingTimeRange(e.target.value)}
+                    required
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:border-primary dark:bg-gray-700 dark:text-gray-100"
+                  >
+                    <option value="">Select a time</option>
+                    {timeRanges.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 
@@ -188,10 +210,15 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
           </form>
           ) : (
             <div className="space-y-4">
+              {roomHeld && (
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">{holdMessage || 'Room is currently held by another reservation.'}</p>
+                </div>
+              )}
               <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
-                <p className="text-sm text-green-800 dark:text-green-200">Room provisionally held until:</p>
+                <p className="text-sm text-green-800 dark:text-green-200">Room temporarily held until:</p>
                 <p className="font-semibold">{new Date(reservedLead.provisionalHoldUntil).toLocaleString()}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">The agent must confirm to finalize the booking. You can cancel this hold.</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">The agent must confirm to finalize the booking. You can cancel this temporary hold.</p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -201,7 +228,7 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
                       const token = await getToken();
                       const { data } = await axios.put(`/api/agent/leads/${reservedLead._id}/cancel-hold`, {}, { headers: { Authorization: `Bearer ${token}` } });
                       if (data?.success) {
-                        toast.success('Hold cancelled');
+                        toast.success('Temporary hold cancelled');
                         setReservedLead(null);
                         onClose();
                       } else {

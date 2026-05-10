@@ -123,6 +123,33 @@ const PropertyDetails = () => {
             ) {
               fetchedProperty.buildings = buildDefaultAgentBuildings(fetchedProperty)
             }
+            // After loading, if this is an agent listing, fetch active temporary holds and mark cells as booked
+            if (fetchedProperty && (String(fetchedProperty.sourceType || '').toLowerCase() === 'agent' || fetchedProperty.agentPost)) {
+              try {
+                const { data: holdsData } = await axios.get(`/api/agent/vacancies/${fetchedProperty._id}/holds`).catch(() => ({ data: null }));
+                const holds = holdsData?.holds || [];
+                if (holds.length > 0 && Array.isArray(fetchedProperty.buildings)) {
+                  // clone buildings to avoid mutating response
+                  const buildings = JSON.parse(JSON.stringify(fetchedProperty.buildings));
+                  const now = new Date();
+                  for (const h of holds) {
+                    if (!h || !h.roomDetails) continue;
+                    try {
+                      const bId = String(h.roomDetails.buildingId || 'agent-listing');
+                      const r = Number(h.roomDetails.row || 0);
+                      const c = Number(h.roomDetails.col || 0);
+                      const until = new Date(h.provisionalHoldUntil);
+                      if (isNaN(until) || until <= now) continue;
+                      const bIndex = buildings.findIndex(b => String(b.id) === String(bId));
+                      if (bIndex !== -1 && buildings[bIndex].grid && buildings[bIndex].grid[r] && buildings[bIndex].grid[r][c]) {
+                        buildings[bIndex].grid[r][c].isBooked = true;
+                      }
+                    } catch (_) {}
+                  }
+                  fetchedProperty.buildings = buildings;
+                }
+              } catch (_) {}
+            }
             setProperty(fetchedProperty)
             setMainImage(fetchedProperty.images[0])
           } else {

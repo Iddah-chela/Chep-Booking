@@ -23,6 +23,8 @@ router.get('/vacancies', protect, isAgent, agentController.getAgentVacancies);
 
 // Public: Get single vacancy by ID (anyone can view)
 router.get('/vacancies/:id', agentController.getVacancyById);
+// Public: Get active holds for a vacancy (non-sensitive)
+router.get('/vacancies/:id/holds', agentController.getVacancyHolds);
 
 // Agent: Update vacancy
 router.put('/vacancies/:id', protect, isAgent, agentController.updateVacancy);

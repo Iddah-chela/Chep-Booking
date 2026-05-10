@@ -366,12 +366,14 @@ export const getAgentLeads = async (req, res) => {
 // GET: Get single lead
 export const getLeadById = async (req, res) => {
   try {
+    console.log('[agentController] getLeadById request id=', req.params.id);
     const lead = await AgentLead.findById(req.params.id)
       .populate('student', 'firstName lastName email phone')
       .populate('vacancy', 'title roomType rent location description amenities photos availabilityFrom availabilityTo minBookingLeadDays')
       .populate('agent', 'firstName lastName email phone');
 
     if (!lead) {
+      console.warn('[agentController] lead not found for id=', req.params.id);
       return res.status(404).json({ message: 'Lead not found' });
     }
 
@@ -384,9 +386,12 @@ export const getLeadById = async (req, res) => {
       await lead.save();
     }
 
+    console.log('[agentController] returning lead id=', lead._id);
     res.json(lead);
   } catch (error) {
     console.error('Error fetching lead:', error);
+    // Include stack trace in logs and return concise message for client
+    console.error(error.stack);
     res.status(500).json({ message: 'Error fetching lead', error: error.message });
   }
 };
@@ -583,6 +588,29 @@ export const getAgentStats = async (req, res) => {
   } catch (error) {
     console.error('Error fetching agent stats:', error);
     res.status(500).json({ message: 'Error fetching stats', error: error.message });
+  }
+};
+
+// GET: Public - active booking holds for a vacancy (non-sensitive)
+export const getVacancyHolds = async (req, res) => {
+  try {
+    const vacancyId = req.params.id;
+    const now = new Date();
+    const holds = await AgentLead.find({
+      vacancy: vacancyId,
+      leadType: 'booking',
+      provisionalHoldUntil: { $gt: now },
+    }).select('roomDetails provisionalHoldUntil -_id').lean();
+
+    const mapped = (holds || []).map(h => ({
+      roomDetails: h.roomDetails || null,
+      provisionalHoldUntil: h.provisionalHoldUntil,
+    }));
+
+    res.json({ success: true, holds: mapped });
+  } catch (error) {
+    console.error('Error fetching vacancy holds:', error);
+    res.status(500).json({ success: false, message: 'Error fetching holds' });
   }
 };
 

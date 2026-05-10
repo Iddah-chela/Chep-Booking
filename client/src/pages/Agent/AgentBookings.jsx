@@ -75,12 +75,12 @@ const AgentBookings = () => {
                   <button
                     disabled={processingId === id}
                     onClick={async () => {
-                      if (!window.confirm('Cancel provisional hold on this booking?')) return;
+                      if (!window.confirm('Cancel temporary hold on this booking?')) return;
                       try {
                         setProcessingId(id);
                         const token = await getToken();
                         await axios.put(`/api/agent/leads/${id}/cancel-hold`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                        toast.success('Provisional hold cancelled');
+                        toast.success('Temporary hold cancelled');
                         fetchBookings();
                       } catch (err) {
                         toast.error('Failed to cancel hold');
@@ -90,7 +90,7 @@ const AgentBookings = () => {
                     }}
                     className='px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg border border-yellow-200'
                   >
-                    Cancel Hold
+                    Cancel Temporary Hold
                   </button>
                 </div>
               </div>
