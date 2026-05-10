@@ -520,7 +520,7 @@ export default function LeadInbox() {
 
             {/* Lead Details Panel */}
             <div className='lg:col-span-1'>
-              {selectedLead ? (
+              {selectedLead && (
                 selectedLead.leadType === 'chat' ? (
                   <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-6'>
                     <h3 className='font-bold text-lg text-gray-900 dark:text-white mb-4'>Chat</h3>
@@ -547,6 +547,7 @@ export default function LeadInbox() {
                   <MessageSquare size={40} className='mx-auto text-gray-400 mb-2' />
                   <p className='text-gray-600 dark:text-gray-400 text-sm'>Select a lead to view details</p>
                 </div>
+                )
               )}
             </div>
           </div>
