@@ -227,9 +227,18 @@ export default function LeadInbox() {
         acc[key] = {
           vacancy: lead.vacancy,
           leads: [],
+          hasProvisionalHold: false,
         };
       }
       acc[key].leads.push(lead);
+      // detect active provisional hold on booking-type leads
+      try {
+        const ph = lead.raw?.provisionalHoldUntil || lead.provisionalHoldUntil;
+        if (lead.leadType === 'booking' && ph) {
+          const until = new Date(ph);
+          if (!isNaN(until) && until > new Date()) acc[key].hasProvisionalHold = true;
+        }
+      } catch (_) {}
       return acc;
     }, {});
 
@@ -249,7 +258,7 @@ export default function LeadInbox() {
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
-      <div className='max-w-7xl mx-auto p-6 md:p-8'>
+      <div className='max-w-screen-xl mx-auto p-6 md:p-8'>
         <div className='flex items-center gap-4 mb-8'>
           <button
             onClick={() => navigate('/agent')}
@@ -330,7 +339,7 @@ export default function LeadInbox() {
                       key={vacancyId}
                       className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow'
                     >
-                      <div className='flex justify-between items-start mb-3'>
+                        <div className='flex justify-between items-start mb-3'>
                         <div>
                           <h3 className='font-semibold text-gray-900 dark:text-white text-lg capitalize'>
                             {vacancy.title || vacancy.roomType}
@@ -340,8 +349,8 @@ export default function LeadInbox() {
                             {vacancy.location?.area}, {vacancy.location?.city}
                           </p>
                         </div>
-                        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getStatusColor(vacancy.status)}`}>
-                          {vacancy.status.charAt(0).toUpperCase() + vacancy.status.slice(1)}
+                        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${group.hasProvisionalHold ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200' : getStatusColor(group.vacancy?.status)}`}>
+                          {group.hasProvisionalHold ? 'Reserved' : (group.vacancy?.status ? (group.vacancy.status.charAt(0).toUpperCase() + group.vacancy.status.slice(1)) : 'Status')}
                         </span>
                       </div>
 
@@ -397,19 +406,18 @@ export default function LeadInbox() {
                                     {lead.message && <p className='text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2'>{lead.message}</p>}
                                   </div>
                                   <div className='flex flex-col items-end gap-2'>
-                                    <button
-                                      onClick={() => {
-                                        toast.success('Opening chat...');
-                                        if (lead.leadType === 'chat' && lead.chatId) {
-                                          navigate(`/chat/agent/${lead.chatId}`);
-                                        } else {
-                                          navigate('/my-chats');
-                                        }
-                                      }}
-                                      className='px-3 py-1 bg-indigo-600 text-white rounded-md text-sm'
-                                    >
-                                      Open Chat
-                                    </button>
+                                    {lead.leadType === 'chat' && (
+                                      <button
+                                        onClick={() => {
+                                          toast.success('Opening chat...');
+                                          if (lead.chatId) navigate(`/agent/chats?chatId=${lead.chatId}`);
+                                          else navigate('/agent/chats');
+                                        }}
+                                        className='px-3 py-1 bg-indigo-600 text-white rounded-md text-sm'
+                                      >
+                                        Open Chat
+                                      </button>
+                                    )}
                                     <a
                                       href={`https://wa.me/?text=${encodeURIComponent(`Hi, I have a ${lead.leadType} request from ${lead.studentInfo.name} (${lead.studentInfo.phone}) for the vacancy "${vacancy.title}". Please advise.`)}`}
                                       target='_blank'
@@ -419,7 +427,7 @@ export default function LeadInbox() {
                                       WhatsApp to Caretaker
                                     </a>
                                     <button
-                                      onClick={() => setSelectedLead(lead)}
+                                      onClick={() => { setTab('leads'); setSelectedLead(lead); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                       className='px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-sm'
                                     >
                                       Details
@@ -501,7 +509,7 @@ export default function LeadInbox() {
                               {group.leads.map((lead) => (
                                 <button
                                   key={lead._id}
-                                  onClick={() => setSelectedLead(lead)}
+                                  onClick={() => { setTab('leads'); setSelectedLead(lead); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                   className={`p-4 border rounded-lg text-left transition-all ${
                                     selectedLead?._id === lead._id
                                       ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
@@ -560,8 +568,8 @@ export default function LeadInbox() {
                       <p className='text-sm text-gray-600 dark:text-gray-400 line-clamp-3'>{selectedLead.message || ''}</p>
                     </div>
                     <div className='space-y-2'>
-                      <button onClick={() => navigate(`/chat/agent/${selectedLead.chatId || ''}`)} className='w-full px-4 py-2 bg-indigo-600 text-white rounded-lg'>Open Chat</button>
-                      <button onClick={() => navigate('/my-chats')} className='w-full px-4 py-2 bg-white border border-gray-300 rounded-lg'>My Chats</button>
+                      <button onClick={() => navigate(`/agent/chats?chatId=${selectedLead.chatId || ''}`)} className='w-full px-4 py-2 bg-indigo-600 text-white rounded-lg'>Open Chat</button>
+                      <button onClick={() => navigate('/agent/chats')} className='w-full px-4 py-2 bg-white border border-gray-300 rounded-lg'>My Chats</button>
                     </div>
                   </div>
                 ) : selectedLead.leadType === 'viewing' ? (
@@ -590,7 +598,7 @@ export default function LeadInbox() {
                       </div>
                     )}
                     <div className='space-y-2'>
-                      <button onClick={() => navigate(`/owner/viewing-requests?viewingId=${selectedLead.raw?._id || ''}`)} className='w-full px-4 py-2 bg-indigo-600 text-white rounded-lg'>Open Viewing</button>
+                      <button onClick={() => navigate(`/agent/viewings?leadId=${selectedLead.raw?._id || ''}`)} className='w-full px-4 py-2 bg-indigo-600 text-white rounded-lg'>Open Viewing</button>
                       <button onClick={() => navigate('/my-viewings')} className='w-full px-4 py-2 bg-white border border-gray-300 rounded-lg'>My Viewings</button>
                     </div>
                   </div>

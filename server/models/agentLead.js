@@ -36,6 +36,7 @@ const agentLeadSchema = new mongoose.Schema(
     },
     preferredMoveInDate: Date,
     preferredViewingDate: Date,
+    preferredViewingTimeRange: String,
     preferredRoomType: String,
     roomDetails: {
       buildingId: { type: String },

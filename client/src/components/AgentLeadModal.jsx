@@ -12,6 +12,7 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
   const { axios, getToken, user } = useAppContext();
   const [message, setMessage] = useState('');
   const [preferredViewingDate, setPreferredViewingDate] = useState('');
+  const [preferredViewingTimeRange, setPreferredViewingTimeRange] = useState('');
   const [preferredMoveInDate, setPreferredMoveInDate] = useState('');
   const [phone, setPhone] = useState(user?.phone || '');
   const [loading, setLoading] = useState(false);
@@ -19,6 +20,12 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
 
   const needsViewingDate = leadType === 'viewing';
   const needsMoveInDate = leadType !== 'contact';
+
+  const timeRanges = [
+    'Morning (9AM-12PM)',
+    'Afternoon (12PM-5PM)',
+    'Evening (5PM-8PM)'
+  ];
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -28,6 +35,10 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
     }
     if (needsViewingDate && !preferredViewingDate) {
       toast.error('Please select a preferred viewing date');
+      return;
+    }
+    if (needsViewingDate && !preferredViewingTimeRange) {
+      toast.error('Please select a preferred viewing time');
       return;
     }
     if (needsMoveInDate && !preferredMoveInDate) {
@@ -58,6 +69,7 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
         };
       }
       if (preferredViewingDate) payload.preferredViewingDate = preferredViewingDate;
+      if (preferredViewingTimeRange) payload.viewingTimeRange = preferredViewingTimeRange;
       if (preferredMoveInDate) payload.preferredMoveInDate = preferredMoveInDate;
 
       const { data } = await axios.post('/api/agent/leads', payload, {

@@ -40,6 +40,9 @@ const AgentDashboard  = lazy(() => import('./pages/Agent/AgentDashboard'))
 const PostVacancy     = lazy(() => import('./pages/Agent/PostVacancy'))
 const EditVacancy     = lazy(() => import('./pages/Agent/EditVacancy'))
 const LeadInbox       = lazy(() => import('./pages/Agent/LeadInbox'))
+const AgentChats      = lazy(() => import('./pages/Agent/AgentChats'))
+const AgentViewings   = lazy(() => import('./pages/Agent/AgentViewings'))
+const AgentBookings   = lazy(() => import('./pages/Agent/AgentBookings'))
 const BecomeAgent     = lazy(() => import('./pages/BecomeAgent'))
 const Terms           = lazy(() => import('./pages/Terms'))
 const Privacy         = lazy(() => import('./pages/Privacy'))
@@ -146,6 +149,9 @@ const App = () => {
               <Route path='post-vacancy' element={<PostVacancy/>}/>
               <Route path='vacancies/:id/edit' element={<EditVacancy/>}/>
               <Route path='leads' element={<LeadInbox/>}/>
+              <Route path='chats' element={<AgentChats/>}/>
+              <Route path='viewings' element={<AgentViewings/>}/>
+              <Route path='bookings' element={<AgentBookings/>}/>
               <Route path='analytics' element={<Navigate to='/agent' replace/>}/>
           </Route>
         </Routes>

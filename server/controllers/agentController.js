@@ -589,7 +589,7 @@ export const getAgentStats = async (req, res) => {
 // POST: Create lead (user expresses interest in vacancy)
 export const createLead = async (req, res) => {
   try {
-    const { vacancyId, leadType = 'contact', message, preferredMoveInDate, preferredViewingDate, preferredRoomType } = req.body;
+    const { vacancyId, leadType = 'contact', message, preferredMoveInDate, preferredViewingDate, preferredRoomType, viewingTimeRange } = req.body;
 
     const vacancy = await AgentVacancy.findOne({
       _id: vacancyId,
@@ -649,6 +649,7 @@ export const createLead = async (req, res) => {
       leadType,
       preferredMoveInDate: preferredMoveInDate ? new Date(preferredMoveInDate) : undefined,
       preferredViewingDate: preferredViewingDate ? new Date(preferredViewingDate) : undefined,
+      preferredViewingTimeRange: viewingTimeRange || req.body.preferredViewingTimeRange || undefined,
       preferredRoomType: preferredRoomType || '',
       roomDetails: roomDetails ? {
         buildingId: String(roomDetails.buildingId),
