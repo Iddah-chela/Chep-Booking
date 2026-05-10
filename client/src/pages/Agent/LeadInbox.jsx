@@ -556,3 +556,4 @@ export default function LeadInbox() {
     </div>
   );
 }
+
