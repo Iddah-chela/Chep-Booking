@@ -80,6 +80,11 @@ const AgentChatInterface = ({ room, vacancyId, onClose, existingChatId }) => {
     event.preventDefault();
     if (!message.trim() || sending) return;
 
+    if (!chat || !chat._id) {
+      toast.error('Chat not loaded yet. Please wait.');
+      return;
+    }
+
     setSending(true);
     try {
       const token = await getToken();
