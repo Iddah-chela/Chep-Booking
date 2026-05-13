@@ -248,6 +248,21 @@ export default function LeadInbox() {
 
   const filteredVacancies = vacancies;
 
+  // When a lead is selected, ensure the details panel is scrolled into view
+  useEffect(() => {
+    if (!selectedLead) return;
+    try {
+      const el = document.getElementById('agent-lead-details');
+      if (el) {
+        // On small screens, scroll the details into view so the user sees it
+        const isSmall = window.innerWidth < 1024;
+        el.scrollIntoView({ behavior: 'smooth', block: isSmall ? 'center' : 'nearest' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (_) {}
+  }, [selectedLead]);
+
   if (loading && (tab === 'vacancies' ? vacancies.length === 0 : leads.length === 0)) {
     return (
       <div className='flex items-center justify-center h-screen'>
@@ -554,7 +569,7 @@ export default function LeadInbox() {
             </div>
 
             {/* Lead Details Panel */}
-            <div className='lg:col-span-1'>
+            <div id='agent-lead-details' className='lg:col-span-1'>
               {selectedLead ? (
                 selectedLead.leadType === 'chat' ? (
                   <div className='bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-6'>

@@ -65,7 +65,12 @@ const AgentChatInterface = ({ room, vacancyId, onClose, existingChatId }) => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error('Could not load messages. Please try again.');
+      console.error('AgentChat init error:', error);
+      if (error?.response?.status === 401) {
+        toast.error('Unauthorized — please sign in again or refresh the page');
+      } else {
+        toast.error('Could not load messages. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -92,7 +97,12 @@ const AgentChatInterface = ({ room, vacancyId, onClose, existingChatId }) => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error('Could not send message. Please try again.');
+      console.error('AgentChat send error:', error);
+      if (error?.response?.status === 401) {
+        toast.error('Unauthorized — please sign in again or refresh the page');
+      } else {
+        toast.error('Could not send message. Please try again.');
+      }
     } finally {
       setSending(false);
     }

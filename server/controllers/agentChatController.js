@@ -19,7 +19,8 @@ const normalizeRoomDetails = (roomDetails) => {
 export const getOrCreateAgentChat = async (req, res) => {
   try {
     const { vacancyId, roomDetails } = req.body;
-    const tenantId = req.user._id;
+    const userId = req.user._id;
+    console.log('[agentChat] getOrCreateAgentChat called by userId=', userId, 'for vacancyId=', vacancyId);
 
     const vacancy = await AgentVacancy.findOne({
       _id: vacancyId,
@@ -28,38 +29,71 @@ export const getOrCreateAgentChat = async (req, res) => {
     });
 
     if (!vacancy) {
+      console.warn('[agentChat] Vacancy not found:', vacancyId);
       return res.json({ success: false, message: 'Vacancy not found' });
     }
 
     const agentId = vacancy.agent;
     if (!agentId) {
+      console.warn('[agentChat] Agent not found on vacancy:', vacancyId);
       return res.json({ success: false, message: 'Agent not found' });
     }
 
     const normalizedRoomDetails = normalizeRoomDetails(roomDetails);
 
-    let chat = await AgentChat.findOne({
-      tenant: tenantId,
-      agent: agentId,
-      vacancy: vacancyId,
-      'roomDetails.buildingId': normalizedRoomDetails.buildingId,
-      'roomDetails.row': normalizedRoomDetails.row,
-      'roomDetails.col': normalizedRoomDetails.col
-    }).populate('tenant agent vacancy');
+    // If the caller is the agent themselves, find or create a chat where they are the agent
+    // Otherwise, create a chat where the caller is the tenant
+    const isCallerAgent = String(agentId) === String(userId);
+    console.log('[agentChat] isCallerAgent=', isCallerAgent);
 
-    if (!chat) {
-      chat = await AgentChat.create({
-        tenant: tenantId,
+    let chat;
+    if (isCallerAgent) {
+      // Agent calling for their own vacancy — create a system chat or find existing
+      chat = await AgentChat.findOne({
         agent: agentId,
         vacancy: vacancyId,
-        roomDetails: normalizedRoomDetails,
-        messages: []
-      });
-      chat = await AgentChat.findById(chat._id).populate('tenant agent vacancy');
+        'roomDetails.buildingId': normalizedRoomDetails.buildingId,
+        'roomDetails.row': normalizedRoomDetails.row,
+        'roomDetails.col': normalizedRoomDetails.col
+      }).populate('tenant agent vacancy');
+      if (!chat) {
+        // Create a placeholder system chat for the agent to view messages about this room
+        chat = await AgentChat.create({
+          tenant: agentId,
+          agent: agentId,
+          vacancy: vacancyId,
+          roomDetails: normalizedRoomDetails,
+          messages: []
+        });
+        chat = await AgentChat.findById(chat._id).populate('tenant agent vacancy');
+      }
+    } else {
+      // Tenant calling to chat with the agent
+      chat = await AgentChat.findOne({
+        tenant: userId,
+        agent: agentId,
+        vacancy: vacancyId,
+        'roomDetails.buildingId': normalizedRoomDetails.buildingId,
+        'roomDetails.row': normalizedRoomDetails.row,
+        'roomDetails.col': normalizedRoomDetails.col
+      }).populate('tenant agent vacancy');
+
+      if (!chat) {
+        chat = await AgentChat.create({
+          tenant: userId,
+          agent: agentId,
+          vacancy: vacancyId,
+          roomDetails: normalizedRoomDetails,
+          messages: []
+        });
+        chat = await AgentChat.findById(chat._id).populate('tenant agent vacancy');
+      }
     }
 
+    console.log('[agentChat] Returning chat:', chat._id);
     res.json({ success: true, chat });
   } catch (error) {
+    console.error('[agentChat] getOrCreateAgentChat error:', error.message);
     res.json({ success: false, message: error.message });
   }
 };
@@ -68,6 +102,7 @@ export const sendAgentMessage = async (req, res) => {
   try {
     const { chatId, content } = req.body;
     const senderId = req.user._id;
+    console.log('[agentChat] sendAgentMessage by senderId=', senderId, 'chatId=', chatId);
 
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return res.json({ success: false, message: 'Message cannot be empty' });
@@ -78,12 +113,16 @@ export const sendAgentMessage = async (req, res) => {
 
     const chat = await AgentChat.findById(chatId);
     if (!chat) {
+      console.warn('[agentChat] Chat not found for send:', chatId);
       return res.json({ success: false, message: 'Chat not found' });
     }
 
     const isTenant = String(chat.tenant) === String(senderId);
     const isAgent = String(chat.agent) === String(senderId);
+    console.log('[agentChat] isTenant=', isTenant, 'isAgent=', isAgent, 'chat.tenant=', chat.tenant, 'chat.agent=', chat.agent);
+    
     if (!isTenant && !isAgent) {
+      console.warn('[agentChat] Unauthorized send attempt: senderId=', senderId, 'chat.tenant=', chat.tenant, 'chat.agent=', chat.agent);
       return res.json({ success: false, message: 'Unauthorized' });
     }
 
@@ -166,18 +205,26 @@ export const getAgentChatById = async (req, res) => {
   try {
     const { chatId } = req.params;
     const userId = req.user._id;
+    console.log('[agentChat] getAgentChatById called by userId=', userId, 'for chatId=', chatId);
 
     const chat = await AgentChat.findById(chatId).populate('tenant agent vacancy');
     if (!chat) {
+      console.warn('[agentChat] Chat not found:', chatId);
       return res.json({ success: false, message: 'Chat not found' });
     }
 
-    if (String(chat.tenant) !== String(userId) && String(chat.agent) !== String(userId)) {
+    const isTenant = String(chat.tenant) === String(userId);
+    const isAgent = String(chat.agent) === String(userId);
+    console.log('[agentChat] isTenant=', isTenant, 'isAgent=', isAgent, 'chat.tenant=', chat.tenant, 'chat.agent=', chat.agent);
+
+    if (!isTenant && !isAgent) {
+      console.warn('[agentChat] Unauthorized access attempt: userId=', userId, 'chat.tenant=', chat.tenant, 'chat.agent=', chat.agent);
       return res.json({ success: false, message: 'Unauthorized' });
     }
 
     res.json({ success: true, chat });
   } catch (error) {
+    console.error('[agentChat] getAgentChatById error:', error.message);
     res.json({ success: false, message: error.message });
   }
 };

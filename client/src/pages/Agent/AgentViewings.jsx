@@ -20,11 +20,20 @@ const AgentViewings = () => {
     try {
       setLoading(true);
       const token = await getToken();
-      const { data } = await axios.get(`/api/agent/leads/${leadId}`, { headers: { Authorization: `Bearer ${token}` } });
+      console.log('[AgentViewings] Fetching lead:', leadId);
+      const { data } = await axios.get(`/api/agent/leads/${leadId}`, { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 });
+      console.log('[AgentViewings] Lead fetched:', data);
       if (data && data.lead) setLead(data.lead);
       else toast.error(data.message || 'Could not load viewing');
     } catch (err) {
-      toast.error('Could not load viewing');
+      console.error('[AgentViewings] Error fetching lead:', err?.response?.status, err?.message);
+      if (err?.code === 'ECONNABORTED') {
+        toast.error('Request timeout — server took too long to respond');
+      } else if (err?.response?.status === 401) {
+        toast.error('Unauthorized — please sign in again');
+      } else {
+        toast.error(err?.response?.data?.message || 'Could not load viewing');
+      }
     } finally {
       setLoading(false);
     }
