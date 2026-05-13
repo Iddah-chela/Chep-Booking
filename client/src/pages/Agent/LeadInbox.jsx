@@ -344,7 +344,7 @@ export default function LeadInbox() {
                 <p className='text-gray-600 dark:text-gray-400'>No vacancies found</p>
               </div>
             ) : (
-              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4'>
                 {filteredVacancies.map((vacancy) => {
                   const vacancyId = vacancy._id;
                   const isOpen = openVacancyIds[vacancyId] ?? false;

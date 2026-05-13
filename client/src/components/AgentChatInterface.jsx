@@ -27,15 +27,18 @@ const AgentChatInterface = ({ room, vacancyId, onClose, existingChatId }) => {
       const token = await getToken();
 
       if (existingChatId) {
+        console.log('[AgentChatInterface] Loading existing chat:', existingChatId);
         const { data } = await axios.get(`/api/agent-chat/${existingChatId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (data.success) {
           setChat(data.chat);
+          console.log('[AgentChatInterface] Chat loaded:', data.chat);
           await axios.post('/api/agent-chat/mark-read', { chatId: existingChatId }, {
             headers: { Authorization: `Bearer ${token}` }
           });
         } else {
+          console.error('[AgentChatInterface] Failed to load chat:', data.message);
           toast.error(data.message);
         }
         return;
@@ -85,6 +88,7 @@ const AgentChatInterface = ({ room, vacancyId, onClose, existingChatId }) => {
       return;
     }
 
+    console.log('[AgentChatInterface] Sending message as user:', user.id, 'chat tenant:', chat.tenant, 'chat agent:', chat.agent);
     setSending(true);
     try {
       const token = await getToken();

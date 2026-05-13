@@ -12,6 +12,8 @@ const AgentViewings = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
+  console.log('[AgentViewings] Component mounted, leadId:', leadId);
+
   useEffect(() => {
     if (leadId) fetchLead();
   }, [leadId]);
