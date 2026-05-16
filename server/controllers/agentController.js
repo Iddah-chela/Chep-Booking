@@ -390,7 +390,7 @@ export const getLeadById = async (req, res) => {
     }
 
     console.log('[agentController] returning lead id=', lead._id);
-    res.json(lead);
+    res.json({ success: true, lead });
   } catch (error) {
     console.error('Error fetching lead:', error);
     // Include stack trace in logs and return concise message for client

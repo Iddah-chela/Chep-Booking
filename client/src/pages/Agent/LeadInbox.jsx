@@ -273,7 +273,7 @@ export default function LeadInbox() {
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
-      <div className='max-w-screen-xl mx-auto p-6 md:p-8'>
+      <div className='max-w-screen-2xl mx-auto p-6 md:p-8'>
         <div className='flex items-center gap-4 mb-8'>
           <button
             onClick={() => navigate('/agent')}
@@ -344,7 +344,7 @@ export default function LeadInbox() {
                 <p className='text-gray-600 dark:text-gray-400'>No vacancies found</p>
               </div>
             ) : (
-              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'>
+              <div className='grid gap-4' style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
                 {filteredVacancies.map((vacancy) => {
                   const vacancyId = vacancy._id;
                   const isOpen = openVacancyIds[vacancyId] ?? false;

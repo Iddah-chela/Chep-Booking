@@ -32,8 +32,12 @@ const AgentViewings = () => {
       console.log('[AgentViewings] Fetching lead:', leadId);
       const { data } = await axios.get(`/api/agent/leads/${leadId}`, { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 });
       console.log('[AgentViewings] Response received:', data);
-      if (data && data.lead) setLead(data.lead);
-      else toast.error(data.message || 'Could not load viewing');
+      const leadData = data?.lead || data;
+      if (leadData && (leadData._id || leadData.studentInfo)) {
+        setLead(leadData);
+      } else {
+        toast.error(data.message || 'Could not load viewing');
+      }
     } catch (err) {
       console.error('[AgentViewings] Error fetching lead:', err?.response?.status, err?.response?.data, err?.message);
       if (err?.code === 'ECONNABORTED') {
