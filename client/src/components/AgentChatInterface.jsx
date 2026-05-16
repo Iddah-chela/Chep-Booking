@@ -132,6 +132,9 @@ const AgentChatInterface = ({ room, vacancyId, onClose, existingChatId }) => {
     );
   }
 
+  const isAgentUser = String(chat?.agent?._id || chat?.agent) === String(user.id);
+  const headerName = isAgentUser ? 'Tenant Conversation' : 'Listing Agent';
+  const headerSubtitle = isAgentUser ? 'Respond to tenant' : 'Agent Support';
   const listingTitle = chat?.vacancy?.title || 'Agent Listing';
 
   return (
@@ -145,8 +148,8 @@ const AgentChatInterface = ({ room, vacancyId, onClose, existingChatId }) => {
               className="w-10 h-10 rounded-full object-cover"
             />
             <div>
-              <h3 className="font-semibold">Listing Agent</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Agent Support</p>
+              <h3 className="font-semibold">{headerName}</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{headerSubtitle}</p>
             </div>
           </div>
           <button
@@ -170,7 +173,7 @@ const AgentChatInterface = ({ room, vacancyId, onClose, existingChatId }) => {
             </div>
           ) : (
             chat?.messages?.map((msg, index) => {
-              const isOwn = msg.sender === user.id;
+              const isOwn = String(msg.sender) === String(user.id);
               return (
                 <div
                   key={index}

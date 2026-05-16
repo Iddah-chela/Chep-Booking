@@ -48,7 +48,7 @@ export const getOrCreateAgentChat = async (req, res) => {
 
     let chat;
     if (isCallerAgent) {
-      // Agent calling for their own vacancy — create a system chat or find existing
+      // Agents should only open existing chats from the leads/chat inbox.
       chat = await AgentChat.findOne({
         agent: agentId,
         vacancy: vacancyId,
@@ -56,16 +56,10 @@ export const getOrCreateAgentChat = async (req, res) => {
         'roomDetails.row': normalizedRoomDetails.row,
         'roomDetails.col': normalizedRoomDetails.col
       }).populate('tenant agent vacancy');
+
       if (!chat) {
-        // Create a placeholder system chat for the agent to view messages about this room
-        chat = await AgentChat.create({
-          tenant: agentId,
-          agent: agentId,
-          vacancy: vacancyId,
-          roomDetails: normalizedRoomDetails,
-          messages: []
-        });
-        chat = await AgentChat.findById(chat._id).populate('tenant agent vacancy');
+        console.warn('[agentChat] Agent attempted to open orphan chat on vacancy without an existing tenant chat:', vacancyId);
+        return res.status(400).json({ success: false, message: 'Agents can only open chats from the leads inbox once a tenant has contacted this vacancy.' });
       }
     } else {
       // Tenant calling to chat with the agent
@@ -119,7 +113,7 @@ export const sendAgentMessage = async (req, res) => {
 
     const isTenant = String(chat.tenant) === String(senderId);
     const isAgent = String(chat.agent) === String(senderId);
-    console.log('[agentChat] isTenant=', isTenant, 'isAgent=', isAgent, 'chat.tenant=', chat.tenant, 'chat.agent=', chat.agent);
+    console.log('[agentChat] isTenant=', isTenant, 'isAgent=', isAgent, 'chat.tenant=', chat.tenant, 'chat.agent=', chat.agent, 'senderId=', senderId);
     
     if (!isTenant && !isAgent) {
       console.warn('[agentChat] Unauthorized send attempt: senderId=', senderId, 'chat.tenant=', chat.tenant, 'chat.agent=', chat.agent);
@@ -134,6 +128,8 @@ export const sendAgentMessage = async (req, res) => {
     });
     chat.lastMessage = new Date();
 
+    const recipientId = isTenant ? String(chat.agent) : String(chat.tenant);
+
     await chat.save();
 
     const updatedChat = await AgentChat.findById(chatId).populate('tenant agent vacancy');
@@ -141,7 +137,6 @@ export const sendAgentMessage = async (req, res) => {
 
     (async () => {
       try {
-        const recipientId = isTenant ? chat.agent : chat.tenant;
         const [sender, recipient, vacancy] = await Promise.all([
           User.findById(senderId),
           User.findById(recipientId),

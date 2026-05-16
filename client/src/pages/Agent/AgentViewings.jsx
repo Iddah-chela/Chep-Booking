@@ -13,6 +13,7 @@ const AgentViewings = () => {
   const [processing, setProcessing] = useState(false);
 
   console.log('[AgentViewings] Component mounted, leadId:', leadId);
+  console.log('[AgentViewings] Render', { leadId, loading, lead });
 
   useEffect(() => {
     if (leadId) {
