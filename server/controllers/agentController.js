@@ -348,6 +348,9 @@ export const getAgentLeads = async (req, res) => {
     // Merge and sort by updatedAt desc
     const merged = [...leadItems, ...chatItems].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
+    console.log('[agentController] getAgentLeads returning', leadItems.length, 'leads and', chatItems.length, 'chats');
+    chatItems.forEach(item => console.log('[agentController] chat item:', item._id, 'actual _id:', item.chat._id));
+
     res.json({
       leads: merged,
       pagination: {

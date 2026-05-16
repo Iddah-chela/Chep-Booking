@@ -18,8 +18,10 @@ const AgentChats = () => {
 
   useEffect(() => {
     const chatId = searchParams.get('chatId');
+    console.log('[AgentChats] useEffect chatId from params:', chatId, 'chats.length:', chats.length);
     if (chatId && chats.length > 0 && !selectedChat) {
       const target = chats.find(c => c._id === chatId);
+      console.log('[AgentChats] Looking for chat:', chatId, 'found:', target?._id);
       if (target) {
         setSelectedChat(target);
         searchParams.delete('chatId');

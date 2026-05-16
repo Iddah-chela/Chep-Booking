@@ -209,16 +209,17 @@ export const getAgentChatById = async (req, res) => {
 
     const chat = await AgentChat.findById(chatId).populate('tenant agent vacancy');
     if (!chat) {
-      console.warn('[agentChat] Chat not found:', chatId);
+      console.warn('[agentChat] Chat not found with id:', chatId);
       return res.json({ success: false, message: 'Chat not found' });
     }
 
-    const isTenant = String(chat.tenant) === String(userId);
-    const isAgent = String(chat.agent) === String(userId);
-    console.log('[agentChat] isTenant=', isTenant, 'isAgent=', isAgent, 'chat.tenant=', chat.tenant, 'chat.agent=', chat.agent);
+    console.log('[agentChat] Found chat, tenant:', chat.tenant?._id || chat.tenant, 'agent:', chat.agent?._id || chat.agent);
+    const isTenant = String(chat.tenant?._id || chat.tenant) === String(userId);
+    const isAgent = String(chat.agent?._id || chat.agent) === String(userId);
+    console.log('[agentChat] isTenant=', isTenant, 'isAgent=', isAgent, 'userId=', userId);
 
     if (!isTenant && !isAgent) {
-      console.warn('[agentChat] Unauthorized access attempt: userId=', userId, 'chat.tenant=', chat.tenant, 'chat.agent=', chat.agent);
+      console.warn('[agentChat] Unauthorized access: userId=', userId, 'doesn\'t match tenant/agent');
       return res.json({ success: false, message: 'Unauthorized' });
     }
 

@@ -15,7 +15,13 @@ const AgentViewings = () => {
   console.log('[AgentViewings] Component mounted, leadId:', leadId);
 
   useEffect(() => {
-    if (leadId) fetchLead();
+    if (leadId) {
+      console.log('[AgentViewings] useEffect: leadId is', leadId);
+      fetchLead();
+    } else {
+      console.log('[AgentViewings] useEffect: no leadId provided');
+      setLoading(false);
+    }
   }, [leadId]);
 
   const fetchLead = async () => {
