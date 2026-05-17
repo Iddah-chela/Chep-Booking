@@ -4,29 +4,69 @@ import AgentChat from '../models/agentChat.js';
 import cloudinary from '../config/cloudinary.js';
 import fs from 'fs/promises';
 import { hasRole } from '../utils/roleUtils.js';
+import User from '../models/user.js';
+import { sendEmail } from '../utils/mailer.js';
 
 const toUserId = (value) => value?.toString?.() || String(value || '');
 
 const uploadAgentMedia = async (file, folder) => {
   if (!file) return null;
-  const result = await cloudinary.uploader.upload(file.path, {
+  console.info('[AgentUpload] starting upload', {
+    filename: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+    path: file.path,
     folder,
-    resource_type: file.mimetype.startsWith('video/') ? 'video' : 'image',
   });
-  await fs.unlink(file.path).catch(() => {});
-  return {
-    url: result.secure_url,
-    publicId: result.public_id,
-    thumbnail: result.resource_type === 'video' ? result.thumbnail_url || '' : '',
-    resourceType: result.resource_type,
-  };
+  try {
+    const result = await cloudinary.uploader.upload(file.path, {
+      folder,
+      resource_type: file.mimetype.startsWith('video/') ? 'video' : 'image',
+    });
+
+    console.info('[AgentUpload] cloudinary response', {
+      secure_url: result.secure_url,
+      public_id: result.public_id,
+      resource_type: result.resource_type,
+    });
+
+    await fs.unlink(file.path).catch((e) => {
+      console.warn('[AgentUpload] failed to unlink temp file', file.path, e?.message || e);
+    });
+
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+      thumbnail: result.resource_type === 'video' ? result.thumbnail_url || '' : '',
+      resourceType: result.resource_type,
+    };
+  } catch (err) {
+    console.error('[AgentUpload] cloudinary upload failed', {
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      path: file.path,
+      error: err?.message || err,
+    });
+    // Attempt to remove temp file even on failure
+    await fs.unlink(file.path).catch(() => {});
+    throw err;
+  }
 };
 
 export const uploadMedia = async (req, res) => {
   try {
     const file = req.file;
     const mediaType = String(req.body?.mediaType || '').toLowerCase();
+
+    console.info('[AgentUpload] request', {
+      userId: req.user?._id,
+      contentType: req.headers['content-type'] || req.headers['Content-Type'],
+      bodyKeys: Object.keys(req.body || {}),
+      hasFile: !!file,
+    });
+
     if (!file) {
+      console.warn('[AgentUpload] no file in request');
       return res.status(400).json({ message: 'No file provided' });
     }
 
@@ -34,11 +74,16 @@ export const uploadMedia = async (req, res) => {
       ? 'agent_vacancies/videos'
       : 'agent_vacancies/photos';
 
-    const media = await uploadAgentMedia(file, folder);
-    return res.json({ success: true, media });
+    try {
+      const media = await uploadAgentMedia(file, folder);
+      return res.json({ success: true, media });
+    } catch (err) {
+      console.error('[AgentUpload] uploadAgentMedia threw', err?.message || err);
+      return res.status(500).json({ success: false, message: 'Upload failed', error: err?.message || 'unknown' });
+    }
   } catch (error) {
-    console.error('Agent media upload error:', error);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error('Agent media upload error:', error?.message || error);
+    return res.status(500).json({ success: false, message: error?.message || 'Agent upload error' });
   }
 };
 
@@ -499,8 +544,8 @@ export const markLeadOutcome = async (req, res) => {
       return;
     }
 
-    // default behavior for other outcomes
-    lead.status = 'pending';
+    // default behavior for other outcomes: set status to the outcome so UI can remove/reflect it
+    lead.status = outcome;
     await lead.save();
     res.json({ message: 'Outcome marked successfully', lead });
   } catch (error) {
@@ -701,6 +746,28 @@ export const createLead = async (req, res) => {
     }
 
     await AgentVacancy.findByIdAndUpdate(vacancyId, updatePayload);
+
+    // Notify agent (and optionally caretakers) by email including student contact
+    (async () => {
+      try {
+        const agentUser = await User.findById(vacancy.agent).select('firstName lastName email phone').lean();
+        const studentContact = `${studentInfo.name} (${studentInfo.phone})`;
+        const listingTitle = vacancy.title || vacancy.roomType || 'an agent listing';
+        const html = `<div style="font-family:Arial,sans-serif;color:#222;max-width:520px;margin:auto;">
+            <h2 style="background:#4F46E5;color:#fff;padding:12px;border-radius:6px;margin:0 0 12px;">New lead for ${listingTitle}</h2>
+            <p style="margin:0 0 8px;">Student: <strong>${studentContact}</strong></p>
+            <p style="margin:0 0 8px;">Message: ${message ? `<em>${message}</em>` : '—'}</p>
+            <p style="margin:0 0 8px;">Vacancy: ${listingTitle}</p>
+            <p style="margin:0 0 8px;">Open the agent dashboard to manage this lead.</p>
+          </div>`;
+
+        if (agentUser?.email) {
+          sendEmail(agentUser.email, `New lead — ${listingTitle} — PataKeja`, html).catch(() => {});
+        }
+      } catch (_) {
+        // ignore notification errors
+      }
+    })();
 
     res.status(201).json({
       message: 'Interest expressed successfully',

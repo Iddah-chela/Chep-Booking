@@ -18,7 +18,13 @@ const AgentBookings = () => {
       const token = await getToken();
       const { data } = await axios.get('/api/agent/leads?status=all&limit=500', { headers: { Authorization: `Bearer ${token}` } });
       const leads = data.leads || [];
-      const bookingLeads = leads.filter(l => (l.leadType === 'booking' || (l.lead && l.lead.leadType === 'booking')));
+      // Exclude already booked outcomes so confirmed bookings are removed from the manage bookings list
+      const bookingLeads = leads.filter(l => {
+        const isBooking = (l.leadType === 'booking' || (l.lead && l.lead.leadType === 'booking'));
+        const outcome = l.outcome || (l.lead && l.lead.outcome) || l.status || (l.lead && l.lead.status) || '';
+        const isBooked = String(outcome).toLowerCase() === 'booked';
+        return isBooking && !isBooked;
+      });
       setBookings(bookingLeads);
     } catch (err) {
       toast.error('Could not load bookings');

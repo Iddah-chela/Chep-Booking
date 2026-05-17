@@ -30,6 +30,9 @@ import utilityRouter from "./routes/utilityRoutes.js";
 import analyticsRouter from "./routes/analyticsRoutes.js";
 import agentRouter from "./routes/agentRoutes.js";
 import agentApplicationRouter from "./routes/agentApplicationRoutes.js";
+import multer from 'multer';
+import upload from './middleware/uploadMiddleware.js';
+import * as agentController from './controllers/agentController.js';
 import { expireViewingRequests } from "./utils/expirationHandler.js";
 import { expireProvisionalHolds } from "./utils/expirationHandler.js";
 import { checkListingFreshness, checkUnlockAutoRefunds, sendPostViewingNudges, sendViewingReminders, sendMoveInNudges, sendMoveOutNudges, sendWeeklyPropertyUpdateReminders } from "./utils/cronJobs.js";
@@ -157,6 +160,38 @@ app.use('/api/visit', generalLimiter, analyticsRouter)
 app.use('/api/analytics', generalLimiter, analyticsRouter)
 app.use('/api/agent', generalLimiter, agentRouter)
 app.use('/api/agent-applications', generalLimiter, agentApplicationRouter)
+
+// Dev-only: debug upload endpoint to test multipart handling without Cloudinary/auth
+if (isDev) {
+    const debugUpload = multer({ storage: multer.diskStorage({}) });
+    app.post('/api/debug/upload-test', debugUpload.single('file'), (req, res) => {
+        console.log('[DebugUpload] headers:', { 'content-type': req.headers['content-type'] });
+        console.log('[DebugUpload] body keys:', Object.keys(req.body || {}));
+        console.log('[DebugUpload] file:', req.file ? {
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+            path: req.file.path
+        } : null);
+        res.json({ success: true, hasFile: !!req.file, file: req.file ? {
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+            path: req.file.path
+        } : null, body: req.body });
+    });
+    // Also expose a dev-only route that calls the real agent upload handler without auth
+    app.post('/api/debug/agent-upload-test', upload.single('file'), async (req, res) => {
+        // Provide a fake agent user for the handler
+        req.user = { _id: 'debug-agent-id' };
+        try {
+            await agentController.uploadMedia(req, res);
+        } catch (e) {
+            console.error('[DebugAgentUpload] handler error', e?.message || e);
+            res.status(500).json({ success: false, message: e?.message || 'handler error' });
+        }
+    });
+}
 
 
 const PORT = process.env.PORT || 3000;

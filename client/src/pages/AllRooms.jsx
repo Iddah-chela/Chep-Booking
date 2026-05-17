@@ -460,7 +460,7 @@ const AllRooms = () => {
                   </div>
                 )}
 
-                {property.vacancyStatus === 'unknown' && (
+                {property.vacancyStatus === 'unknown' && !property?.agentPost && (
                   <div className='px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full text-sm font-medium'>
                     Availability Not Confirmed
                   </div>

@@ -207,7 +207,8 @@ export default function PostVacancy() {
         });
         const uploadedUrl = response.data?.media?.url;
         if (!uploadedUrl) {
-          throw new Error('Upload failed: missing media URL');
+          console.error('Upload response missing media URL:', response.data);
+          throw new Error(response.data?.message || 'Upload failed: missing media URL');
         }
 
         if (mediaType === 'photo') {
@@ -227,8 +228,8 @@ export default function PostVacancy() {
         }
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload file. Please try again.');
+      console.error('Upload error:', error.response?.data || error.message || error);
+      toast.error(error.response?.data?.message || 'Failed to upload file. Please try again.');
     } finally {
       setUploading(false);
       e.target.value = '';

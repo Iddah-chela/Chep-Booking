@@ -68,7 +68,14 @@ const AgentChatInterface = ({ room, vacancyId, onClose, existingChatId }) => {
         toast.error(data.message);
       }
     } catch (error) {
-      console.error('AgentChat init error:', error);
+      console.error('AgentChat init error:', error?.response?.data || error.message || error);
+      // If agent attempted to open a chat without a tenant initiated chat, server returns 400
+      if (error?.response?.status === 400) {
+        const msg = error.response?.data?.message || 'Agents can only open chats from the leads inbox once a tenant has contacted this vacancy.';
+        toast.error(msg);
+        // Optionally guide agent to leads inbox
+        return;
+      }
       if (error?.response?.status === 401) {
         toast.error('Unauthorized — please sign in again or refresh the page');
       } else {

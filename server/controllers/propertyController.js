@@ -25,14 +25,25 @@ const inferTierAndStatus = (property) => {
   const hasImages = property.hasImages ?? (Array.isArray(property.images) && property.images.length > 0);
 
   const listingTier = property.listingTier || (hasRoomLevelData ? 'live' : 'directory');
+  const isAgentListing = String(property.sourceType || '').toLowerCase() === 'agent' || !!property.agentPost;
 
   let vacancyStatus = property.vacancyStatus;
-  if (!vacancyStatus || (listingTier === 'live' && vacancyStatus === 'unknown')) {
+  if (!vacancyStatus || (listingTier === 'live' && vacancyStatus === 'unknown') || (isAgentListing && vacancyStatus === 'unknown')) {
     const vacantRooms = Number(property.vacantRooms || 0);
-    if (listingTier !== 'live') vacancyStatus = 'unknown';
-    else if (vacantRooms > 3) vacancyStatus = 'available';
-    else if (vacantRooms > 0) vacancyStatus = 'limited';
-    else vacancyStatus = 'full';
+    // For agent listings, always show confirmed availability based on available rooms
+    if (isAgentListing) {
+      if (vacantRooms > 3) vacancyStatus = 'available';
+      else if (vacantRooms > 0) vacancyStatus = 'limited';
+      else vacancyStatus = 'available'; // default to available for agent posts
+    } else if (listingTier !== 'live') {
+      vacancyStatus = 'unknown';
+    } else if (vacantRooms > 3) {
+      vacancyStatus = 'available';
+    } else if (vacantRooms > 0) {
+      vacancyStatus = 'limited';
+    } else {
+      vacancyStatus = 'full';
+    }
   }
 
   const actionability = normalizeListingActionability(listingTier);
@@ -290,6 +301,8 @@ export const getAllProperties = async (req, res) => {
           availableRooms: v.availableRooms,
           amenities: v.amenities || [],
           description: v.description || '',
+          // Hide landlord/agent name for public feed
+          landlordName: '',
         };
         return inferTierAndStatus(obj);
       });
@@ -351,9 +364,9 @@ export const getPropertyById = async (req, res) => {
         agentImage: agentUser?.image || '',
         agentEmail: agentUser?.email || '',
         agentPhone: agentUser?.phoneNumber || '',
-        contact: agentUser?.phoneNumber || '',
-        whatsappNumber: agentUser?.phoneNumber || '',
-        landlordName: agentUser?.username || 'Agent',
+        contact: '',
+        whatsappNumber: '',
+        landlordName: '',
         description: vacancy.description || '',
         roomType: vacancy.roomType,
         availableRooms: vacancy.availableRooms,

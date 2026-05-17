@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ const AgentViewings = () => {
   const [searchParams] = useSearchParams();
   const leadId = searchParams.get('leadId');
   const { axios, getToken } = useAppContext();
+  const navigate = useNavigate();
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -93,18 +94,22 @@ const AgentViewings = () => {
               try {
                 setProcessing(true);
                 const token = await getToken();
-                await axios.put(`/api/agent/leads/${leadId}/outcome`, { outcome: 'viewed' }, { headers: { Authorization: `Bearer ${token}` } });
+                console.log('[AgentViewings] Marking viewed for leadId:', leadId);
+                const { data } = await axios.put(`/api/agent/leads/${leadId}/outcome`, { outcome: 'viewed' }, { headers: { Authorization: `Bearer ${token}` } });
+                console.log('[AgentViewings] Response:', data);
                 toast.success('Viewing marked as completed');
-                fetchLead();
+                // Return to leads/agent dashboard after marking
+                navigate('/agent');
               } catch (err) {
-                toast.error('Failed to mark viewing');
+                console.error('[AgentViewings] Error marking viewed:', err?.response?.status, err?.response?.data, err?.message);
+                toast.error(err?.response?.data?.message || 'Failed to mark viewing');
               } finally {
                 setProcessing(false);
               }
             }}
-            className='px-4 py-2 bg-green-600 text-white rounded-lg'
+            className='px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50'
           >
-            Confirm Viewed
+            {processing ? 'Processing...' : 'Confirm Viewed'}
           </button>
 
           <button
@@ -114,18 +119,22 @@ const AgentViewings = () => {
               try {
                 setProcessing(true);
                 const token = await getToken();
-                await axios.put(`/api/agent/leads/${leadId}/outcome`, { outcome: 'not-fit' }, { headers: { Authorization: `Bearer ${token}` } });
+                console.log('[AgentViewings] Marking not-fit for leadId:', leadId);
+                const { data } = await axios.put(`/api/agent/leads/${leadId}/outcome`, { outcome: 'not-fit' }, { headers: { Authorization: `Bearer ${token}` } });
+                console.log('[AgentViewings] Response:', data);
                 toast.success('Viewing declined');
-                fetchLead();
+                // Return to leads/agent dashboard after marking
+                navigate('/agent');
               } catch (err) {
-                toast.error('Failed to decline viewing');
+                console.error('[AgentViewings] Error marking not-fit:', err?.response?.status, err?.response?.data, err?.message);
+                toast.error(err?.response?.data?.message || 'Failed to decline viewing');
               } finally {
                 setProcessing(false);
               }
             }}
-            className='px-4 py-2 bg-red-100 text-red-700 rounded-lg border border-red-200'
+            className='px-4 py-2 bg-red-100 text-red-700 rounded-lg border border-red-200 disabled:opacity-50'
           >
-            Decline
+            {processing ? 'Processing...' : 'Decline'}
           </button>
         </div>
       </div>
