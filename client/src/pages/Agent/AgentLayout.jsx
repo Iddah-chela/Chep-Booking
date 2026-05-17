@@ -66,7 +66,7 @@ export default function AgentLayout() {
       </div>
 
       {/* Main Content */}
-      <div className='flex-1 p-4 pt-8 md:px-10 pb-24 md:pb-10 overflow-y-auto overflow-x-hidden min-w-0'>
+      <div className='flex-1 p-4 pt-4 md:px-10 pb-24 md:pb-10 overflow-y-auto overflow-x-hidden min-w-0'>
         <Outlet />
       </div>
 
