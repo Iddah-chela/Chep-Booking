@@ -561,11 +561,11 @@ export default function EditVacancy() {
             {mediaType === 'photo' ? `Photos (${photos.length}/5)` : `Videos (${videos.length}/3)`}
           </h2>
 
-          <div className='grid grid-cols-1 md:grid-cols-4 gap-3 mb-4'>
+          <div className='grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 min-w-0'>
             <select
               value={mediaType}
               onChange={(e) => setMediaType(e.target.value)}
-              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg'
+              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg w-full'
             >
               <option value='photo'>Photo</option>
               <option value='video'>Video</option>
@@ -575,12 +575,12 @@ export default function EditVacancy() {
               placeholder='Paste photo or video URL'
               value={mediaInput}
               onChange={(e) => setMediaInput(e.target.value)}
-              className='md:col-span-2 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-0'
+              className='md:col-span-2 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-0 w-full'
             />
             <button
               type='button'
               onClick={handleAddMedia}
-              className='bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors'
+              className='bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors w-full md:w-auto'
             >
               <Plus size={18} />
               Add URL
