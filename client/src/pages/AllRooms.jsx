@@ -3,7 +3,7 @@ import { assets } from '../assets/assets'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { X, Coins, ImageIcon } from 'lucide-react'
+import { X, Coins, ImageIcon, Video } from 'lucide-react'
 import { PropertyCardSkeleton } from '../components/Skeletons'
 
 const CheckBox = ({label, selected = false, onChange =() =>{}}) => {
@@ -120,7 +120,16 @@ const AllRooms = () => {
             minPriceDisplay: prices.length > 0 ? Math.min(...prices) : fallbackMin,
             maxPriceDisplay: prices.length > 0 ? Math.max(...prices) : fallbackMax,
             hasRealImages: !!(property.images && property.images.length > 0),
-            images: property.images && property.images.length > 0 ? property.images : []
+              images: property.images && property.images.length > 0 ? property.images : [],
+              hasVideo: Array.isArray(property.videos) && property.videos.length > 0,
+              // prefer explicit thumbnail if provided by backend, else leave null
+              videoThumbnail: (Array.isArray(property.videos) && property.videos.length > 0)
+                ? (typeof property.videos[0] === 'string' ? null : (property.videos[0].thumbnail || property.videos[0].thumb || null))
+                : null,
+              // rawVideoSrc used if no thumbnail exists — still rendered as an image (not playable)
+              rawVideoSrc: (Array.isArray(property.videos) && property.videos.length > 0)
+                ? (typeof property.videos[0] === 'string' ? property.videos[0] : (property.videos[0].url || ''))
+                : null
           }
         })
         
@@ -398,9 +407,42 @@ const AllRooms = () => {
                   className='w-full aspect-[16/10] rounded-xl shadow-lg object-cover object-center cursor-pointer hover:shadow-2xl transition-shadow relative'
                 />
               ) : (
-                <div className='w-full aspect-[16/10] rounded-xl shadow-inner border border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-700 flex flex-col items-center justify-center text-gray-500 dark:text-gray-300'>
-                  <ImageIcon className='w-8 h-8 mb-2 opacity-80' />
-                  
+                <div className='w-full aspect-[16/10] rounded-xl shadow-inner border border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-300 relative overflow-hidden'>
+                  {property.videoThumbnail ? (
+                    <img
+                      onClick={() => { navigate(`/rooms/${property._id}`); scrollTo(0,0) }}
+                      src={property.videoThumbnail}
+                      alt='Video preview'
+                      title='View Property Details'
+                      className='w-full h-full object-cover cursor-pointer hover:shadow-2xl transition-shadow'
+                    />
+                  ) : property.hasVideo ? (
+                    <div
+                      onClick={() => { navigate(`/rooms/${property._id}`); scrollTo(0,0) }}
+                      role='button'
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          navigate(`/rooms/${property._id}`)
+                          scrollTo(0,0)
+                        }
+                      }}
+                      className='w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 cursor-pointer hover:shadow-2xl transition-shadow'
+                    >
+                      <Video className='w-16 h-16 text-gray-500 dark:text-gray-300' aria-hidden />
+                    </div>
+                  ) : (
+                    <div className='flex flex-col items-center justify-center'>
+                      <ImageIcon className='w-8 h-8 mb-2 opacity-80' />
+                    </div>
+                  )}
+                  {property.hasVideo && (
+                    <div className='absolute left-3 top-3 bg-black/50 rounded-full p-2 flex items-center justify-center' aria-hidden>
+                      <svg className='w-4 h-4 text-white' viewBox='0 0 24 24' fill='currentColor'>
+                        <path d='M7 6v12l10-6-10-6z' />
+                      </svg>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

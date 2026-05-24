@@ -126,19 +126,16 @@ const AgentViewings = () => {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-gray-900 p-6 md:p-8'>
+    <div className='py-28 px-4 md:px-16 lg:px-24 xl:px-32 min-h-screen'>
       <div className='max-w-7xl mx-auto'>
-        <div className='mb-6 flex items-center justify-between gap-4'>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6'>
           <div>
-            <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Viewing Requests</h1>
-            <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>Track pending, confirmed, and denied viewings in one place.</p>
+            <h1 className='text-3xl font-semibold mb-2'>Viewing Requests</h1>
+            <p className='text-gray-500 text-sm mt-1'>Manage viewing requests from potential renters</p>
           </div>
-          <button
-            onClick={() => navigate('/agent')}
-            className='px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-          >
-            Back to dashboard
-          </button>
+          <div>
+            <button onClick={() => navigate('/agent')} className='text-sm text-indigo-600 hover:underline'>Back to dashboard</button>
+          </div>
         </div>
 
         <div className='flex gap-2 mb-6 overflow-x-auto pb-2'>
@@ -146,10 +143,10 @@ const AgentViewings = () => {
             <button
               key={entry.key}
               onClick={() => setTab(entry.key)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all border ${
+              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
                 tab === entry.key
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               {entry.label}

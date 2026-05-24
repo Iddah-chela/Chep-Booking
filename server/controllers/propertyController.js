@@ -284,9 +284,10 @@ export const getAllProperties = async (req, res) => {
         const obj = {
           _id: v._id,
           name: v.title || 'Agent listing',
-          images: (v.photos || []).map(p => p.url).filter(Boolean),
+          images: (v.photos || []).map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean),
           place: v.location?.city || '',
           estate: v.location?.area || '',
+          videos: v.videos || [],
           listedRentMin: v.rent?.min ?? null,
           listedRentMax: v.rent?.max ?? null,
           listingTier: 'agent',
@@ -304,6 +305,13 @@ export const getAllProperties = async (req, res) => {
           // Hide landlord/agent name for public feed
           landlordName: '',
         };
+        // If there are no images but videos exist, try to use a video thumbnail as a preview
+        if ((!obj.images || obj.images.length === 0) && Array.isArray(v.videos) && v.videos.length > 0) {
+          const first = v.videos[0];
+          const thumb = first && (typeof first === 'string' ? null : (first.thumbnail || first.thumb || ''));
+          if (thumb) obj.images = [thumb];
+          // keep videos on the object so front-end can detect a video-only listing
+        }
         return inferTierAndStatus(obj);
       });
 

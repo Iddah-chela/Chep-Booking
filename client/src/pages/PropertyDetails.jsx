@@ -21,7 +21,7 @@ const PropertyDetails = () => {
     const [selectedBuilding, setSelectedBuilding] = useState(0)
     const [zoomedBuilding, setZoomedBuilding] = useState(null)
     const [selectedRoom, setSelectedRoom] = useState(null)
-    const [mainImage, setMainImage] = useState(null)
+    const [mainMedia, setMainMedia] = useState(null) // { type: 'image'|'video', src, thumbnail? }
     const [showChat, setShowChat] = useState(false)
     const [showAgentLeadModal, setShowAgentLeadModal] = useState(false)
     const [agentLeadType, setAgentLeadType] = useState('contact')
@@ -151,7 +151,17 @@ const PropertyDetails = () => {
               } catch (_) {}
             }
             setProperty(fetchedProperty)
-            setMainImage(fetchedProperty.images[0])
+            // initialize main media (prefer image, else video)
+            try {
+              if (Array.isArray(fetchedProperty.images) && fetchedProperty.images.length > 0) {
+                setMainMedia({ type: 'image', src: fetchedProperty.images[0] });
+              } else if (Array.isArray(fetchedProperty.videos) && fetchedProperty.videos.length > 0) {
+                const v0 = fetchedProperty.videos[0];
+                setMainMedia({ type: 'video', src: typeof v0 === 'string' ? v0 : (v0.url || '') });
+              } else {
+                setMainMedia(null);
+              }
+            } catch (_) { setMainMedia(null) }
           } else {
             toast.error(response.data.message)
           }
@@ -627,7 +637,7 @@ const PropertyDetails = () => {
 
   // Informational mode fallback for directory records with no room map.
   if (!canShowRoomGrid) {
-    const image = mainImage || property.images?.[0] || assets.house1
+  const mainMediaNow = mainMedia || (property?.images?.[0] ? { type: 'image', src: property.images[0] } : (property?.videos?.[0] ? { type: 'video', src: typeof property.videos[0] === 'string' ? property.videos[0] : (property.videos[0].url || '') } : null))
     const availableUnits = isAgentListing ? Math.max(1, Number(property.availableRooms || property.vacantRooms || 1)) : 0
     const unitTiles = isAgentListing
       ? Array.from({ length: Math.min(availableUnits, 12) }, (_, index) => ({
@@ -664,7 +674,13 @@ const PropertyDetails = () => {
           </div>
         </div>
 
-        <img src={image} alt='' className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700' />
+        {mainMediaNow?.type === 'image' ? (
+          <img src={mainMediaNow.src} alt='' className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700' />
+        ) : mainMediaNow?.type === 'video' ? (
+          <video src={mainMediaNow.src} controls className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700 bg-black' />
+        ) : (
+          <img src={assets.house1} alt='' className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700' />
+        )}
 
         {isAgentListing && (
           <div className='mt-6 space-y-4'>
@@ -1038,9 +1054,16 @@ const PropertyDetails = () => {
         {/* Images */}
         <div className='flex flex-col lg:flex-row mt-8 gap-4'>
           <div className='lg:w-2/3 w-full'>
-            {mainImage ? (
-              <img src={mainImage} alt='' className='w-full h-96 rounded-lg object-cover' />
-            ) : (
+            {Array.isArray(property?.images) && property.images.length > 0 ? (
+                <img src={property.images[0]} alt='' className='w-full h-96 rounded-lg object-cover' />
+              ) : Array.isArray(property?.videos) && property.videos.length > 0 ? (
+                // Show first video (use thumbnail if provided)
+                (property.videos[0] && typeof property.videos[0] !== 'string' && property.videos[0].thumbnail) ? (
+                  <img src={property.videos[0].thumbnail} alt='' className='w-full h-96 rounded-lg object-cover' />
+                ) : (
+                  <video src={typeof property.videos[0] === 'string' ? property.videos[0] : property.videos[0].url} controls className='w-full h-96 rounded-lg object-cover bg-black' />
+                )
+              ) : (
               <div className='w-full h-96 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400'>
                 <ImageIcon className='w-12 h-12 mb-2 opacity-70' />
                 <span className='text-sm font-medium'>No image available</span>
@@ -1049,14 +1072,26 @@ const PropertyDetails = () => {
           </div>
           <div className='grid grid-cols-2 gap-2 lg:w-1/3 w-full'>
             {Array.isArray(property.images) && property.images.length > 0 ? (
-              property.images.slice(0, 4).map((image, index) => (
+                property.images.slice(0, 4).map((image, index) => (
                 <img
-                  onClick={() => setMainImage(image)}
+                  onClick={() => setMainMedia({ type: 'image', src: image })}
                   key={index}
                   src={image}
                   alt=''
-                  className={`w-full h-44 rounded-lg object-cover cursor-pointer ${mainImage === image ? 'ring-2 ring-primary' : ''}`}
+                  className={`w-full h-44 rounded-lg object-cover cursor-pointer ${(mainMedia?.type === 'image' && mainMedia.src === image) ? 'ring-2 ring-primary' : ''}`}
                 />
+              ))
+            ) : Array.isArray(property.videos) && property.videos.length > 0 ? (
+              property.videos.slice(0, 4).map((video, index) => (
+                <div key={index} onClick={() => setMainMedia({ type: 'video', src: (typeof video === 'string' ? video : (video.url || '')) })} className={`w-full h-44 rounded-lg overflow-hidden bg-black cursor-pointer ${mainMedia?.type === 'video' && mainMedia.src === (typeof video === 'string' ? video : (video.url || '')) ? 'ring-2 ring-primary' : ''}`}>
+                  {typeof video === 'string' ? (
+                    <video src={video} className='w-full h-full object-cover' controls />
+                  ) : (video.thumbnail ? (
+                    <img src={video.thumbnail} alt='' className='w-full h-full object-cover' />
+                  ) : (
+                    <video src={video.url} className='w-full h-full object-cover' controls />
+                  ))}
+                </div>
               ))
             ) : (
               <div className='col-span-2 h-44 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400'>

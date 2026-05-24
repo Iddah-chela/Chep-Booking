@@ -122,11 +122,13 @@ const AgentBookings = () => {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-gray-900 p-6 md:p-8'>
+    <div className='py-28 px-4 md:px-16 lg:px-24 xl:px-32 min-h-screen'>
       <div className='max-w-6xl mx-auto'>
-        <div className='mb-6'>
-          <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Manage Bookings</h1>
-          <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>Confirmed bookings stay visible in their own tab, while denied leads remain for reference.</p>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6'>
+          <div>
+            <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Manage Bookings</h1>
+            <p className='text-sm text-gray-600 dark:text-gray-400 mt-0.5'>Confirmed bookings stay visible in their own tab, while denied leads remain for reference.</p>
+          </div>
         </div>
 
         <div className='flex gap-2 mb-6 overflow-x-auto pb-2'>
@@ -134,10 +136,10 @@ const AgentBookings = () => {
             <button
               key={entry.key}
               onClick={() => setTab(entry.key)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all border ${
+              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
                 tab === entry.key
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               {entry.label}

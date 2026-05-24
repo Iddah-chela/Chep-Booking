@@ -19,6 +19,7 @@ export default function EditVacancy() {
   const [videos, setVideos] = useState([]);
   const [mediaInput, setMediaInput] = useState('');
   const [mediaType, setMediaType] = useState('photo');
+  const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
   const [showGridEditor, setShowGridEditor] = useState(false);
   const [buildingsJson, setBuildingsJson] = useState('');
   const [formData, setFormData] = useState({
@@ -145,6 +146,10 @@ export default function EditVacancy() {
     setUploading(true);
     try {
       for (const file of files) {
+        if (file.size > MAX_UPLOAD_BYTES) {
+          toast.error(`${file.name} is too large (${(file.size / (1024 * 1024)).toFixed(2)} MB). Maximum is 15 MB.`);
+          continue;
+        }
         const formDataUpload = new FormData();
         formDataUpload.append('file', file);
         formDataUpload.append('mediaType', mediaType);
@@ -152,10 +157,10 @@ export default function EditVacancy() {
         const response = await axios.post('/api/agent/upload-media', formDataUpload, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const uploadedUrl = response.data?.media?.url;
-        if (!uploadedUrl) {
-          console.error('Upload response missing media URL:', response.data);
-          throw new Error(response.data?.message || 'Upload failed: missing media URL');
+        const media = response.data?.media;
+        if (!media || !media.url) {
+          console.error('Upload response missing media object:', response.data);
+          throw new Error(response.data?.message || 'Upload failed: missing media object');
         }
 
         if (mediaType === 'photo') {
@@ -163,14 +168,14 @@ export default function EditVacancy() {
             toast.error('Maximum 5 photos reached');
             break;
           }
-          setPhotos([...photos, uploadedUrl]);
+          setPhotos([...photos, media]);
           toast.success('Photo uploaded');
         } else {
           if (videos.length >= 3) {
             toast.error('Maximum 3 videos reached');
             break;
           }
-          setVideos([...videos, uploadedUrl]);
+          setVideos([...videos, media]);
           toast.success('Video uploaded');
         }
       }
@@ -289,8 +294,8 @@ export default function EditVacancy() {
         availableRooms: Number(formData.availableRooms),
         description: formData.description,
         amenities,
-        photos: photos.map((url) => ({ url, publicId: '' })),
-        videos: videos.map((url) => ({ url, publicId: '', thumbnail: '' })),
+        photos: photos.map((p) => (typeof p === 'string' ? { url: p, publicId: '' } : { url: p.url, publicId: p.publicId || '', thumbnail: p.thumbnail || '' })),
+        videos: videos.map((v) => (typeof v === 'string' ? { url: v, publicId: '', thumbnail: '' } : { url: v.url, publicId: v.publicId || '', thumbnail: v.thumbnail || '' })),
         buildings: parsedBuildings,
         moveInDate: formData.moveInDate ? new Date(formData.moveInDate).toISOString() : undefined,
         availabilityFrom: formData.availabilityFrom ? new Date(formData.availabilityFrom).toISOString() : undefined,
@@ -570,7 +575,7 @@ export default function EditVacancy() {
               placeholder='Paste photo or video URL'
               value={mediaInput}
               onChange={(e) => setMediaInput(e.target.value)}
-              className='md:col-span-2 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+              className='md:col-span-2 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-0'
             />
             <button
               type='button'
@@ -597,13 +602,14 @@ export default function EditVacancy() {
                 className='hidden'
               />
             </label>
+            <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>Max file size: 15 MB. Allowed types: images and videos.</p>
           </div>
 
           {photos.length > 0 && (
             <div className='grid grid-cols-2 md:grid-cols-5 gap-4 mt-4'>
               {photos.map((photo, index) => (
                 <div key={index} className='relative group'>
-                  <img src={photo} alt={`Photo ${index + 1}`} className='w-full h-24 object-cover rounded-lg' />
+                  <img src={typeof photo === 'string' ? photo : (photo.url || '')} alt={`Photo ${index + 1}`} className='w-full h-24 object-cover rounded-lg' />
                   <button
                     type='button'
                     onClick={() => removePhoto(index)}
@@ -620,9 +626,9 @@ export default function EditVacancy() {
             <div className='space-y-2 mt-4'>
               {videos.map((video, index) => (
                 <div key={index} className='flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg'>
-                  <div className='flex items-center gap-2'>
+                  <div className='flex items-center gap-2 min-w-0'>
                     <Video size={18} className='text-gray-500' />
-                    <span className='text-sm text-gray-700 dark:text-gray-300 truncate'>{video.substring(0, 50)}...</span>
+                    <span className='text-sm text-gray-700 dark:text-gray-300 truncate'>{(typeof video === 'string' ? video : (video.url || '')).substring(0, 50)}...</span>
                   </div>
                   <button
                     type='button'

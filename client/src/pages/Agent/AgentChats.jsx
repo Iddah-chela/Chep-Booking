@@ -46,8 +46,8 @@ const AgentChats = () => {
   if (loading) return <div className='flex items-center justify-center h-screen'><Loader className='animate-spin' /></div>;
 
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-gray-900 p-6 md:p-8'>
-      <h1 className='text-3xl md:text-4xl font-playfair mb-8'>Agent Messages</h1>
+    <div className='py-28 px-4 md:px-16 lg:px-24 xl:px-32 min-h-screen'>
+      <h1 className='text-3xl md:text-4xl font-playfair mb-6'>Agent Messages</h1>
       {chats.length === 0 ? (
         <div className='text-center py-16'>No chats yet</div>
       ) : (
