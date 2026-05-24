@@ -273,8 +273,8 @@ export default function LeadInbox() {
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
-      <div className='max-w-screen-2xl mx-auto p-6 md:p-8'>
-        <div className='flex items-center gap-4 mb-8'>
+      <div className='max-w-screen-2xl mx-auto px-4 pt-4 pb-6 md:p-8'>
+        <div className='flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8'>
           <button
             onClick={() => navigate('/agent')}
             className='p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors'
@@ -282,8 +282,8 @@ export default function LeadInbox() {
             <ChevronLeft size={24} />
           </button>
           <div>
-            <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>My Vacancies & Leads</h1>
-            <p className='text-gray-600 dark:text-gray-400 mt-1'>Manage your postings and track interest</p>
+            <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight'>My Vacancies & Leads</h1>
+            <p className='text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1'>Manage your postings and track interest</p>
           </div>
         </div>
 
