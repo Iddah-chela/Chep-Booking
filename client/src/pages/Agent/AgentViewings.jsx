@@ -126,7 +126,7 @@ const AgentViewings = () => {
   }
 
   return (
-    <div className='py-28 px-4 md:px-16 lg:px-24 xl:px-32 min-h-screen'>
+    <div className='px-4 md:px-16 lg:px-24 xl:px-32 min-h-screen'>
       <div className='max-w-7xl mx-auto'>
         <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6'>
           <div>
