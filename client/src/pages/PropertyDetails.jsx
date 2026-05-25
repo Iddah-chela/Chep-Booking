@@ -11,7 +11,7 @@ import PaymentModal from '../components/PaymentModal'
 import { useAppContext } from '../context/AppContext'
 import { toast } from 'react-hot-toast'
 import { SignInButton, SignUpButton } from '@clerk/clerk-react'
-import { Gift, Lock, Unlock, Key, CreditCard, MessageCircle, Smartphone, PartyPopper, Check, Share2, Copy, Users, User as UserIcon, Image as ImageIcon, Video as VideoIcon, PlayCircle } from 'lucide-react'
+import { Gift, Lock, Unlock, Key, CreditCard, MessageCircle, Smartphone, PartyPopper, Check, Share2, Copy, Users, User as UserIcon, Image as ImageIcon, PlayCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PropertyDetailSkeleton } from '../components/Skeletons'
 
 const PropertyDetails = () => {
@@ -674,13 +674,36 @@ const PropertyDetails = () => {
           </div>
         </div>
 
-        {mainMediaNow?.type === 'image' ? (
-          <img src={mainMediaNow.src} alt='' className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700' />
-        ) : mainMediaNow?.type === 'video' ? (
-          <video src={mainMediaNow.src} controls className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700 bg-black' />
-        ) : (
-          <img src={assets.house1} alt='' className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700' />
-        )}
+        <div className='relative'>
+          {activeMedia?.type === 'image' ? (
+            <img src={activeMedia.src} alt='' className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700' />
+          ) : activeMedia?.type === 'video' ? (
+            <video src={activeMedia.src} controls className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700 bg-black' />
+          ) : (
+            <img src={assets.house1} alt='' className='w-full max-h-[420px] rounded-xl object-cover border border-gray-200 dark:border-gray-700' />
+          )}
+
+          {mediaItems.length > 1 && (
+            <>
+              <button
+                type='button'
+                onClick={() => goToMedia(activeMediaIndex - 1)}
+                className='absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/45 text-white flex items-center justify-center hover:bg-black/65 transition-colors'
+                aria-label='Previous media'
+              >
+                <ChevronLeft className='w-5 h-5' />
+              </button>
+              <button
+                type='button'
+                onClick={() => goToMedia(activeMediaIndex + 1)}
+                className='absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/45 text-white flex items-center justify-center hover:bg-black/65 transition-colors'
+                aria-label='Next media'
+              >
+                <ChevronRight className='w-5 h-5' />
+              </button>
+            </>
+          )}
+        </div>
 
         {isAgentListing && (
           <div className='mt-6 space-y-4'>
@@ -962,6 +985,21 @@ const PropertyDetails = () => {
   const soonAvailableCount = property.buildings.reduce((sum, b) =>
     sum + (b.grid || []).flat().filter(cell => cell?.type === 'room' && cell?.isMoveOutSoon && !cell?.isVacant && !cell?.isBooked).length
   , 0)
+  const mediaItems = [
+    ...(Array.isArray(property?.images) ? property.images.filter(Boolean).map((src) => ({ type: 'image', src })) : []),
+    ...(Array.isArray(property?.videos) ? property.videos.filter(Boolean).map((video) => ({
+      type: 'video',
+      src: typeof video === 'string' ? video : (video.url || ''),
+      thumbnail: typeof video === 'string' ? null : (video.thumbnail || video.thumb || null),
+    })) : []),
+  ]
+  const activeMedia = mainMedia || mediaItems[0] || null
+  const activeMediaIndex = Math.max(0, mediaItems.findIndex((item) => item.type === activeMedia?.type && item.src === activeMedia?.src))
+  const goToMedia = (nextIndex) => {
+    if (mediaItems.length === 0) return
+    const wrappedIndex = (nextIndex + mediaItems.length) % mediaItems.length
+    setMainMedia(mediaItems[wrappedIndex])
+  }
 
   // Dynamic cell size for compound thumbnail view
   const numBuildings = property.buildings.length
@@ -1071,27 +1109,30 @@ const PropertyDetails = () => {
             )}
           </div>
           <div className='grid grid-cols-2 gap-2 lg:w-1/3 w-full'>
-            {Array.isArray(property.images) && property.images.length > 0 ? (
-                property.images.slice(0, 4).map((image, index) => (
-                <img
-                  onClick={() => setMainMedia({ type: 'image', src: image })}
-                  key={index}
-                  src={image}
-                  alt=''
-                  className={`w-full h-44 rounded-lg object-cover cursor-pointer ${(mainMedia?.type === 'image' && mainMedia.src === image) ? 'ring-2 ring-primary' : ''}`}
-                />
-              ))
-            ) : Array.isArray(property.videos) && property.videos.length > 0 ? (
-              property.videos.slice(0, 4).map((video, index) => (
-                <div key={index} onClick={() => setMainMedia({ type: 'video', src: (typeof video === 'string' ? video : (video.url || '')) })} className={`w-full h-44 rounded-lg overflow-hidden bg-black cursor-pointer ${mainMedia?.type === 'video' && mainMedia.src === (typeof video === 'string' ? video : (video.url || '')) ? 'ring-2 ring-primary' : ''}`}>
-                  {typeof video === 'string' ? (
-                    <video src={video} className='w-full h-full object-cover' controls />
-                  ) : (video.thumbnail ? (
-                    <img src={video.thumbnail} alt='' className='w-full h-full object-cover' />
+            {mediaItems.length > 0 ? (
+              mediaItems.slice(0, 4).map((item, index) => (
+                <button
+                  key={`${item.type}-${item.src}-${index}`}
+                  type='button'
+                  onClick={() => setMainMedia(item)}
+                  className={`relative w-full h-44 rounded-lg overflow-hidden cursor-pointer border border-gray-200 dark:border-gray-700 ${activeMedia?.type === item.type && activeMedia?.src === item.src ? 'ring-2 ring-primary' : ''}`}
+                  title={`Open ${item.type}`}
+                >
+                  {item.type === 'image' ? (
+                    <img src={item.src} alt='' className='w-full h-full object-cover' />
+                  ) : item.thumbnail ? (
+                    <img src={item.thumbnail} alt='' className='w-full h-full object-cover' />
                   ) : (
-                    <video src={video.url} className='w-full h-full object-cover' controls />
-                  ))}
-                </div>
+                    <div className='w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800'>
+                      <PlayCircle className='w-14 h-14 text-gray-500 dark:text-gray-300' />
+                    </div>
+                  )}
+                  {item.type === 'video' && (
+                    <div className='absolute left-2 top-2 bg-black/55 rounded-full p-1.5'>
+                      <PlayCircle className='w-4 h-4 text-white' />
+                    </div>
+                  )}
+                </button>
               ))
             ) : (
               <div className='col-span-2 h-44 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400'>
@@ -1103,42 +1144,6 @@ const PropertyDetails = () => {
             )}
           </div>
         </div>
-
-        {Array.isArray(property?.videos) && property.videos.length > 0 && (
-          <div className='mt-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4'>
-            <div className='flex items-center gap-2 mb-3'>
-              <VideoIcon className='w-5 h-5 text-indigo-600' />
-              <h2 className='text-lg font-semibold text-gray-900 dark:text-white'>Videos</h2>
-            </div>
-            <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3'>
-              {property.videos.slice(0, 4).map((video, index) => {
-                const videoSrc = typeof video === 'string' ? video : (video.url || '')
-                const videoThumb = typeof video === 'string' ? null : (video.thumbnail || video.thumb || null)
-                return (
-                  <button
-                    key={index}
-                    type='button'
-                    onClick={() => setMainMedia({ type: 'video', src: videoSrc })}
-                    className={`relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 aspect-[16/10] text-left ${mainMedia?.type === 'video' && mainMedia.src === videoSrc ? 'ring-2 ring-primary' : ''}`}
-                    title='Open video'
-                  >
-                    {videoThumb ? (
-                      <img src={videoThumb} alt='' className='w-full h-full object-cover' />
-                    ) : (
-                      <div className='w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800'>
-                        <PlayCircle className='w-14 h-14 text-gray-500 dark:text-gray-300' />
-                      </div>
-                    )}
-                    <div className='absolute inset-0 bg-black/15' />
-                    <div className='absolute left-2 top-2 bg-black/55 rounded-full p-1.5'>
-                      <PlayCircle className='w-4 h-4 text-white' />
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Grid Selector */}
         <div className='mt-10 p-6 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl border border-purple-200 dark:border-purple-700'>
