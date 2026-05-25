@@ -1091,21 +1091,37 @@ const PropertyDetails = () => {
 
         {/* Images */}
         <div className='flex flex-col lg:flex-row mt-8 gap-4'>
-          <div className='lg:w-2/3 w-full'>
-            {Array.isArray(property?.images) && property.images.length > 0 ? (
-                <img src={property.images[0]} alt='' className='w-full h-96 rounded-lg object-cover' />
-              ) : Array.isArray(property?.videos) && property.videos.length > 0 ? (
-                // Show first video (use thumbnail if provided)
-                (property.videos[0] && typeof property.videos[0] !== 'string' && property.videos[0].thumbnail) ? (
-                  <img src={property.videos[0].thumbnail} alt='' className='w-full h-96 rounded-lg object-cover' />
-                ) : (
-                  <video src={typeof property.videos[0] === 'string' ? property.videos[0] : property.videos[0].url} controls className='w-full h-96 rounded-lg object-cover bg-black' />
-                )
-              ) : (
+          <div className='lg:w-2/3 w-full relative'>
+            {activeMedia?.type === 'image' ? (
+              <img src={activeMedia.src} alt='' className='w-full h-96 rounded-lg object-cover border border-gray-200 dark:border-gray-700' />
+            ) : activeMedia?.type === 'video' ? (
+              <video src={activeMedia.src} controls className='w-full h-96 rounded-lg object-cover border border-gray-200 dark:border-gray-700 bg-black' />
+            ) : (
               <div className='w-full h-96 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400'>
                 <ImageIcon className='w-12 h-12 mb-2 opacity-70' />
                 <span className='text-sm font-medium'>No image available</span>
               </div>
+            )}
+
+            {mediaItems.length > 1 && (
+              <>
+                <button
+                  type='button'
+                  onClick={() => goToMedia(activeMediaIndex - 1)}
+                  className='absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/45 text-white flex items-center justify-center hover:bg-black/65 transition-colors'
+                  aria-label='Previous media'
+                >
+                  <ChevronLeft className='w-5 h-5' />
+                </button>
+                <button
+                  type='button'
+                  onClick={() => goToMedia(activeMediaIndex + 1)}
+                  className='absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/45 text-white flex items-center justify-center hover:bg-black/65 transition-colors'
+                  aria-label='Next media'
+                >
+                  <ChevronRight className='w-5 h-5' />
+                </button>
+              </>
             )}
           </div>
           <div className='grid grid-cols-2 gap-2 lg:w-1/3 w-full'>
