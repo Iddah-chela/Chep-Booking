@@ -11,7 +11,7 @@ import PaymentModal from '../components/PaymentModal'
 import { useAppContext } from '../context/AppContext'
 import { toast } from 'react-hot-toast'
 import { SignInButton, SignUpButton } from '@clerk/clerk-react'
-import { Gift, Lock, Unlock, Key, CreditCard, MessageCircle, Smartphone, PartyPopper, Check, Share2, Copy, Users, User as UserIcon, Image as ImageIcon } from 'lucide-react'
+import { Gift, Lock, Unlock, Key, CreditCard, MessageCircle, Smartphone, PartyPopper, Check, Share2, Copy, Users, User as UserIcon, Image as ImageIcon, Video as VideoIcon, PlayCircle } from 'lucide-react'
 import { PropertyDetailSkeleton } from '../components/Skeletons'
 
 const PropertyDetails = () => {
@@ -1103,6 +1103,42 @@ const PropertyDetails = () => {
             )}
           </div>
         </div>
+
+        {Array.isArray(property?.videos) && property.videos.length > 0 && (
+          <div className='mt-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4'>
+            <div className='flex items-center gap-2 mb-3'>
+              <VideoIcon className='w-5 h-5 text-indigo-600' />
+              <h2 className='text-lg font-semibold text-gray-900 dark:text-white'>Videos</h2>
+            </div>
+            <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3'>
+              {property.videos.slice(0, 4).map((video, index) => {
+                const videoSrc = typeof video === 'string' ? video : (video.url || '')
+                const videoThumb = typeof video === 'string' ? null : (video.thumbnail || video.thumb || null)
+                return (
+                  <button
+                    key={index}
+                    type='button'
+                    onClick={() => setMainMedia({ type: 'video', src: videoSrc })}
+                    className={`relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 aspect-[16/10] text-left ${mainMedia?.type === 'video' && mainMedia.src === videoSrc ? 'ring-2 ring-primary' : ''}`}
+                    title='Open video'
+                  >
+                    {videoThumb ? (
+                      <img src={videoThumb} alt='' className='w-full h-full object-cover' />
+                    ) : (
+                      <div className='w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800'>
+                        <PlayCircle className='w-14 h-14 text-gray-500 dark:text-gray-300' />
+                      </div>
+                    )}
+                    <div className='absolute inset-0 bg-black/15' />
+                    <div className='absolute left-2 top-2 bg-black/55 rounded-full p-1.5'>
+                      <PlayCircle className='w-4 h-4 text-white' />
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Grid Selector */}
         <div className='mt-10 p-6 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl border border-purple-200 dark:border-purple-700'>
