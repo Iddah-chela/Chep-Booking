@@ -108,7 +108,7 @@ export default function LeadInbox() {
   }, [leads, leadFilter]);
 
   const handleReopenVacancy = async (vacancyId) => {
-    if (!window.confirm('Re-open this vacancy? Students can view it again.')) return;
+    if (!window.confirm('Refresh this vacancy? It will be made visible again in the public listings.')) return;
     try {
       setReopeningId(vacancyId);
       const token = await getToken();
@@ -117,11 +117,11 @@ export default function LeadInbox() {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Vacancy reopened');
+      toast.success('Vacancy refreshed');
       fetchVacancies();
     } catch (error) {
       console.error('Error reopening vacancy:', error);
-      toast.error(error.response?.data?.message || 'Failed to reopen vacancy');
+      toast.error(error.response?.data?.message || 'Failed to refresh vacancy');
     } finally {
       setReopeningId(null);
     }
@@ -397,6 +397,13 @@ export default function LeadInbox() {
                             className='flex-1 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm'
                           >
                             {isOpen ? 'Hide Contacts' : `Show Contacts (${group.leads.length})`}
+                          </button>
+                          <button
+                            onClick={() => handleReopenVacancy(vacancy._id)}
+                            disabled={reopeningId === vacancy._id}
+                            className='px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-lg text-sm'
+                          >
+                            {reopeningId === vacancy._id ? 'Refreshing…' : 'Refresh'}
                           </button>
                           <button
                             onClick={() => navigate(`/agent/vacancies/${vacancy._id}/edit`)}

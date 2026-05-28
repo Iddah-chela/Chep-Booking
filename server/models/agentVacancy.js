@@ -102,8 +102,8 @@ const agentVacancySchema = new mongoose.Schema(
       type: Date,
       required: true,
       index: true,
-      // Default to 72 hours from now
-      default: () => new Date(Date.now() + 72 * 60 * 60 * 1000),
+      // Keep agent listings long-lived by default; use refresh/reopen to extend further.
+      default: () => new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
     },
     isActive: {
       type: Boolean,
@@ -133,8 +133,8 @@ const agentVacancySchema = new mongoose.Schema(
 // Index for finding active vacancies by expiry
 agentVacancySchema.index({ isActive: 1, expiresAt: 1 });
 
-// TTL index to auto-delete expired vacancies (optional, can be handled manually)
-agentVacancySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// TTL index intentionally not used for agent listings so they behave like landlord posts.
+// Older deployments may still have the index in MongoDB and may need a one-time drop.
 
 // Middleware to set expiresAt if not provided and auto-expire contacted vacancies
 agentVacancySchema.pre('save', function (next) {

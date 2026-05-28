@@ -9,6 +9,8 @@ import { sendEmail } from '../utils/mailer.js';
 
 const toUserId = (value) => value?.toString?.() || String(value || '');
 
+const farFutureDate = () => new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000);
+
 const uploadAgentMedia = async (file, folder) => {
   if (!file) return null;
   console.info('[AgentUpload] starting upload', {
@@ -152,7 +154,7 @@ export const postVacancy = async (req, res) => {
       availabilityFrom: availabilityFrom ? new Date(availabilityFrom) : undefined,
       availabilityTo: availabilityTo ? new Date(availabilityTo) : undefined,
       minBookingLeadDays: Number.isFinite(Number(minBookingLeadDays)) ? Number(minBookingLeadDays) : 2,
-      expiresAt: availabilityTo ? new Date(availabilityTo) : undefined,
+      expiresAt: farFutureDate(),
     });
 
     await vacancy.save();
@@ -269,9 +271,14 @@ export const updateVacancy = async (req, res) => {
     if (availabilityFrom !== undefined) vacancy.availabilityFrom = availabilityFrom ? new Date(availabilityFrom) : undefined;
     if (availabilityTo !== undefined) {
       vacancy.availabilityTo = availabilityTo ? new Date(availabilityTo) : undefined;
-      vacancy.expiresAt = availabilityTo ? new Date(availabilityTo) : vacancy.expiresAt;
     }
     if (minBookingLeadDays !== undefined) vacancy.minBookingLeadDays = Number(minBookingLeadDays);
+
+    // Editing a vacancy should also refresh/reactivate it like a landlord listing.
+    vacancy.isActive = true;
+    vacancy.status = 'open';
+    vacancy.contactedAt = null;
+    vacancy.expiresAt = farFutureDate();
 
     await vacancy.save();
     res.json({ message: 'Vacancy updated successfully', vacancy });
@@ -307,7 +314,7 @@ export const deleteVacancy = async (req, res) => {
   }
 };
 
-// PUT: Re-open a "contacted" vacancy back to "open"
+// PUT: Refresh/re-open a vacancy back to active/open
 export const reopenVacancy = async (req, res) => {
   try {
     const { id } = req.params;
@@ -323,17 +330,15 @@ export const reopenVacancy = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    if (vacancy.status === 'contacted') {
-      vacancy.status = 'open';
-      vacancy.contactedAt = null;
-      await vacancy.save();
-      res.json({ message: 'Vacancy reopened successfully', vacancy });
-    } else {
-      res.status(400).json({ message: 'Only "contacted" vacancies can be reopened' });
-    }
+    vacancy.isActive = true;
+    vacancy.status = 'open';
+    vacancy.contactedAt = null;
+    vacancy.expiresAt = farFutureDate();
+    await vacancy.save();
+    res.json({ message: 'Vacancy refreshed successfully', vacancy });
   } catch (error) {
     console.error('Error reopening vacancy:', error);
-    res.status(500).json({ message: 'Error reopening vacancy', error: error.message });
+    res.status(500).json({ message: 'Error refreshing vacancy', error: error.message });
   }
 };
 
