@@ -255,10 +255,10 @@ const AdminListings = () => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
-      p.name?.toLowerCase().includes(q) ||
-      p.estate?.toLowerCase().includes(q) ||
-      p.place?.toLowerCase().includes(q) ||
-      p.owner?.email?.toLowerCase().includes(q)
+      (String(p.name || '').toLowerCase()).includes(q) ||
+      (String(p.estate || '').toLowerCase()).includes(q) ||
+      (String(p.place || '').toLowerCase()).includes(q) ||
+      (String(p.owner?.email || '').toLowerCase()).includes(q)
     );
   });
 
