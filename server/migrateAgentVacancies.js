@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
-import AgentVacancy from './models/agentVacancy.js';
+import { runAgentVacancyMigration } from './utils/agentVacancyMigration.js';
 
 dotenv.config({ path: './.env' });
 
@@ -20,59 +20,29 @@ const agentId = getArgValue('--agent');
 const olderThanDaysRaw = getArgValue('--older-than-days');
 const olderThanDays = olderThanDaysRaw ? Number(olderThanDaysRaw) : null;
 
-const now = new Date();
-const farFuture = new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000);
-
-const baseOrFilters = [
-  { expiresAt: { $lte: now } },
-  { status: 'expired' },
-];
-
-const query = { $or: baseOrFilters };
-if (agentId) query.agent = agentId;
-if (Number.isFinite(olderThanDays) && olderThanDays > 0) {
-  query.createdAt = { $lte: new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000) };
-}
-
-const update = {
-  $set: {
-    isActive: true,
-    status: 'open',
-    contactedAt: null,
-    expiresAt: farFuture,
-  },
-};
-
-const findTtlIndexes = async () => {
-  const indexes = await AgentVacancy.collection.indexes();
-  return indexes.filter((idx) => idx && idx.key && idx.key.expiresAt === 1 && typeof idx.expireAfterSeconds === 'number');
-};
-
 async function main() {
   console.log('Starting agent vacancy migration');
   console.log('Mode:', applyChanges ? 'APPLY' : 'DRY-RUN');
-  console.log('Query:', JSON.stringify(query));
 
   await connectDB();
 
-  const matchingCount = await AgentVacancy.countDocuments(query);
-  console.log('Matching vacancies:', matchingCount);
+  const result = await runAgentVacancyMigration({
+    applyChanges,
+    agentId,
+    olderThanDays,
+    dropTtlIndexes: true,
+  });
 
-  const sample = await AgentVacancy.find(query)
-    .select('_id agent isActive status expiresAt createdAt')
-    .sort({ createdAt: -1 })
-    .limit(20)
-    .lean();
-
-  if (sample.length > 0) {
-    console.log('Sample vacancy ids:', sample.map((v) => String(v._id)).join(', '));
+  console.log('Query:', JSON.stringify(result.query));
+  console.log('Matching vacancies:', result.matchingCount);
+  if (result.sampleIds.length > 0) {
+    console.log('Sample vacancy ids:', result.sampleIds.join(', '));
   }
 
-  const ttlIndexes = await findTtlIndexes();
-  if (ttlIndexes.length === 0) {
+  if (result.ttlIndexNames.length === 0) {
     console.log('No TTL index found on expiresAt.');
   } else {
-    console.log('TTL indexes on expiresAt:', ttlIndexes.map((i) => i.name).join(', '));
+    console.log('TTL indexes on expiresAt:', result.ttlIndexNames.join(', '));
   }
 
   if (!applyChanges) {
@@ -80,15 +50,13 @@ async function main() {
     process.exit(0);
   }
 
-  const result = await AgentVacancy.updateMany(query, update);
   console.log('Updated vacancies:', result.modifiedCount);
-
-  for (const idx of ttlIndexes) {
-    try {
-      await AgentVacancy.collection.dropIndex(idx.name);
-      console.log(`Dropped TTL index: ${idx.name}`);
-    } catch (error) {
-      console.warn(`Failed to drop index ${idx.name}:`, error.message || error);
+  if (result.droppedIndexes.length > 0) {
+    console.log('Dropped TTL indexes:', result.droppedIndexes.join(', '));
+  }
+  if (result.failedDrops.length > 0) {
+    for (const failed of result.failedDrops) {
+      console.warn(`Failed to drop index ${failed.name}:`, failed.error);
     }
   }
 

@@ -36,10 +36,54 @@ import * as agentController from './controllers/agentController.js';
 import { expireViewingRequests } from "./utils/expirationHandler.js";
 import { expireProvisionalHolds } from "./utils/expirationHandler.js";
 import { checkListingFreshness, checkUnlockAutoRefunds, sendPostViewingNudges, sendViewingReminders, sendMoveInNudges, sendMoveOutNudges, sendWeeklyPropertyUpdateReminders } from "./utils/cronJobs.js";
+import mongoose from 'mongoose';
+import { runAgentVacancyMigration } from './utils/agentVacancyMigration.js';
 
 
 connectDB()
 connectCloudinary();
+
+const waitForMongoConnection = async (maxWaitMs = 60000) => {
+    const start = Date.now();
+    while (mongoose.connection.readyState !== 1 && Date.now() - start < maxWaitMs) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    return mongoose.connection.readyState === 1;
+};
+
+const maybeRunAgentVacancyMigrationOnStartup = async () => {
+    const enabled = String(process.env.RUN_AGENT_VACANCY_MIGRATION || '').toLowerCase() === 'true';
+    if (!enabled) return;
+
+    const connected = await waitForMongoConnection();
+    if (!connected) {
+        console.warn('[AgentVacancyMigration] Skipped: MongoDB not connected within timeout');
+        return;
+    }
+
+    const olderThanDaysRaw = process.env.AGENT_VACANCY_MIGRATION_OLDER_THAN_DAYS;
+    const olderThanDays = olderThanDaysRaw ? Number(olderThanDaysRaw) : null;
+
+    try {
+        const result = await runAgentVacancyMigration({
+            applyChanges: true,
+            olderThanDays,
+            dropTtlIndexes: true,
+        });
+
+        console.log('[AgentVacancyMigration] completed', {
+            matchingCount: result.matchingCount,
+            modifiedCount: result.modifiedCount,
+            droppedIndexes: result.droppedIndexes,
+            failedDrops: result.failedDrops,
+        });
+        console.log('[AgentVacancyMigration] Set RUN_AGENT_VACANCY_MIGRATION=false after successful deploy to avoid reruns.');
+    } catch (error) {
+        console.error('[AgentVacancyMigration] failed', error?.message || error);
+    }
+};
+
+maybeRunAgentVacancyMigrationOnStartup();
 
 const app = express()
 
