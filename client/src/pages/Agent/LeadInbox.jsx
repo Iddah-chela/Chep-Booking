@@ -365,7 +365,7 @@ export default function LeadInbox() {
                           </p>
                         </div>
                         <span className={`text-xs px-3 py-1 rounded-full font-semibold ${group.hasTemporaryHold ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200' : getStatusColor(group.vacancy?.status)}`}>
-                          {group.hasTemporaryHold ? 'Reserved' : (group.vacancy?.status ? (group.vacancy.status.charAt(0).toUpperCase() + group.vacancy.status.slice(1)) : 'Status')}
+                          {group.hasTemporaryHold ? 'Reserved' : (group.vacancy?.status ? (group.vacancy.status.charAt(0).toUpperCase() + group.vacancy.status.slice(1)) : 'Open')}
                         </span>
                       </div>
 

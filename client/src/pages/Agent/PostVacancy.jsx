@@ -44,6 +44,8 @@ export default function PostVacancy() {
     availabilityFrom: '',
     availabilityTo: '',
     minBookingLeadDays: '2',
+    contactPhone: '',
+    whatsappNumber: '',
   });
 
   const handleInputChange = (e) => {
@@ -358,6 +360,8 @@ export default function PostVacancy() {
         availabilityFrom: formData.availabilityFrom ? new Date(formData.availabilityFrom).toISOString() : undefined,
         availabilityTo: formData.availabilityTo ? new Date(formData.availabilityTo).toISOString() : undefined,
         minBookingLeadDays: Number(formData.minBookingLeadDays) || 2,
+        contactPhone: formData.contactPhone?.trim() || '',
+        whatsappNumber: formData.whatsappNumber?.trim() || '',
       };
 
       const res = await axios.post('/api/agent/vacancies', payload, {
@@ -560,6 +564,29 @@ export default function PostVacancy() {
             rows='5'
             className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
           />
+        </div>
+
+        <div className='mb-8'>
+          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Contact (optional)</h2>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <input
+              type='tel'
+              name='contactPhone'
+              placeholder='Contact phone (e.g. 0712345678)'
+              value={formData.contactPhone}
+              onChange={handleInputChange}
+              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+            />
+            <input
+              type='tel'
+              name='whatsappNumber'
+              placeholder='WhatsApp number (optional)'
+              value={formData.whatsappNumber}
+              onChange={handleInputChange}
+              className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+            />
+          </div>
+          <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>Providing a contact or WhatsApp number makes it easier for tenants to reach you.</p>
         </div>
 
         <div className='mb-8'>

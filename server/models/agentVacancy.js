@@ -93,6 +93,15 @@ const agentVacancySchema = new mongoose.Schema(
     availabilityTo: {
       type: Date,
     },
+    // Optional contact fields supplied by the posting agent
+    contactPhone: {
+      type: String,
+      default: ''
+    },
+    whatsappNumber: {
+      type: String,
+      default: ''
+    },
     minBookingLeadDays: {
       type: Number,
       default: 2,

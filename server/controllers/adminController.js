@@ -3,6 +3,7 @@ import Room from "../models/room.js";
 import House from "../models/house.js";
 import Report from "../models/report.js";
 import Property from "../models/property.js";
+import AgentVacancy from "../models/agentVacancy.js";
 import PropertyClaim from "../models/propertyClaim.js";
 import SiteVisit from "../models/siteVisit.js";
 import Booking from "../models/booking.js";
@@ -239,8 +240,45 @@ export const getAllProperties = async (req, res) => {
     try {
         const properties = await Property.find()
             .populate('owner', 'username email image role')
-            .sort({ createdAt: -1 });
-        res.json({ success: true, properties });
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Also include agent vacancies for admin overview
+        const rawVacancies = await AgentVacancy.find()
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Map vacancies into property-like objects for admin UI
+        const vacancyProps = await Promise.all(rawVacancies.map(async (v) => {
+            const agentUser = v.agent ? await User.findById(v.agent).select('username email image role phoneNumber').lean() : null;
+            return {
+                _id: v._id,
+                name: v.title || 'Agent listing',
+                images: (v.photos || []).map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean),
+                estate: v.location?.area || '',
+                place: v.location?.city || '',
+                owner: {
+                    username: agentUser?.username || 'Agent',
+                    email: agentUser?.email || '',
+                    image: agentUser?.image || '',
+                    role: agentUser?.role || 'agent'
+                },
+                isVerified: false,
+                listingTier: 'agent',
+                sourceType: 'agent',
+                isExpired: !v.isActive,
+                vacantRooms: v.availableRooms,
+                totalRooms: v.availableRooms,
+                buildings: v.buildings || [],
+                createdAt: v.createdAt,
+                landlordName: '',
+                contact: v.contactPhone || agentUser?.phoneNumber || '',
+                whatsappNumber: v.whatsappNumber || agentUser?.phoneNumber || '',
+            };
+        }));
+
+        const merged = [...properties, ...vacancyProps].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        res.json({ success: true, properties: merged });
     } catch (error) {
         res.json({ success: false, message: error.message });
     }
@@ -250,10 +288,22 @@ export const getAllProperties = async (req, res) => {
 export const delistProperty = async (req, res) => {
     try {
         const { propertyId } = req.body;
-        const property = await Property.findById(propertyId);
-        if (!property) return res.json({ success: false, message: 'Property not found' });
-        property.isExpired = true;
-        await property.save();
+        let property = await Property.findById(propertyId);
+        if (property) {
+            property.isExpired = true;
+            await property.save();
+            return res.json({ success: true, message: 'Property delisted successfully' });
+        }
+
+        // Try agent vacancy
+        const vacancy = await AgentVacancy.findById(propertyId);
+        if (vacancy) {
+            vacancy.isActive = false;
+            await vacancy.save();
+            return res.json({ success: true, message: 'Agent vacancy delisted successfully' });
+        }
+
+        return res.json({ success: false, message: 'Property or agent vacancy not found' });
         res.json({ success: true, message: 'Property delisted successfully' });
     } catch (error) {
         res.json({ success: false, message: error.message });
@@ -264,11 +314,21 @@ export const delistProperty = async (req, res) => {
 export const relistProperty = async (req, res) => {
     try {
         const { propertyId } = req.body;
-        const property = await Property.findById(propertyId);
-        if (!property) return res.json({ success: false, message: 'Property not found' });
-        property.isExpired = false;
-        await property.save();
-        res.json({ success: true, message: 'Property re-listed' });
+        let property = await Property.findById(propertyId);
+        if (property) {
+            property.isExpired = false;
+            await property.save();
+            return res.json({ success: true, message: 'Property re-listed' });
+        }
+
+        const vacancy = await AgentVacancy.findById(propertyId);
+        if (vacancy) {
+            vacancy.isActive = true;
+            await vacancy.save();
+            return res.json({ success: true, message: 'Agent vacancy re-listed' });
+        }
+
+        res.json({ success: false, message: 'Property or agent vacancy not found' });
     } catch (error) {
         res.json({ success: false, message: error.message });
     }

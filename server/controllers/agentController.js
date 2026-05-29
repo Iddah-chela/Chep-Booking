@@ -108,6 +108,8 @@ export const postVacancy = async (req, res) => {
       availabilityFrom,
       availabilityTo,
       minBookingLeadDays,
+      contactPhone,
+      whatsappNumber,
     } = req.body;
 
     const agentId = toUserId(req.user._id);
@@ -154,6 +156,8 @@ export const postVacancy = async (req, res) => {
       availabilityFrom: availabilityFrom ? new Date(availabilityFrom) : undefined,
       availabilityTo: availabilityTo ? new Date(availabilityTo) : undefined,
       minBookingLeadDays: Number.isFinite(Number(minBookingLeadDays)) ? Number(minBookingLeadDays) : 2,
+      contactPhone: String(contactPhone || '').trim(),
+      whatsappNumber: String(whatsappNumber || '').trim(),
       expiresAt: farFutureDate(),
     });
 
@@ -293,6 +297,8 @@ export const updateVacancy = async (req, res) => {
       vacancy.availabilityTo = availabilityTo ? new Date(availabilityTo) : undefined;
     }
     if (minBookingLeadDays !== undefined) vacancy.minBookingLeadDays = Number(minBookingLeadDays);
+    if (req.body.contactPhone !== undefined) vacancy.contactPhone = String(req.body.contactPhone || '').trim();
+    if (req.body.whatsappNumber !== undefined) vacancy.whatsappNumber = String(req.body.whatsappNumber || '').trim();
 
     // Editing a vacancy should also refresh/reactivate it like a landlord listing.
     vacancy.isActive = true;

@@ -304,6 +304,9 @@ export const getAllProperties = async (req, res) => {
           description: v.description || '',
           // Hide landlord/agent name for public feed
           landlordName: '',
+          // Contact fields provided by agent
+          contact: v.contactPhone || '',
+          whatsappNumber: v.whatsappNumber || '',
         };
         // If there are no images but videos exist, try to use a video thumbnail as a preview
         if ((!obj.images || obj.images.length === 0) && Array.isArray(v.videos) && v.videos.length > 0) {
@@ -372,8 +375,8 @@ export const getPropertyById = async (req, res) => {
         agentImage: agentUser?.image || '',
         agentEmail: agentUser?.email || '',
         agentPhone: agentUser?.phoneNumber || '',
-        contact: '',
-        whatsappNumber: '',
+        contact: vacancy.contactPhone || agentUser?.phoneNumber || '',
+        whatsappNumber: vacancy.whatsappNumber || agentUser?.phoneNumber || '',
         landlordName: '',
         description: vacancy.description || '',
         roomType: vacancy.roomType,

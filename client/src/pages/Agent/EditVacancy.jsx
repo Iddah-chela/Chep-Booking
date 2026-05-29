@@ -33,6 +33,8 @@ export default function EditVacancy() {
     availabilityFrom: '',
     availabilityTo: '',
     minBookingLeadDays: '2',
+    contactPhone: '',
+    whatsappNumber: '',
   });
 
   // Fetch vacancy if not passed via location state
@@ -75,6 +77,8 @@ export default function EditVacancy() {
       availabilityFrom: vacancy.availabilityFrom ? new Date(vacancy.availabilityFrom).toISOString().split('T')[0] : '',
       availabilityTo: vacancy.availabilityTo ? new Date(vacancy.availabilityTo).toISOString().split('T')[0] : '',
       minBookingLeadDays: String(vacancy.minBookingLeadDays || 2),
+      contactPhone: vacancy.contactPhone || '',
+      whatsappNumber: vacancy.whatsappNumber || '',
     });
     setAmenities(vacancy.amenities || []);
     setPhotos((vacancy.photos || []).map(p => p.url || p));
@@ -301,6 +305,8 @@ export default function EditVacancy() {
         availabilityFrom: formData.availabilityFrom ? new Date(formData.availabilityFrom).toISOString() : undefined,
         availabilityTo: formData.availabilityTo ? new Date(formData.availabilityTo).toISOString() : undefined,
         minBookingLeadDays: Number(formData.minBookingLeadDays) || 2,
+        contactPhone: formData.contactPhone?.trim() || '',
+        whatsappNumber: formData.whatsappNumber?.trim() || '',
       };
 
       const res = await axios.put(`/api/agent/vacancies/${id}`, payload, {

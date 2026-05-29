@@ -458,16 +458,18 @@ const AdminListings = () => {
                       className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">
                       View Listing ↗
                     </a>
-                    {!property.isVerified ? (
-                      <button onClick={() => handleVerify(property._id)}
-                        className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700">
-                        Verify
-                      </button>
-                    ) : (
-                      <button onClick={() => handleUnverify(property._id)}
-                        className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-xs hover:bg-yellow-600">
-                        Unverify
-                      </button>
+                    {property.listingTier !== 'agent' && (
+                      !property.isVerified ? (
+                        <button onClick={() => handleVerify(property._id)}
+                          className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700">
+                          Verify
+                        </button>
+                      ) : (
+                        <button onClick={() => handleUnverify(property._id)}
+                          className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-xs hover:bg-yellow-600">
+                          Unverify
+                        </button>
+                      )
                     )}
                     {property.isExpired ? (
                       <button onClick={() => handleRelist(property._id)}
@@ -480,11 +482,13 @@ const AdminListings = () => {
                         Delist
                       </button>
                     )}
-                    <button onClick={() => { setTransferTarget(property); setTransferEmail(''); }}
-                      className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs hover:bg-purple-700 flex items-center gap-1">
-                      <ArrowRightLeft className="w-3 h-3" />
-                      Transfer to Owner
-                    </button>
+                    {property.listingTier !== 'agent' && (
+                      <button onClick={() => { setTransferTarget(property); setTransferEmail(''); }}
+                        className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs hover:bg-purple-700 flex items-center gap-1">
+                        <ArrowRightLeft className="w-3 h-3" />
+                        Transfer to Owner
+                      </button>
+                    )}
                     {getPhoneHref(property) && (
                       <a
                         href={getPhoneHref(property)}
