@@ -276,7 +276,7 @@ export const getAllProperties = async (req, res) => {
 
     // Include active agent vacancies in the public feed (agent name/contact intentionally omitted)
     try {
-      const rawVacancies = await AgentVacancy.find({ isActive: true, expiresAt: { $gt: new Date() } })
+      const rawVacancies = await AgentVacancy.find({ isActive: true })
         .sort({ createdAt: -1 })
         .lean();
 

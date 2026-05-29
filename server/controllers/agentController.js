@@ -209,7 +209,6 @@ export const getVacancyById = async (req, res) => {
     const vacancy = await AgentVacancy.findOne({
       _id: req.params.id,
       isActive: true,
-      expiresAt: { $gt: new Date() },
     }).populate('agent', 'firstName lastName email phone');
 
     if (!vacancy) {
@@ -220,6 +219,27 @@ export const getVacancyById = async (req, res) => {
   } catch (error) {
     console.error('Error fetching vacancy:', error);
     res.status(500).json({ message: 'Error fetching vacancy', error: error.message });
+  }
+};
+
+// GET: Agent-only vacancy details for management/editing (includes inactive/old records)
+export const getVacancyForAgent = async (req, res) => {
+  try {
+    const vacancy = await AgentVacancy.findById(req.params.id).populate('agent', 'firstName lastName email phone');
+
+    if (!vacancy) {
+      return res.status(404).json({ message: 'Vacancy not found' });
+    }
+
+    const agentId = toUserId(req.user._id);
+    if (vacancy.agent.toString() !== agentId.toString()) {
+      return res.status(403).json({ message: 'Unauthorized to access this vacancy' });
+    }
+
+    return res.json(vacancy);
+  } catch (error) {
+    console.error('Error fetching agent vacancy:', error);
+    return res.status(500).json({ message: 'Error fetching vacancy', error: error.message });
   }
 };
 
@@ -602,12 +622,10 @@ export const cancelProvisionalHold = async (req, res) => {
 export const getAgentStats = async (req, res) => {
   try {
     const agentId = toUserId(req.user._id);
-    const now = new Date();
 
     const activeVacancies = await AgentVacancy.countDocuments({
       agent: agentId,
       isActive: true,
-      expiresAt: { $gt: now },
     });
 
     const totalLeads = await AgentLead.countDocuments({ agent: agentId });
@@ -675,7 +693,6 @@ export const createLead = async (req, res) => {
     const vacancy = await AgentVacancy.findOne({
       _id: vacancyId,
       isActive: true,
-      expiresAt: { $gt: new Date() },
     });
     if (!vacancy) {
       return res.status(404).json({ message: 'Vacancy not found' });

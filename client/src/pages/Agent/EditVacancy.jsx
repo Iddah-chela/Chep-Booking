@@ -48,7 +48,7 @@ export default function EditVacancy() {
   const fetchVacancy = async () => {
     try {
       const token = await getToken();
-      const res = await axios.get(`/api/agent/vacancies/${id}`, {
+      const res = await axios.get(`/api/agent/vacancies/${id}/manage`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data) {

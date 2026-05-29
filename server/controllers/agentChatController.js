@@ -25,7 +25,6 @@ export const getOrCreateAgentChat = async (req, res) => {
     const vacancy = await AgentVacancy.findOne({
       _id: vacancyId,
       isActive: true,
-      expiresAt: { $gt: new Date() }
     });
 
     if (!vacancy) {

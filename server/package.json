@@ -10,6 +10,8 @@
     "dev": "nodemon server.js",
     "cleanup-test-accounts": "node cleanupTestAccounts.js",
     "cleanup-test-accounts:apply": "node cleanupTestAccounts.js --apply",
+    "migrate:agent-vacancies:dry": "node migrateAgentVacancies.js",
+    "migrate:agent-vacancies:apply": "node migrateAgentVacancies.js --apply",
     "backfill:listing-metadata": "node backfillListingMetadata.js",
     "import:directory-listings": "node importDirectoryListings.js",
     "import:directory-listings:dry": "node importDirectoryListings.js --dry-run"

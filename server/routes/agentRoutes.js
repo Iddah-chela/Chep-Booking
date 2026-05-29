@@ -21,6 +21,9 @@ router.post('/vacancies', protect, isAgent, agentController.postVacancy);
 // Agent: Get all their vacancies
 router.get('/vacancies', protect, isAgent, agentController.getAgentVacancies);
 
+// Agent: Get one vacancy for management/editing (includes inactive/old)
+router.get('/vacancies/:id/manage', protect, isAgent, agentController.getVacancyForAgent);
+
 // Public: Get single vacancy by ID (anyone can view)
 router.get('/vacancies/:id', agentController.getVacancyById);
 // Public: Get active holds for a vacancy (non-sensitive)
