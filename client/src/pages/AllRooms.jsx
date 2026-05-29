@@ -262,11 +262,11 @@ const AllRooms = () => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      property.name.toLowerCase().includes(query) ||
-      property.address.toLowerCase().includes(query) ||
-      property.place.toLowerCase().includes(query) ||
-      property.estate.toLowerCase().includes(query) ||
-      property.propertyType.toLowerCase().includes(query)
+      (String(property.name || '').toLowerCase()).includes(query) ||
+      (String(property.address || '').toLowerCase()).includes(query) ||
+      (String(property.place || '').toLowerCase()).includes(query) ||
+      (String(property.estate || '').toLowerCase()).includes(query) ||
+      (String(property.propertyType || '').toLowerCase()).includes(query)
     );
   }
   
@@ -275,9 +275,9 @@ const AllRooms = () => {
     if (!urlLocation) return true;
     const query = urlLocation.toLowerCase();
     return (
-      property.place.toLowerCase().includes(query) ||
-      property.estate.toLowerCase().includes(query) ||
-      property.address.toLowerCase().includes(query)
+      (String(property.place || '').toLowerCase()).includes(query) ||
+      (String(property.estate || '').toLowerCase()).includes(query) ||
+      (String(property.address || '').toLowerCase()).includes(query)
     );
   }
   
