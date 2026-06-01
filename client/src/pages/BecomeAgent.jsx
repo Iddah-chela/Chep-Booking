@@ -1,11 +1,12 @@
-import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useClerk } from '@clerk/clerk-react';
 import { useAppContext } from '../context/AppContext';
 import { ChevronLeft, Plus, X, Loader, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function BecomeAgent() {
   const { axios, getToken, navigate, user, authLoading, isAgent } = useAppContext();
+  const { openSignUp } = useClerk();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [areas, setAreas] = useState([]);
@@ -20,7 +21,7 @@ export default function BecomeAgent() {
   useEffect(() => {
     if (authLoading) return; // Wait for auth to load
     if (!user) {
-      navigate('/sign-up');
+      setLoading(false);
       return;
     }
     // If user is already an agent, redirect to agent dashboard
@@ -119,6 +120,25 @@ export default function BecomeAgent() {
     return (
       <div className='flex items-center justify-center h-screen'>
         <Loader className='animate-spin' size={32} />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className='max-w-2xl mx-auto p-6 md:p-8 mt-20'>
+        <div className='bg-white dark:bg-gray-800 rounded-lg p-8 shadow border border-gray-200 dark:border-gray-700 text-center'>
+          <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Become an Agent</h1>
+          <p className='text-gray-600 dark:text-gray-400 mt-3'>
+            Sign in or create an account to apply for agent access.
+          </p>
+          <button
+            onClick={() => openSignUp({ redirectUrl: '/become-agent' })}
+            className='mt-6 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors'
+          >
+            Sign up to apply
+          </button>
+        </div>
       </div>
     );
   }
