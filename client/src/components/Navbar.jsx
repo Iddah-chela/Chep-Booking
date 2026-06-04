@@ -26,7 +26,7 @@ const Navbar = () => {
     const location = useLocation()
     const routerNavigate = useNavigate()
 
-    const{user, navigate, isOwner, dbImage, enablePushNotifications, darkMode, toggleDarkMode, isCaretaker} = useAppContext()
+    const{user, navigate, isOwner, isAgent, dbImage, enablePushNotifications, darkMode, toggleDarkMode, isCaretaker} = useAppContext()
 
     const [showPushPrompt, setShowPushPrompt] = useState(false)
 
@@ -121,6 +121,16 @@ const Navbar = () => {
                     >
                         <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5' /></svg>
                         List Your Property
+                    </button>
+                )}
+
+                {user && !isAgent && (
+                    <button 
+                        className={`flex items-center gap-1.5 border px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all ${isScrolled ? 'text-black dark:text-gray-200 border-purple-700 dark:border-purple-500 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50' : heroLight ? 'text-gray-900 border-purple-700 bg-purple-50/80 hover:bg-purple-100/80' : 'text-white border-purple-400 bg-purple-900/30 hover:bg-purple-900/50'}`} 
+                        onClick={() => navigate('/become-agent')}
+                    >
+                        <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13 10V3L4 14h7v7l9-11h-7z' /></svg>
+                        Become Agent
                     </button>
                 )}
                 </div>
@@ -235,6 +245,16 @@ const Navbar = () => {
                         >
                             <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5' /></svg>
                             List Your Property
+                        </button>
+                    )}
+
+                    {user && !isAgent && (
+                        <button 
+                            className="flex items-center gap-1.5 border border-purple-600 dark:border-purple-500 bg-purple-50 dark:bg-purple-900/30 px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all hover:bg-purple-100 dark:hover:bg-purple-900/50"
+                            onClick={() => { setIsMenuOpen(false); navigate('/become-agent'); }}
+                        >
+                            <svg className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13 10V3L4 14h7v7l9-11h-7z' /></svg>
+                            Become Agent
                         </button>
                     )}
 

@@ -89,6 +89,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
       4: existingImages[3] || null,
     }
   })
+  const [videoUrl, setVideoUrl] = useState(existingProperty?.videoUrl || '')
   const [loading, setLoading] = useState(false)
   const [locating, setLocating] = useState(false)
   const [locationPermission, setLocationPermission] = useState('unknown') // unknown | prompt | granted | denied
@@ -603,6 +604,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
         buildings: buildings,
         compoundGate: compoundGate,
         compoundRoadSurface,
+        videoUrl: videoUrl.trim() || undefined,
         // When editing with no new images chosen, pass existing URLs so server keeps them
         images: imageUrls.length > 0 ? imageUrls : (existingProperty?.images || [])
       }
@@ -759,6 +761,34 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
                 )}
               </label>
             ))}
+          </div>
+        </div>
+
+        {/* Property Video */}
+        <div className='border-l-4 border-blue-500 pl-4 mb-6'>
+          <h2 className='text-xl font-semibold mb-3'>Property Video (Optional)</h2>
+          <p className='text-sm text-gray-500 mb-3'>Add a video URL to showcase your property. Supported: YouTube, Vimeo, or direct video URLs (MP4, WebM, etc.)</p>
+          <div className='space-y-3'>
+            <input
+              type='url'
+              placeholder='e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ or https://example.com/property.mp4'
+              className='w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100'
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+            />
+            {videoUrl && (
+              <div className='flex items-center gap-3'>
+                <Check className='w-5 h-5 text-green-600' />
+                <span className='text-sm text-green-700 dark:text-green-300'>Video URL added</span>
+                <button
+                  type='button'
+                  onClick={(e) => { e.preventDefault(); setVideoUrl('') }}
+                  className='ml-auto text-sm text-red-600 hover:text-red-700 font-medium'
+                >
+                  Remove
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

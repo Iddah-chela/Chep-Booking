@@ -390,14 +390,14 @@ export default function PostVacancy() {
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Post a Vacancy</h1>
-          <p className='text-gray-600 dark:text-gray-400 mt-1'>Share the details students need to decide quickly.</p>
+          <h1 className='text-2xl md:text-3xl font-bold text-gray-900 dark:text-white'>Post a Vacancy</h1>
+          <p className='text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1'>Share the details students need to decide quickly.</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className='bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 shadow-sm border border-gray-200 dark:border-gray-700'>
         <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Title</h2>
+          <h2 className='text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4'>Title</h2>
           <input
             type='text'
             name='title'
@@ -409,7 +409,7 @@ export default function PostVacancy() {
         </div>
 
         <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Location</h2>
+          <h2 className='text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4'>Location</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <div className='relative'>
               <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={18} />
@@ -454,7 +454,7 @@ export default function PostVacancy() {
         </div>
 
         <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Rent Range</h2>
+          <h2 className='text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4'>Rent Range</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <input
               type='number'
@@ -478,7 +478,7 @@ export default function PostVacancy() {
         </div>
 
         <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Room Details</h2>
+          <h2 className='text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4'>Room Details</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <select
               name='roomType'
@@ -508,7 +508,7 @@ export default function PostVacancy() {
         <div className='mb-8'>
           <div className='flex items-start justify-between mb-4'>
             <div>
-              <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>Availability Window</h2>
+              <h2 className='text-lg md:text-xl font-semibold text-gray-900 dark:text-white'>Availability Window</h2>
               <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>Use this to show when the vacancy opens and the last date someone can move in. (Optional)</p>
             </div>
           </div>
@@ -555,7 +555,7 @@ export default function PostVacancy() {
         </div>
 
         <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Description</h2>
+          <h2 className='text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4'>Description</h2>
           <textarea
             name='description'
             placeholder='Describe the room or property'
@@ -567,7 +567,7 @@ export default function PostVacancy() {
         </div>
 
         <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>Contact (optional)</h2>
+          <h2 className='text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4'>Contact (optional)</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <input
               type='tel'

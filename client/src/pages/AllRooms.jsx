@@ -5,6 +5,7 @@ import axios from 'axios'
 import toast from 'react-hot-toast'
 import { X, Coins, ImageIcon, Video } from 'lucide-react'
 import { PropertyCardSkeleton } from '../components/Skeletons'
+import { generateVideoThumbnail } from '../utils/videoThumbnail'
 
 const CheckBox = ({label, selected = false, onChange =() =>{}}) => {
     return(
@@ -46,6 +47,7 @@ const AllRooms = () => {
 
   const [selectedSort, setSelectedSort] = useState('')
   const [loading, setLoading] = useState(true)
+  const [generatedThumbnails, setGeneratedThumbnails] = useState({})
 
   const formatLocationLine = (property) => {
     const address = (property.address || '').trim()
@@ -147,6 +149,31 @@ const AllRooms = () => {
   useEffect(() => {
     fetchProperties({ showLoader: true })
   }, [fetchProperties])
+
+  // Generate thumbnails for videos
+  useEffect(() => {
+    const generateThumbnails = async () => {
+      for (const property of properties) {
+        if (property.hasVideo && !property.videoThumbnail && property.rawVideoSrc && !generatedThumbnails[property._id]) {
+          try {
+            const thumbnail = await generateVideoThumbnail(property.rawVideoSrc)
+            if (thumbnail) {
+              setGeneratedThumbnails(prev => ({
+                ...prev,
+                [property._id]: thumbnail
+              }))
+            }
+          } catch (err) {
+            console.error('Failed to generate thumbnail for', property._id, err)
+          }
+        }
+      }
+    }
+    
+    if (properties.length > 0) {
+      generateThumbnails()
+    }
+  }, [properties])
 
   useEffect(() => {
     const pollId = window.setInterval(() => {
@@ -408,10 +435,10 @@ const AllRooms = () => {
                 />
               ) : (
                 <div className='w-full aspect-[16/10] rounded-xl shadow-inner border border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-300 relative overflow-hidden'>
-                  {property.videoThumbnail ? (
+                  {property.videoThumbnail || generatedThumbnails[property._id] ? (
                     <img
                       onClick={() => { navigate(`/rooms/${property._id}`); scrollTo(0,0) }}
-                      src={property.videoThumbnail}
+                      src={property.videoThumbnail || generatedThumbnails[property._id]}
                       alt='Video preview'
                       title='View Property Details'
                       className='w-full h-full object-cover cursor-pointer hover:shadow-2xl transition-shadow'

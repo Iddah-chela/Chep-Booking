@@ -19,7 +19,7 @@ const getBookingRent = (booking) => {
 }
 
 const MyBooking = () => {
-    const { axios, getToken, user } = useAppContext()
+    const { axios, getToken, user, isAgent } = useAppContext()
     const [bookings, setBookings] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchParams] = useSearchParams()
@@ -120,17 +120,54 @@ const MyBooking = () => {
     const fetchBookings = async () => {
         try {
             const token = await getToken()
-            const { data } = await axios.get('/api/bookings/user', {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-            
-            if (data.success) {
-                setBookings(data.bookings || [])
-            } else {
-                toast.error(data.message)
+            const allBookings = []
+
+            // Fetch tenant bookings (where user is the tenant)
+            try {
+                const { data } = await axios.get('/api/bookings/user', {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+                
+                if (data.success) {
+                    allBookings.push(...(data.bookings || []).map(b => ({ ...b, _bookingType: 'tenant' })))
+                } else {
+                    toast.error(data.message)
+                }
+            } catch (error) {
+                toast.error('Failed to fetch tenant bookings')
             }
-        } catch (error) {
-            toast.error('Failed to fetch bookings')
+
+            // Fetch agent bookings (where user is the agent with vacancies)
+            if (isAgent) {
+                try {
+                    const { data } = await axios.get('/api/agent/leads?status=all&limit=500', {
+                        headers: { Authorization: `Bearer ${token}` },
+                    })
+                    const leads = data.leads || []
+                    const bookingLeads = leads
+                        .filter(lead => {
+                            const leadType = String(lead?.leadType || lead?.lead?.leadType || '').toLowerCase()
+                            return leadType === 'booking' || leadType === 'reserve'
+                        })
+                        .map(lead => ({
+                            ...lead,
+                            _bookingType: 'agent',
+                            _leadStatus: String(lead?.outcome || lead?.status || lead?.lead?.outcome || lead?.lead?.status || '').toLowerCase(),
+                        }))
+                    allBookings.push(...bookingLeads)
+                } catch (error) {
+                    console.error('Failed to fetch agent bookings:', error)
+                }
+            }
+
+            // Sort by date
+            allBookings.sort((a, b) => {
+                const aDate = new Date(a.createdAt || a.updatedAt || 0)
+                const bDate = new Date(b.createdAt || b.updatedAt || 0)
+                return bDate - aDate
+            })
+
+            setBookings(allBookings)
         } finally {
             setLoading(false)
         }
@@ -151,137 +188,171 @@ const MyBooking = () => {
             <div className='max-w-6xl mt-8 w-full text-gray-800 dark:text-gray-200'>
                 <div className='hidden md:grid md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 dark:border-gray-700 font-medium text-base py-3'>
                     <div>Property Details</div>
-                    <div>Move-In Status</div>
+                    <div>{bookings.some(b => b._bookingType === 'agent') ? 'Booking / Status' : 'Move-In Status'}</div>
                     <div>Booking Status</div>
                 </div>
 
                 {bookings.map((booking)=>(
-                    <div key={booking._id} className='grid grid-cols-1 md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 dark:border-gray-700 py-6 first:border-t gap-4'>
-
-                        {/*Property Details*/}
-                        <div className='flex flex-col md:flex-row gap-4'>
-                            {booking.property?.images?.[0] && (
-                                <img src={booking.property.images[0]} alt="" className='w-full md:w-44 h-32 rounded shadow object-cover'/>
-                            )}
+                    booking._bookingType === 'agent' ? (
+                        // Agent Booking Row
+                        <div key={booking._id} className='grid grid-cols-1 md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 dark:border-gray-700 py-6 first:border-t gap-4'>
                             <div className='flex flex-col gap-1.5'>
-                                <p className='font-playfair text-2xl'>{booking.property?.name || 'Property'}
-                                    <span className='font-inter text-sm'> ({booking.roomDetails?.roomType})</span>
-                                </p>
-                                <div className='flex items-center gap-1 text-sm text-gray-500'>
-                                    <img src={assets.locationIcon} alt="" className='w-4 h-4' />
-                                    <span>{booking.property?.estate}, {booking.property?.place}</span>
+                                <div className='flex items-center gap-2'>
+                                    <p className='font-playfair text-2xl'>{booking.student?.firstName || booking.tenant?.firstName || 'Tenant'}</p>
+                                    <span className='text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-full font-medium'>Agent Booking</span>
                                 </div>
-                                <div className='flex items-center gap-2 text-sm mt-2'>
-                                    <span className='px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded text-xs font-medium'>
-                                        Ksh {getBookingRent(booking).toLocaleString()}/month
-                                    </span>
+                                <p className='text-sm text-gray-600 dark:text-gray-400'>{booking.vacancy?.title || 'Your Vacancy'}</p>
+                                <p className='text-sm text-gray-600 dark:text-gray-400'>{booking.student?.email || booking.tenant?.email || 'N/A'}</p>
+                            </div>
+
+                            <div className='flex flex-col justify-center gap-2'>
+                                <div>
+                                    <p className='font-medium text-sm'>Lead Date:</p>
+                                    <p className='text-gray-600 dark:text-gray-400 text-sm'>
+                                        {new Date(booking.createdAt).toLocaleDateString('en-KE', { day:'numeric', month:'short', year:'numeric' })}
+                                    </p>
                                 </div>
-                                <p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
-                                    Building: {booking.roomDetails?.buildingName}
-                                </p>
+                            </div>
+
+                            <div className='flex flex-col justify-center'>
+                                <span className={`px-3 py-1.5 rounded-full text-xs font-medium text-center ${
+                                    booking._leadStatus === 'booked' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                    booking._leadStatus === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                                    booking._leadStatus === 'viewed' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                }`}>
+                                    {booking._leadStatus.charAt(0).toUpperCase() + booking._leadStatus.slice(1)}
+                                </span>
                             </div>
                         </div>
+                    ) : (
+                        // Tenant Booking Row
+                        <div key={booking._id} className='grid grid-cols-1 md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 dark:border-gray-700 py-6 first:border-t gap-4'>
 
-                        {/*Move-In Status*/}
-                        <div className='flex flex-col justify-center gap-2'>
-                            <div>
-                                <p className='font-medium text-sm'>Move-In Date:</p>
-                                <p className='text-gray-600 dark:text-gray-400 text-sm'>
-                                    {booking.moveInDate ? new Date(booking.moveInDate).toLocaleDateString('en-KE', { day:'numeric', month:'long', year:'numeric' }) : 'Not set'}
-                                </p>
+                            {/*Property Details*/}
+                            <div className='flex flex-col md:flex-row gap-4'>
+                                {booking.property?.images?.[0] && (
+                                    <img src={booking.property.images[0]} alt="" className='w-full md:w-44 h-32 rounded shadow object-cover'/>
+                                )}
+                                <div className='flex flex-col gap-1.5'>
+                                    <p className='font-playfair text-2xl'>{booking.property?.name || 'Property'}
+                                        <span className='font-inter text-sm'> ({booking.roomDetails?.roomType})</span>
+                                    </p>
+                                    <div className='flex items-center gap-1 text-sm text-gray-500'>
+                                        <img src={assets.locationIcon} alt="" className='w-4 h-4' />
+                                        <span>{booking.property?.estate}, {booking.property?.place}</span>
+                                    </div>
+                                    <div className='flex items-center gap-2 text-sm mt-2'>
+                                        <span className='px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded text-xs font-medium'>
+                                            Ksh {getBookingRent(booking).toLocaleString()}/month
+                                        </span>
+                                    </div>
+                                    <p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
+                                        Building: {booking.roomDetails?.buildingName}
+                                    </p>
+                                </div>
                             </div>
-                            <div className='flex items-center gap-2 mt-1'>
-                                <div className={`h-3 w-3 rounded-full ${booking.moveOutStatus === 'completed' ? "bg-blue-500" : booking.hasMoved ? "bg-green-500" : "bg-yellow-500" }`}></div>
-                                <p className={`text-sm font-medium ${booking.moveOutStatus === 'completed' ? "text-blue-600" : booking.hasMoved ? "text-green-600" : "text-yellow-600" }`}>
-                                    {booking.moveOutStatus === 'completed' ? "Moved Out" : booking.hasMoved ? "Moved In" : "Not Moved In"}
-                                </p>
-                            </div>
-                            {booking.status === 'confirmed' && !booking.hasMoved && (() => {
-                                const moveInDate = booking.moveInDate ? new Date(booking.moveInDate) : null;
-                                const isToday = moveInDate && moveInDate <= new Date();
-                                return isToday ? (
-                                    <div className='mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl'>
-                                        <p className='text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-2'>🏠 Is today your move-in day?</p>
-                                        <div className='flex gap-2'>
+
+                            {/*Move-In Status*/}
+                            <div className='flex flex-col justify-center gap-2'>
+                                <div>
+                                    <p className='font-medium text-sm'>Move-In Date:</p>
+                                    <p className='text-gray-600 dark:text-gray-400 text-sm'>
+                                        {booking.moveInDate ? new Date(booking.moveInDate).toLocaleDateString('en-KE', { day:'numeric', month:'long', year:'numeric' }) : 'Not set'}
+                                    </p>
+                                </div>
+                                <div className='flex items-center gap-2 mt-1'>
+                                    <div className={`h-3 w-3 rounded-full ${booking.moveOutStatus === 'completed' ? "bg-blue-500" : booking.hasMoved ? "bg-green-500" : "bg-yellow-500" }`}></div>
+                                    <p className={`text-sm font-medium ${booking.moveOutStatus === 'completed' ? "text-blue-600" : booking.hasMoved ? "text-green-600" : "text-yellow-600" }`}>
+                                        {booking.moveOutStatus === 'completed' ? "Moved Out" : booking.hasMoved ? "Moved In" : "Not Moved In"}
+                                    </p>
+                                </div>
+                                {booking.status === 'confirmed' && !booking.hasMoved && (() => {
+                                    const moveInDate = booking.moveInDate ? new Date(booking.moveInDate) : null;
+                                    const isToday = moveInDate && moveInDate <= new Date();
+                                    return isToday ? (
+                                        <div className='mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl'>
+                                            <p className='text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-2'>🏠 Is today your move-in day?</p>
+                                            <div className='flex gap-2'>
+                                                <button
+                                                    onClick={() => handleMoveIn(booking._id)}
+                                                    className='flex-1 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors'
+                                                >
+                                                    ✓ I Moved In!
+                                                </button>
+                                                <button
+                                                    className='flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors'
+                                                    onClick={() => toast('No worries — confirm when you move in.')}
+                                                >
+                                                    Not Yet
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleMoveIn(booking._id)}
+                                            className='mt-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors'
+                                        >
+                                            Confirm Move-In
+                                        </button>
+                                    );
+                                })()}
+                                {/* Give / update move-out notice (available anytime after move-in until completed) */}
+                                {booking.hasMoved && booking.moveOutStatus !== 'completed' && (
+                                    <div className='mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-xl'>
+                                        <p className='text-xs font-semibold text-orange-700 dark:text-orange-300 mb-2'>Planning to move out? Set or update your expected move-out date.</p>
+                                        <div className='flex gap-2 items-center'>
+                                            <input
+                                                type='date'
+                                                value={noticeDates[booking._id] || (booking.moveOutDate ? new Date(booking.moveOutDate).toISOString().split('T')[0] : '')}
+                                                min={new Date().toISOString().split('T')[0]}
+                                                onChange={e => setNoticeDates(prev => ({ ...prev, [booking._id]: e.target.value }))}
+                                                className='flex-1 border border-orange-300 dark:border-orange-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-100 outline-orange-500'
+                                            />
                                             <button
-                                                onClick={() => handleMoveIn(booking._id)}
-                                                className='flex-1 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors'
+                                                onClick={() => handleGiveNotice(booking._id)}
+                                                disabled={givingNotice === booking._id}
+                                                className='px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-xs font-medium rounded-lg transition-colors whitespace-nowrap'
                                             >
-                                                ✓ I Moved In!
-                                            </button>
-                                            <button
-                                                className='flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors'
-                                                onClick={() => toast('No worries — confirm when you move in.')}
-                                            >
-                                                Not Yet
+                                                {givingNotice === booking._id ? 'Sending...' : (booking.moveOutStatus === 'none' ? 'Give Notice' : 'Update Notice')}
                                             </button>
                                         </div>
                                     </div>
-                                ) : (
-                                    <button
-                                        onClick={() => handleMoveIn(booking._id)}
-                                        className='mt-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors'
-                                    >
-                                        Confirm Move-In
-                                    </button>
-                                );
-                            })()}
-                            {/* Give / update move-out notice (available anytime after move-in until completed) */}
-                            {booking.hasMoved && booking.moveOutStatus !== 'completed' && (
-                                <div className='mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-xl'>
-                                    <p className='text-xs font-semibold text-orange-700 dark:text-orange-300 mb-2'>Planning to move out? Set or update your expected move-out date.</p>
-                                    <div className='flex gap-2 items-center'>
-                                        <input
-                                            type='date'
-                                            value={noticeDates[booking._id] || (booking.moveOutDate ? new Date(booking.moveOutDate).toISOString().split('T')[0] : '')}
-                                            min={new Date().toISOString().split('T')[0]}
-                                            onChange={e => setNoticeDates(prev => ({ ...prev, [booking._id]: e.target.value }))}
-                                            className='flex-1 border border-orange-300 dark:border-orange-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-100 outline-orange-500'
-                                        />
-                                        <button
-                                            onClick={() => handleGiveNotice(booking._id)}
-                                            disabled={givingNotice === booking._id}
-                                            className='px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-xs font-medium rounded-lg transition-colors whitespace-nowrap'
-                                        >
-                                            {givingNotice === booking._id ? 'Sending...' : (booking.moveOutStatus === 'none' ? 'Give Notice' : 'Update Notice')}
-                                        </button>
+                                )}
+                                {booking.moveOutStatus === 'notice_given' && (
+                                    <div className='mt-3 p-2 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-lg'>
+                                        <p className='text-xs text-orange-700 dark:text-orange-300 font-medium'>Move-out notice sent - awaiting owner/caretaker confirmation{booking.moveOutDate ? ` (${new Date(booking.moveOutDate).toLocaleDateString('en-KE', { day:'numeric', month:'short', year:'numeric' })})` : ''}</p>
                                     </div>
-                                </div>
-                            )}
-                            {booking.moveOutStatus === 'notice_given' && (
-                                <div className='mt-3 p-2 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-lg'>
-                                    <p className='text-xs text-orange-700 dark:text-orange-300 font-medium'>Move-out notice sent - awaiting owner/caretaker confirmation{booking.moveOutDate ? ` (${new Date(booking.moveOutDate).toLocaleDateString('en-KE', { day:'numeric', month:'short', year:'numeric' })})` : ''}</p>
-                                </div>
-                            )}
-                            {booking.moveOutStatus === 'scheduled' && (
-                                <div className='mt-3 p-2 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg'>
-                                    <p className='text-xs text-amber-700 dark:text-amber-300 font-medium'>Available soon: owner/caretaker confirmed your move-out date{booking.moveOutDate ? ` (${new Date(booking.moveOutDate).toLocaleDateString('en-KE', { day:'numeric', month:'short', year:'numeric' })})` : ''}. You'll be asked to confirm on that day.</p>
-                                </div>
-                            )}
-                            {booking.moveOutStatus === 'scheduled' && booking.moveOutDate && new Date(booking.moveOutDate) <= new Date() && (
-                                <button
-                                    onClick={() => handleMoveOutNow(booking._id)}
-                                    disabled={confirmingMoveOut === booking._id}
-                                    className='mt-2 px-3 py-1.5 bg-orange-600 text-white text-xs font-medium rounded-lg hover:bg-orange-700 disabled:opacity-60 transition-colors'
-                                >
-                                    {confirmingMoveOut === booking._id ? 'Confirming...' : 'I Moved Out'}
-                                </button>
-                            )}
-                        </div>
+                                )}
+                                {booking.moveOutStatus === 'scheduled' && (
+                                    <div className='mt-3 p-2 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg'>
+                                        <p className='text-xs text-amber-700 dark:text-amber-300 font-medium'>Available soon: owner/caretaker confirmed your move-out date{booking.moveOutDate ? ` (${new Date(booking.moveOutDate).toLocaleDateString('en-KE', { day:'numeric', month:'short', year:'numeric' })})` : ''}. You'll be asked to confirm on that day.</p>
+                                    </div>
+                                )}
+                                {booking.moveOutStatus === 'scheduled' && booking.moveOutDate && new Date(booking.moveOutDate) <= new Date() && (
+                                    <button
+                                        onClick={() => handleMoveOutNow(booking._id)}
+                                        disabled={confirmingMoveOut === booking._id}
+                                        className='mt-2 px-3 py-1.5 bg-orange-600 text-white text-xs font-medium rounded-lg hover:bg-orange-700 disabled:opacity-60 transition-colors'
+                                    >
+                                        {confirmingMoveOut === booking._id ? 'Confirming...' : 'I Moved Out'}
+                                    </button>
+                                )}
+                            </div>
 
-                        {/*Booking Status*/}
-                        <div className='flex flex-col justify-center'>
-                            <span className={`px-3 py-1.5 rounded-full text-xs font-medium text-center ${
-                                booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                                booking.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                                booking.status === 'completed' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                            }`}>
-                                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                            </span>
+                            {/*Booking Status*/}
+                            <div className='flex flex-col justify-center'>
+                                <span className={`px-3 py-1.5 rounded-full text-xs font-medium text-center ${
+                                    booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                    booking.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                                    booking.status === 'completed' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                }`}>
+                                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                </span>
+                            </div>
                         </div>
-
-                    </div>
+                    )
                 ))}
             </div>
         )}

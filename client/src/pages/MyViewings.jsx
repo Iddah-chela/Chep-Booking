@@ -6,7 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import { MapPin, Navigation } from 'lucide-react';
 
 const MyViewings = () => {
-  const { axios, getToken, user, isOwner, navigate } = useAppContext();
+  const { axios, getToken, user, isOwner, navigate, isAgent } = useAppContext();
   const [viewings, setViewings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,20 +56,59 @@ const MyViewings = () => {
 
   const fetchViewings = async () => {
     try {
-      const token = await getToken();
-      const { data } = await axios.get('/api/viewing/user-requests', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const token = await getToken()
+      const allViewings = []
 
-      if (data.success) {
-        setViewings(data.viewingRequests);
-      } else {
-        toast.error(data.message);
+      // Fetch tenant viewing requests (where user is the renter)
+      try {
+        const { data } = await axios.get('/api/viewing/user-requests', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        if (data.success) {
+          allViewings.push(...(data.viewingRequests || []).map(v => ({ ...v, _viewingType: 'tenant' })))
+        } else {
+          toast.error(data.message)
+        }
+      } catch (error) {
+        console.error('Failed to fetch tenant viewings:', error)
       }
+
+      // Fetch agent viewing requests (where user is the agent)
+      if (isAgent) {
+        try {
+          const { data } = await axios.get('/api/agent/leads?status=all&limit=500', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          const leads = data.leads || []
+          const viewingLeads = leads
+            .filter(lead => {
+              const leadType = String(lead?.leadType || lead?.lead?.leadType || '').toLowerCase()
+              return leadType === 'viewing' || leadType === 'view'
+            })
+            .map(lead => ({
+              ...lead,
+              _viewingType: 'agent',
+              _leadStatus: String(lead?.outcome || lead?.status || lead?.lead?.outcome || lead?.lead?.status || '').toLowerCase(),
+            }))
+          allViewings.push(...viewingLeads)
+        } catch (error) {
+          console.error('Failed to fetch agent viewings:', error)
+        }
+      }
+
+      // Sort by date
+      allViewings.sort((a, b) => {
+        const aDate = new Date(a.createdAt || a.updatedAt || 0)
+        const bDate = new Date(b.createdAt || b.updatedAt || 0)
+        return bDate - aDate
+      })
+
+      setViewings(allViewings)
     } catch (error) {
-      toast.error('Could not load viewings. Please try again.');
+      toast.error('Could not load viewings. Please try again.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   };
 
@@ -180,14 +219,14 @@ const MyViewings = () => {
   return (
     <div className="py-28 px-4 md:px-16 lg:px-24 xl:px-32 min-h-screen">
       <h1 className="text-3xl font-medium mb-8">
-        {isOwner ? 'Viewing Requests' : 'My Viewing Requests'}
+        {isOwner || isAgent ? 'Viewing Requests' : 'My Viewing Requests'}
       </h1>
 
-      {viewings.length === 0 ? (
+          {viewings.length === 0 ? (
         <div className="text-center py-16 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <p className="text-gray-500 dark:text-gray-400 text-lg">No viewing requests yet</p>
           <p className="text-gray-400 dark:text-gray-500 mt-2">
-            {isOwner 
+            {isOwner || isAgent
               ? 'Requests from renters will appear here' 
               : 'Start requesting viewings to find your next home!'}
           </p>
@@ -195,9 +234,63 @@ const MyViewings = () => {
       ) : (
         <div className="space-y-4">
           {viewings.map((viewing) => {
-            const isRenter = viewing.renter?._id === user?.id;
-            const otherUser = isRenter ? viewing.owner : viewing.renter;
-            if (!otherUser) return null;
+            // Agent viewing row
+            if (viewing._viewingType === 'agent') {
+              return (
+                <div
+                  key={viewing._id}
+                  className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+                >
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <img
+                          src={viewing.student?.image || viewing.tenant?.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(viewing.student?.firstName || viewing.tenant?.firstName || 'Tenant') + '&background=6366f1&color=fff'}
+                          alt={viewing.student?.firstName || viewing.tenant?.firstName || 'Tenant'}
+                          onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(viewing.student?.firstName || viewing.tenant?.firstName || 'Tenant') + '&background=6366f1&color=fff' }}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div>
+                          <h3 className="font-medium">{viewing.student?.firstName || viewing.tenant?.firstName || 'Tenant'}</h3>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Viewing Request</p>
+                            <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-full">Agent</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-2">
+                        <p className="text-gray-700 dark:text-gray-300">
+                          <span className="font-medium">Your Vacancy:</span> {viewing.vacancy?.title || 'N/A'}
+                        </p>
+                        <p className="text-gray-700 dark:text-gray-300">
+                          <span className="font-medium">Email:</span> {viewing.student?.email || viewing.tenant?.email || 'N/A'}
+                        </p>
+                        <p className="text-gray-700 dark:text-gray-300">
+                          <span className="font-medium">Date:</span> {new Date(viewing.createdAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-3">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        viewing._leadStatus === 'viewed' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                        viewing._leadStatus === 'booked' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                        viewing._leadStatus === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                      }`}>
+                        {viewing._leadStatus.charAt(0).toUpperCase() + viewing._leadStatus.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            // Tenant viewing row (existing code)
+            const isRenter = viewing.renter?._id === user?.id
+            const otherUser = isRenter ? viewing.owner : viewing.renter
+            if (!otherUser) return null
 
             return (
               <div
@@ -359,7 +452,7 @@ const MyViewings = () => {
                   </div>
                 </div>
               </div>
-            );
+            )
           })}
         </div>
       )}
