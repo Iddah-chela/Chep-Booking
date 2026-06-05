@@ -1,10 +1,10 @@
 import express from "express";
 import { protect, optionalProtect } from "../middleware/authMiddleware.js";
-import upload from "../middleware/uploadMiddleware.js";
-import { 
-  createProperty, 
-  getAllProperties, 
-  getPropertyById, 
+import upload, { singleFile } from "../middleware/uploadMiddleware.js";
+import {
+  createProperty,
+  getAllProperties,
+  getPropertyById,
   getOwnerProperties,
   updateProperty,
   deleteProperty,
@@ -16,7 +16,8 @@ import {
   caretakerToggleRoom,
   submitPropertyClaim,
   getPropertyClaimStatus,
-  getMyPropertyClaims
+  getMyPropertyClaims,
+  uploadPropertyVideo,
 } from "../controllers/propertyController.js";
 
 const propertyRouter = express.Router();
@@ -26,6 +27,7 @@ propertyRouter.get('/', getAllProperties);
 
 // Specific protected routes MUST come before /:id wildcard
 propertyRouter.post('/', protect, createProperty);
+propertyRouter.post('/upload-video', protect, singleFile('file'), uploadPropertyVideo);
 propertyRouter.get('/owner/my-properties', protect, getOwnerProperties);
 propertyRouter.post('/toggle-room', protect, toggleRoomAvailability);
 

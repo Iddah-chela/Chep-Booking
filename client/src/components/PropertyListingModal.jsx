@@ -90,6 +90,10 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
     }
   })
   const [videoUrl, setVideoUrl] = useState(existingProperty?.videoUrl || '')
+  const [videoData, setVideoData] = useState(
+    existingProperty?.videos?.[0] ? existingProperty.videos[0] : null
+  )
+  const [videoUploading, setVideoUploading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [locating, setLocating] = useState(false)
   const [locationPermission, setLocationPermission] = useState('unknown') // unknown | prompt | granted | denied
@@ -552,6 +556,35 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
     return <div style={{ fontSize: fontSize + 'px' }} className='text-gray-400'>·</div>
   }
 
+  const handleVideoFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('video/')) {
+      toast.error('Please select a video file')
+      return
+    }
+    try {
+      setVideoUploading(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      const token = await getToken()
+      const { data } = await axios.post('/api/properties/upload-video', formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+      })
+      if (data.success) {
+        setVideoData(data.media)
+        setVideoUrl('')
+        toast.success('Video uploaded')
+      } else {
+        toast.error(data.message || 'Upload failed')
+      }
+    } catch (err) {
+      toast.error('Video upload failed')
+    } finally {
+      setVideoUploading(false)
+    }
+  }
+
   const onSubmitHandler = async (e) => {
     e.preventDefault()
 
@@ -605,6 +638,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
         compoundGate: compoundGate,
         compoundRoadSurface,
         videoUrl: videoUrl.trim() || undefined,
+        videos: videoData ? [videoData] : (existingProperty?.videos || []),
         // When editing with no new images chosen, pass existing URLs so server keeps them
         images: imageUrls.length > 0 ? imageUrls : (existingProperty?.images || [])
       }
@@ -767,29 +801,63 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
         {/* Property Video */}
         <div className='border-l-4 border-blue-500 pl-4 mb-6'>
           <h2 className='text-xl font-semibold mb-3'>Property Video (Optional)</h2>
-          <p className='text-sm text-gray-500 mb-3'>Add a video URL to showcase your property. Supported: YouTube, Vimeo, or direct video URLs (MP4, WebM, etc.)</p>
-          <div className='space-y-3'>
-            <input
-              type='url'
-              placeholder='e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ or https://example.com/property.mp4'
-              className='w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100'
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-            />
-            {videoUrl && (
-              <div className='flex items-center gap-3'>
-                <Check className='w-5 h-5 text-green-600' />
-                <span className='text-sm text-green-700 dark:text-green-300'>Video URL added</span>
-                <button
-                  type='button'
-                  onClick={(e) => { e.preventDefault(); setVideoUrl('') }}
-                  className='ml-auto text-sm text-red-600 hover:text-red-700 font-medium'
-                >
-                  Remove
-                </button>
+
+          {/* Uploaded file video */}
+          {videoData ? (
+            <div className='flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg'>
+              {videoData.thumbnail ? (
+                <img src={videoData.thumbnail} alt='Video thumbnail' className='w-16 h-12 object-cover rounded' />
+              ) : (
+                <div className='w-16 h-12 bg-gray-800 flex items-center justify-center rounded'>
+                  <svg className='w-6 h-6 text-white' viewBox='0 0 24 24' fill='currentColor'><path d='M7 6v12l10-6-10-6z'/></svg>
+                </div>
+              )}
+              <div className='flex-1 min-w-0'>
+                <p className='text-sm font-medium text-blue-800 dark:text-blue-200 truncate'>Video uploaded</p>
+                <p className='text-xs text-blue-600 dark:text-blue-400 truncate'>{videoData.url}</p>
               </div>
-            )}
-          </div>
+              <button
+                type='button'
+                onClick={() => setVideoData(null)}
+                className='text-sm text-red-600 hover:text-red-700 font-medium shrink-0'
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className='space-y-3'>
+              {/* Upload from device */}
+              <div>
+                <p className='text-sm text-gray-500 dark:text-gray-400 mb-2'>Upload from device (MP4, WebM, etc.)</p>
+                <label className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${videoUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                  <svg className='w-4 h-4 text-gray-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' /></svg>
+                  <span className='text-sm text-gray-700 dark:text-gray-300'>
+                    {videoUploading ? 'Uploading…' : 'Choose video file'}
+                  </span>
+                  <input type='file' accept='video/*' className='hidden' onChange={handleVideoFileChange} disabled={videoUploading} />
+                </label>
+              </div>
+
+              {/* Or paste a URL */}
+              <div>
+                <p className='text-sm text-gray-500 dark:text-gray-400 mb-2'>Or paste a video URL (YouTube, Vimeo, direct MP4…)</p>
+                <input
+                  type='url'
+                  placeholder='https://www.youtube.com/watch?v=...'
+                  className='w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100 text-sm'
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                />
+                {videoUrl && (
+                  <div className='flex items-center gap-3 mt-2'>
+                    <Check className='w-4 h-4 text-green-600' />
+                    <span className='text-sm text-green-700 dark:text-green-300'>URL added</span>
+                    <button type='button' onClick={() => setVideoUrl('')} className='ml-auto text-sm text-red-600 hover:text-red-700 font-medium'>Remove</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Quick Setup */}

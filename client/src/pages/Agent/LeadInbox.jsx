@@ -15,6 +15,7 @@ export default function LeadInbox() {
   const [openVacancyIds, setOpenVacancyIds] = useState({});
   const [reopeningId, setReopeningId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [markingOccupiedId, setMarkingOccupiedId] = useState(null);
 
   useEffect(() => {
     // When viewing vacancies, also fetch recent leads so each vacancy can show its contacts
@@ -145,6 +146,24 @@ export default function LeadInbox() {
     }
   };
 
+  const handleMarkOccupied = async (vacancyId) => {
+    if (!window.confirm('Mark this vacancy as occupied? It will be removed from the public feed.')) return;
+    try {
+      setMarkingOccupiedId(vacancyId);
+      const token = await getToken();
+      await axios.put(`/api/agent/vacancies/${vacancyId}/mark-occupied`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success('Vacancy marked as occupied');
+      fetchVacancies();
+    } catch (error) {
+      console.error('Error marking vacancy as occupied:', error);
+      toast.error('Failed to update vacancy');
+    } finally {
+      setMarkingOccupiedId(null);
+    }
+  };
+
   const handleUpdateLeadStatus = async (leadId, newStatus) => {
     // If this is a chat item (merged from chats), don't call lead endpoints
     if (String(leadId).startsWith('chat_')) {
@@ -205,6 +224,7 @@ export default function LeadInbox() {
       contacted: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
       booked: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
       expired: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
+      occupied: 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
       new: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
       viewed: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
       pending: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200',
@@ -364,8 +384,8 @@ export default function LeadInbox() {
                             {vacancy.location?.area}, {vacancy.location?.city}
                           </p>
                         </div>
-                        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${group.hasTemporaryHold ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200' : getStatusColor(group.vacancy?.status)}`}>
-                          {group.hasTemporaryHold ? 'Reserved' : (group.vacancy?.status ? (group.vacancy.status.charAt(0).toUpperCase() + group.vacancy.status.slice(1)) : 'Open')}
+                        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${group.hasTemporaryHold ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200' : getStatusColor(vacancy.status)}`}>
+                          {group.hasTemporaryHold ? 'Reserved' : (vacancy.status ? (vacancy.status.charAt(0).toUpperCase() + vacancy.status.slice(1)) : 'Open')}
                         </span>
                       </div>
 
@@ -412,6 +432,15 @@ export default function LeadInbox() {
                             Edit
                           </button>
                         </div>
+                        {vacancy.status !== 'occupied' && vacancy.isActive && (
+                          <button
+                            onClick={() => handleMarkOccupied(vacancy._id)}
+                            disabled={markingOccupiedId === vacancy._id}
+                            className='w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-60 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors'
+                          >
+                            {markingOccupiedId === vacancy._id ? 'Updating…' : 'Mark as Occupied'}
+                          </button>
+                        )}
                       </div>
 
                       {isOpen && (

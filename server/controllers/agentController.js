@@ -368,6 +368,33 @@ export const reopenVacancy = async (req, res) => {
   }
 };
 
+// PUT: Mark vacancy as occupied (removes from feed, sets status to occupied)
+export const markVacancyOccupied = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const agentId = toUserId(req.user._id);
+
+    const vacancy = await AgentVacancy.findById(id);
+
+    if (!vacancy) {
+      return res.status(404).json({ message: 'Vacancy not found' });
+    }
+
+    if (vacancy.agent.toString() !== agentId.toString()) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    vacancy.isActive = false;
+    vacancy.status = 'occupied';
+    await vacancy.save();
+
+    res.json({ message: 'Vacancy marked as occupied', vacancy });
+  } catch (error) {
+    console.error('Error marking vacancy as occupied:', error);
+    res.status(500).json({ message: 'Error marking vacancy as occupied', error: error.message });
+  }
+};
+
 // GET: Get all leads for agent
 export const getAgentLeads = async (req, res) => {
   try {

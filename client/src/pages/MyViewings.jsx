@@ -86,11 +86,15 @@ const MyViewings = () => {
               const leadType = String(lead?.leadType || lead?.lead?.leadType || '').toLowerCase()
               return leadType === 'viewing' || leadType === 'view'
             })
-            .map(lead => ({
-              ...lead,
-              _viewingType: 'agent',
-              _leadStatus: String(lead?.outcome || lead?.status || lead?.lead?.outcome || lead?.lead?.status || '').toLowerCase(),
-            }))
+            .map(rawItem => {
+              // Server wraps each item as { type: 'lead', lead: <actual lead>, ... }
+              const leadObj = rawItem.type === 'lead' && rawItem.lead ? rawItem.lead : rawItem
+              return {
+                ...leadObj,
+                _viewingType: 'agent',
+                _leadStatus: String(leadObj?.outcome || leadObj?.status || '').toLowerCase(),
+              }
+            })
           allViewings.push(...viewingLeads)
         } catch (error) {
           console.error('Failed to fetch agent viewings:', error)

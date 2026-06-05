@@ -121,7 +121,7 @@ const agentVacancySchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['open', 'contacted', 'booked', 'expired'],
+      enum: ['open', 'contacted', 'booked', 'expired', 'occupied'],
       default: 'open',
       index: true,
     },

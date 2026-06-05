@@ -10,7 +10,9 @@ const FeaturedHouses = () => {
     
     // Show properties with current or near-future availability; show verified ones first
     const featuredProperties = (properties || [])
-      .filter(p => p && ((p.vacantRooms || 0) > 0 || (p.soonAvailableRooms || 0) > 0) && p.images && p.images.length > 0)
+      .filter(p => p && ((p.vacantRooms || 0) > 0 || (p.soonAvailableRooms || 0) > 0) && (
+        (p.images && p.images.length > 0) || (Array.isArray(p.videos) && p.videos.length > 0)
+      ))
       .sort((a, b) => (b.isVerified ? 1 : 0) - (a.isVerified ? 1 : 0))
       .slice(0, 4);
     
@@ -25,11 +27,30 @@ const FeaturedHouses = () => {
               className='bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer border border-gray-200 dark:border-gray-700'
             >
               <div className='relative h-48'>
-                <img 
-                  src={property.images[0]} 
-                  alt={property.name}
-                  className='w-full h-full object-cover'
-                />
+                {property.images && property.images.length > 0 ? (
+                  <img
+                    src={property.images[0]}
+                    alt={property.name}
+                    className='w-full h-full object-cover'
+                  />
+                ) : (() => {
+                  const firstVid = Array.isArray(property.videos) && property.videos.length > 0 ? property.videos[0] : null;
+                  const thumb = firstVid && (typeof firstVid !== 'string') ? (firstVid.thumbnail || firstVid.thumb || null) : null;
+                  return thumb ? (
+                    <div className='relative w-full h-full'>
+                      <img src={thumb} alt={property.name} className='w-full h-full object-cover' />
+                      <div className='absolute inset-0 flex items-center justify-center bg-black/20'>
+                        <div className='bg-black/50 rounded-full p-2'>
+                          <svg className='w-5 h-5 text-white' viewBox='0 0 24 24' fill='currentColor'><path d='M7 6v12l10-6-10-6z'/></svg>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className='w-full h-full flex items-center justify-center bg-gray-800'>
+                      <svg className='w-10 h-10 text-gray-400' viewBox='0 0 24 24' fill='currentColor'><path d='M7 6v12l10-6-10-6z'/></svg>
+                    </div>
+                  );
+                })()}
                 {property.isVerified && (
                   <div className='absolute top-2 right-2 bg-green-500 dark:bg-green-700 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1'>
                     <Check className='w-3 h-3' /> Verified

@@ -199,6 +199,11 @@ const propertySchema = new mongoose.Schema({
   },
   buildings: [buildingSchema],
   images: [String], // Cloudinary URLs
+  videos: [{
+    url: { type: String },
+    publicId: { type: String, default: '' },
+    thumbnail: { type: String, default: '' },
+  }],
   compoundGate: {
     side: { type: String, enum: ['top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'], default: 'bottom' },
     layout: { type: String, enum: ['row', 'col'], default: 'row' }

@@ -1,3 +1,4 @@
+import fs from 'fs/promises';
 import Property from "../models/property.js";
 import User from "../models/user.js";
 import UserPass from "../models/userPass.js";
@@ -122,6 +123,33 @@ const hasContactAccess = async (propertyId, req) => {
   return false;
 };
 
+// Upload a video file for a property listing (landlord/admin)
+export const uploadPropertyVideo = async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ success: false, message: 'No file provided' });
+
+    const result = await cloudinary.uploader.upload(file.path, {
+      folder: 'house_properties/videos',
+      resource_type: 'video',
+    });
+
+    await fs.unlink(file.path).catch(() => {});
+
+    return res.json({
+      success: true,
+      media: {
+        url: result.secure_url,
+        publicId: result.public_id,
+        thumbnail: result.thumbnail_url || '',
+      },
+    });
+  } catch (error) {
+    console.error('Property video upload error:', error?.message || error);
+    return res.status(500).json({ success: false, message: error?.message || 'Upload failed' });
+  }
+};
+
 // Create a new property with buildings and grid layout
 export const createProperty = async (req, res) => {
   try {
@@ -147,7 +175,8 @@ export const createProperty = async (req, res) => {
       compoundGate,
       compoundRoadSurface,
       googleMapsUrl,
-      landlordName
+      landlordName,
+      videos,
     } = req.body;
     const owner = req.user._id;
     const isAdmin = hasRole(req.user, 'admin');
@@ -211,6 +240,7 @@ export const createProperty = async (req, res) => {
       landlordName: landlordName?.trim() || '',
       buildings: parsedBuildings,
       images: uploadedImageUrls,
+      videos: Array.isArray(videos) ? videos : [],
       compoundGate: compoundGate || { side: 'bottom' },
       compoundRoadSurface: String(compoundRoadSurface || '').toLowerCase() === 'murram' ? 'murram' : 'tarmac'
     });
@@ -457,7 +487,8 @@ export const updateProperty = async (req, res) => {
       compoundGate,
       compoundRoadSurface,
       googleMapsUrl,
-      landlordName
+      landlordName,
+      videos,
     } = req.body;
     const owner = req.user._id;
 
@@ -532,6 +563,7 @@ export const updateProperty = async (req, res) => {
         ? (String(compoundRoadSurface || '').toLowerCase() === 'murram' ? 'murram' : 'tarmac')
         : (existing.compoundRoadSurface || 'tarmac'),
       images: updatedImages,
+      videos: Array.isArray(videos) ? videos : existing.videos,
       totalRooms,
       vacantRooms,
     };
