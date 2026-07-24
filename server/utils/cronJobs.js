@@ -623,3 +623,75 @@ export const sendMoveOutNudges = async () => {
         console.error('[MoveOut cron error]', error.message);
     }
 };
+
+// ── Placement confirmation nudges / expiry (agent reputation) ─────────────────
+// After agent marks booked: nudge tenant at ~24h and ~48h; expire without counting at 7 days.
+export const processPlacementConfirmations = async () => {
+    try {
+        const AgentLead = (await import('../models/agentLead.js')).default;
+        const now = Date.now();
+        const DAY = 24 * 60 * 60 * 1000;
+
+        const awaiting = await AgentLead.find({
+            placementConfirmStatus: 'awaiting_tenant',
+            placementConfirmRequestedAt: { $exists: true },
+        }).limit(200);
+
+        let nudged = 0;
+        let expired = 0;
+
+        for (const lead of awaiting) {
+            const requestedAt = new Date(lead.placementConfirmRequestedAt).getTime();
+            if (!Number.isFinite(requestedAt)) continue;
+            const age = now - requestedAt;
+            const nudgeCount = Number(lead.placementNudgeCount || 0);
+
+            // Expire after 7 days — no reputation count
+            if (age >= 7 * DAY) {
+                lead.placementConfirmStatus = 'expired';
+                lead.placementConfirmRespondedAt = new Date();
+                await lead.save();
+                expired += 1;
+
+                if (lead.student) {
+                    sendPushNotification(lead.student, {
+                        title: 'Placement confirmation expired',
+                        body: 'This confirmation timed out and will not count toward the agent’s reputation.',
+                        url: '/my-bookings',
+                        type: 'booking',
+                        style: 'warning',
+                    }).catch(() => {});
+                }
+                continue;
+            }
+
+            // Nudge at 24h (1st) and 48h (2nd)
+            const shouldNudge =
+                (nudgeCount === 0 && age >= DAY) ||
+                (nudgeCount === 1 && age >= 2 * DAY);
+
+            if (!shouldNudge || !lead.student) continue;
+
+            lead.placementNudgeCount = nudgeCount + 1;
+            lead.placementLastNudgeAt = new Date();
+            await lead.save();
+            nudged += 1;
+
+            sendPushNotification(lead.student, {
+                title: 'Reminder: Did you get this house?',
+                body: 'Please confirm your placement — it only takes a moment.',
+                url: `/placement-confirm/${lead._id}`,
+                type: 'booking',
+                style: 'info',
+            }).catch(() => {});
+        }
+
+        if (nudged || expired) {
+            console.log(`[PlacementConfirm] nudged=${nudged} expired=${expired}`);
+        }
+        return { nudged, expired };
+    } catch (error) {
+        console.error('[PlacementConfirm cron error]', error.message);
+        return { error: error.message };
+    }
+};

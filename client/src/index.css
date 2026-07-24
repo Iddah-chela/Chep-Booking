@@ -84,6 +84,26 @@ html.dark-transition *::after {
   animation: slideUp 0.3s ease-out;
 }
 
+/* Keep Leaflet panes/controls inside the map shell (below fixed navbar z-[1100]) */
+.vacancy-map-shell,
+.vacancy-map-shell .leaflet-container {
+  z-index: 0 !important;
+  isolation: isolate;
+}
+.vacancy-map-shell .leaflet-pane,
+.vacancy-map-shell .leaflet-top,
+.vacancy-map-shell .leaflet-bottom,
+.vacancy-map-shell .leaflet-control {
+  z-index: auto;
+}
+.vacancy-map-shell .leaflet-map-pane { z-index: 1 !important; }
+.vacancy-map-shell .leaflet-tile-pane { z-index: 2 !important; }
+.vacancy-map-shell .leaflet-overlay-pane { z-index: 3 !important; }
+.vacancy-map-shell .leaflet-marker-pane { z-index: 4 !important; }
+.vacancy-map-shell .leaflet-tooltip-pane { z-index: 5 !important; }
+.vacancy-map-shell .leaflet-popup-pane { z-index: 6 !important; }
+.vacancy-map-shell .leaflet-control-container { z-index: 7 !important; }
+
 /* ── Clerk modal dark mode overrides ─────────────────────────────────── */
 html.dark .cl-card,
 html.dark .cl-signIn-root,

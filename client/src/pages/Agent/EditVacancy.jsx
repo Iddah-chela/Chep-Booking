@@ -4,6 +4,7 @@ import { useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft, Plus, X, Loader, Image, Video, MapPin, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GridHelper, { sampleBuildingJson } from './_gridHelper';
+import LocationPinPicker from '../../components/LocationPinPicker';
 
 export default function EditVacancy() {
   const { axios, getToken, navigate } = useAppContext();
@@ -24,10 +25,11 @@ export default function EditVacancy() {
   const [buildingsJson, setBuildingsJson] = useState('');
   const [formData, setFormData] = useState({
     title: '',
-    location: { area: '', city: '' },
+    location: { area: '', city: '', coordinates: null },
     rent: { min: '', max: '' },
     roomType: 'single',
     availableRooms: '1',
+    googleMapsUrl: '',
     description: '',
     moveInDate: '',
     availabilityFrom: '',
@@ -66,12 +68,20 @@ export default function EditVacancy() {
   };
 
   const populateForm = (vacancy) => {
+    const coords = vacancy.location?.coordinates;
     setFormData({
       title: vacancy.title || '',
-      location: vacancy.location || { area: '', city: '' },
+      location: {
+        area: vacancy.location?.area || '',
+        city: vacancy.location?.city || '',
+        coordinates: coords?.latitude != null && coords?.longitude != null
+          ? { latitude: coords.latitude, longitude: coords.longitude }
+          : null,
+      },
       rent: vacancy.rent || { min: '', max: '' },
       roomType: vacancy.roomType || 'single',
       availableRooms: String(vacancy.availableRooms || 1),
+      googleMapsUrl: vacancy.googleMapsUrl || '',
       description: vacancy.description || '',
       moveInDate: vacancy.moveInDate ? new Date(vacancy.moveInDate).toISOString().split('T')[0] : '',
       availabilityFrom: vacancy.availabilityFrom ? new Date(vacancy.availabilityFrom).toISOString().split('T')[0] : '',
@@ -222,6 +232,13 @@ export default function EditVacancy() {
         toast.error('Please fill in location details');
         return;
       }
+      if (
+        formData.location.coordinates?.latitude == null ||
+        formData.location.coordinates?.longitude == null
+      ) {
+        toast.error('Drop an accurate map pin. Exact location is shared only after a viewing is confirmed.');
+        return;
+      }
       if (!formData.rent.min || !formData.rent.max) {
         toast.error('Please fill in rent range');
         return;
@@ -289,13 +306,24 @@ export default function EditVacancy() {
 
       const payload = {
         title: formData.title.trim(),
-        location: formData.location,
+        location: {
+          area: formData.location.area,
+          city: formData.location.city,
+          ...(formData.location.coordinates
+            ? { coordinates: formData.location.coordinates }
+            : { coordinates: null }),
+        },
         rent: {
           min: Number(formData.rent.min),
           max: Number(formData.rent.max),
         },
         roomType: formData.roomType,
         availableRooms: Number(formData.availableRooms),
+        googleMapsUrl: formData.googleMapsUrl?.trim() || (
+          formData.location.coordinates
+            ? `https://www.google.com/maps?q=${formData.location.coordinates.latitude},${formData.location.coordinates.longitude}`
+            : ''
+        ),
         description: formData.description,
         amenities,
         photos: photos.map((p) => (typeof p === 'string' ? { url: p, publicId: '' } : { url: p.url, publicId: p.publicId || '', thumbnail: p.thumbnail || '' })),
@@ -354,7 +382,7 @@ export default function EditVacancy() {
           <input
             type='text'
             name='title'
-            placeholder='e.g. Spacious bedsitter near campus'
+            placeholder='e.g. Spacious bedsitter near town'
             value={formData.title}
             onChange={handleInputChange}
             className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
@@ -382,6 +410,30 @@ export default function EditVacancy() {
               value={formData.location.city}
               onChange={handleInputChange}
               className='px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+            />
+          </div>
+          <div className='mt-3'>
+            <input
+              type='url'
+              name='googleMapsUrl'
+              placeholder='Optional Google Maps link'
+              value={formData.googleMapsUrl}
+              onChange={handleInputChange}
+              className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+            />
+          </div>
+          <div className='mt-4'>
+            <LocationPinPicker
+              value={formData.location.coordinates}
+              onChange={(coordinates) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  location: { ...prev.location, coordinates },
+                  googleMapsUrl: coordinates
+                    ? `https://www.google.com/maps?q=${coordinates.latitude},${coordinates.longitude}`
+                    : prev.googleMapsUrl,
+                }));
+              }}
             />
           </div>
         </div>

@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { X, Coins, ImageIcon, Video } from 'lucide-react'
 import { PropertyCardSkeleton } from '../components/Skeletons'
 import { generateVideoThumbnail } from '../utils/videoThumbnail'
+import AgentReputationBadge from '../components/AgentReputationBadge'
 
 const CheckBox = ({label, selected = false, onChange =() =>{}}) => {
     return(
@@ -500,6 +501,9 @@ const AllRooms = () => {
               >
                 {property.name}
               </p>
+              {(property.agentPost || property.sourceType === 'agent' || property.agentReputation) && property.agentReputation && (
+                <AgentReputationBadge reputation={property.agentReputation} compact className='mt-1' />
+              )}
               
               <div className='flex items-center gap-3 flex-wrap'>
                 {property.isVerified && (

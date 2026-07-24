@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { assets } from '../assets/assets'
 import { useAppContext } from '../context/AppContext'
 import toast from 'react-hot-toast'
-import { GraduationCap, Building2 } from 'lucide-react'
+import { User, Building2 } from 'lucide-react'
 
 const AuthModal = ({ onClose, initialMode = 'login' }) => {
     const { setUser, setIsOwner } = useAppContext()
@@ -79,7 +79,7 @@ const AuthModal = ({ onClose, initialMode = 'login' }) => {
     return (
         <div 
             onClick={onClose} 
-            className='fixed top-0 bottom-0 left-0 right-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto p-4'
+            className='fixed top-0 bottom-0 left-0 right-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto p-4'
         >
             <div 
                 onClick={(e) => e.stopPropagation()} 
@@ -163,8 +163,8 @@ const AuthModal = ({ onClose, initialMode = 'login' }) => {
                                     }`}
                                 >
                                     <div className='text-center'>
-                                        <GraduationCap className='w-7 h-7 mx-auto mb-2 text-indigo-500' />
-                                        <div className='font-medium'>Student</div>
+                                        <User className='w-7 h-7 mx-auto mb-2 text-indigo-500' />
+                                        <div className='font-medium'>Renter</div>
                                         <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Looking for rentals</div>
                                     </div>
                                 </button>

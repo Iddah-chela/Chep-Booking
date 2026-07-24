@@ -3,7 +3,7 @@ import { useAppContext } from '../context/AppContext'
 import toast from 'react-hot-toast'
 import { Shield, Building2, ArrowLeft, LayoutGrid, DollarSign, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Zap, Clock, Bell } from 'lucide-react'
 import { ManagedPropertySkeleton } from '../components/Skeletons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import UtilityManager from './HouseOwner/UtilityManager'
 import PropertyListingModal from '../components/PropertyListingModal'
@@ -11,9 +11,15 @@ import PropertyListingModal from '../components/PropertyListingModal'
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 const ManagedProperties = () => {
+  const { user, getToken, axios, isOwner } = useAppContext()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('availability')
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get('tab')
+    return ['availability', 'tracker', 'utilities'].includes(tab) ? tab : 'availability'
+  })
   const [bookingMap, setBookingMap] = useState({}) // key: `${propId}-${bid}-${row}-${col}` → booking
   // Rent tracker state
   const [trackerMonth, setTrackerMonth] = useState(new Date().getMonth() + 1)
@@ -33,22 +39,32 @@ const ManagedProperties = () => {
   const [confirmingMoveOut, setConfirmingMoveOut] = useState(null)
   const [editingProperty, setEditingProperty] = useState(null)
 
-  const { user, getToken, axios } = useAppContext()
-  const navigate = useNavigate()
-
   const fetchManagedProperties = async () => {
     try {
       setLoading(true)
       const token = await getToken()
-      const [propRes, bookRes] = await Promise.all([
-        axios.get('/api/properties/managed', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('/api/bookings/property', { headers: { Authorization: `Bearer ${token}` } })
-      ])
-      if (propRes.data.success) setProperties(propRes.data.properties)
-      if (bookRes.data.success) {
+      const headers = { Authorization: `Bearer ${token}` }
+      const requests = [
+        axios.get('/api/properties/managed', { headers }).catch(() => ({ data: { success: false, properties: [] } })),
+        axios.get('/api/bookings/property', { headers }).catch(() => ({ data: { success: false, bookings: [] } })),
+      ]
+      if (isOwner) {
+        requests.push(
+          axios.get('/api/properties/owner/my-properties', { headers }).catch(() => ({ data: { success: false, properties: [] } }))
+        )
+      }
+      const [propRes, bookRes, ownRes] = await Promise.all(requests)
+
+      const byId = new Map()
+      ;(propRes.data?.properties || []).forEach((p) => byId.set(String(p._id), p))
+      ;(ownRes?.data?.properties || []).forEach((p) => byId.set(String(p._id), p))
+      setProperties([...byId.values()])
+
+      if (bookRes.data?.success) {
         const map = {}
-        bookRes.data.bookings.forEach(b => {
+        ;(bookRes.data.bookings || []).forEach(b => {
           const propId = b?.property?._id || b?.property
+          if (!b?.roomDetails) return
           const key = `${propId}-${b.roomDetails.buildingId}-${b.roomDetails.row}-${b.roomDetails.col}`
           map[key] = b
         })

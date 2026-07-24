@@ -6,6 +6,9 @@ import fs from 'fs/promises';
 import { hasRole } from '../utils/roleUtils.js';
 import User from '../models/user.js';
 import { sendEmail } from '../utils/mailer.js';
+import { resolveCoordinates, normalizeCoordinates, mapsUrlFromLocation } from '../utils/geoUtils.js';
+import { buildPublicAgentReputation, agentReputationSelect } from '../utils/agentReputation.js';
+import { sendPushNotification } from '../utils/pushNotifier.js';
 
 const toUserId = (value) => value?.toString?.() || String(value || '');
 
@@ -126,6 +129,21 @@ export const postVacancy = async (req, res) => {
       return res.status(400).json({ message: 'Available rooms must be at least 1' });
     }
 
+    const resolvedCoords = resolveCoordinates({
+      coordinates: location?.coordinates,
+      googleMapsUrl,
+    });
+    if (!resolvedCoords) {
+      return res.status(400).json({
+        message: 'Please drop an accurate map pin for this vacancy. Exact location is shared only after a viewing is confirmed.',
+      });
+    }
+    const locationPayload = {
+      area: location.area,
+      city: location.city,
+      coordinates: resolvedCoords,
+    };
+
     // Parse buildings if provided as JSON string
     let parsedBuildings = [];
     if (buildings) {
@@ -139,7 +157,7 @@ export const postVacancy = async (req, res) => {
     const vacancy = new AgentVacancy({
       agent: agentId,
       title: String(title || '').trim(),
-      location,
+      location: locationPayload,
       rent: {
         min: Number(rent.min),
         max: Number(rent.max),
@@ -151,7 +169,7 @@ export const postVacancy = async (req, res) => {
       photos: photos || [],
       videos: videos || [],
       buildings: parsedBuildings,
-      googleMapsUrl: String(googleMapsUrl || '').trim(),
+      googleMapsUrl: String(googleMapsUrl || '').trim() || mapsUrlFromLocation({ coordinates: resolvedCoords }) || '',
       moveInDate: moveInDate ? new Date(moveInDate) : undefined,
       availabilityFrom: availabilityFrom ? new Date(availabilityFrom) : undefined,
       availabilityTo: availabilityTo ? new Date(availabilityTo) : undefined,
@@ -229,14 +247,15 @@ export const getVacancyById = async (req, res) => {
 // GET: Agent-only vacancy details for management/editing (includes inactive/old records)
 export const getVacancyForAgent = async (req, res) => {
   try {
-    const vacancy = await AgentVacancy.findById(req.params.id).populate('agent', 'firstName lastName email phone');
+    const vacancy = await AgentVacancy.findById(req.params.id);
 
     if (!vacancy) {
       return res.status(404).json({ message: 'Vacancy not found' });
     }
 
     const agentId = toUserId(req.user._id);
-    if (vacancy.agent.toString() !== agentId.toString()) {
+    const ownerId = toUserId(vacancy.agent?._id || vacancy.agent);
+    if (ownerId !== agentId && !hasRole(req.user, 'admin')) {
       return res.status(403).json({ message: 'Unauthorized to access this vacancy' });
     }
 
@@ -260,11 +279,42 @@ export const updateVacancy = async (req, res) => {
       return res.status(404).json({ message: 'Vacancy not found' });
     }
 
-    if (vacancy.agent.toString() !== agentId.toString()) {
+    if (vacancy.agent.toString() !== agentId.toString() && !hasRole(req.user, 'admin')) {
       return res.status(403).json({ message: 'Unauthorized to update this vacancy' });
     }
 
-    if (location) vacancy.location = location;
+    if (location) {
+      const resolvedCoords = resolveCoordinates({
+        coordinates: location.coordinates !== undefined
+          ? location.coordinates
+          : vacancy.location?.coordinates,
+        googleMapsUrl: googleMapsUrl !== undefined ? googleMapsUrl : vacancy.googleMapsUrl,
+      });
+      if (!resolvedCoords) {
+        return res.status(400).json({
+          message: 'Please drop an accurate map pin for this vacancy. Exact location is shared only after a viewing is confirmed.',
+        });
+      }
+      vacancy.location = {
+        area: location.area ?? vacancy.location?.area,
+        city: location.city ?? vacancy.location?.city,
+        coordinates: resolvedCoords,
+      };
+    } else if (googleMapsUrl !== undefined) {
+      const resolvedCoords = resolveCoordinates({
+        coordinates: vacancy.location?.coordinates,
+        googleMapsUrl,
+      });
+      if (!resolvedCoords) {
+        return res.status(400).json({
+          message: 'Please drop an accurate map pin for this vacancy. Exact location is shared only after a viewing is confirmed.',
+        });
+      }
+      vacancy.location = {
+        ...(vacancy.location?.toObject?.() || vacancy.location || {}),
+        coordinates: resolvedCoords,
+      };
+    }
     if (title !== undefined) vacancy.title = String(title || '').trim();
     if (rent) {
       if (Number(rent.min) < 0 || Number(rent.max) < 0 || Number(rent.min) > Number(rent.max)) {
@@ -326,7 +376,7 @@ export const deleteVacancy = async (req, res) => {
       return res.status(404).json({ message: 'Vacancy not found' });
     }
 
-    if (vacancy.agent.toString() !== agentId.toString()) {
+    if (toUserId(vacancy.agent) !== agentId && !hasRole(req.user, 'admin')) {
       return res.status(403).json({ message: 'Unauthorized to delete this vacancy' });
     }
 
@@ -352,7 +402,7 @@ export const reopenVacancy = async (req, res) => {
       return res.status(404).json({ message: 'Vacancy not found' });
     }
 
-    if (vacancy.agent.toString() !== agentId.toString()) {
+    if (toUserId(vacancy.agent) !== agentId && !hasRole(req.user, 'admin')) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
@@ -380,7 +430,7 @@ export const markVacancyOccupied = async (req, res) => {
       return res.status(404).json({ message: 'Vacancy not found' });
     }
 
-    if (vacancy.agent.toString() !== agentId.toString()) {
+    if (toUserId(vacancy.agent) !== agentId && !hasRole(req.user, 'admin')) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
@@ -411,7 +461,7 @@ export const getAgentLeads = async (req, res) => {
 
     const skip = (Number(page) - 1) * Number(limit);
     const leads = await AgentLead.find(query)
-      .populate('student', 'firstName lastName email phone')
+      .populate('student', 'username email phoneNumber image')
       .populate('vacancy', 'title roomType rent location availabilityFrom availabilityTo minBookingLeadDays')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -425,7 +475,7 @@ export const getAgentLeads = async (req, res) => {
       chatQuery['messages.read'] = false; // simplistic unread filter
     }
     const chats = await AgentChat.find(chatQuery)
-      .populate('tenant', 'firstName lastName email phone')
+      .populate('tenant', 'username email phoneNumber image')
       .populate('vacancy', 'title roomType rent location')
       .sort({ updatedAt: -1 })
       .skip(skip)
@@ -474,9 +524,9 @@ export const getLeadById = async (req, res) => {
   try {
     console.log('[agentController] getLeadById request id=', req.params.id);
     const lead = await AgentLead.findById(req.params.id)
-      .populate('student', 'firstName lastName email phone')
+      .populate('student', 'username email phoneNumber image')
       .populate('vacancy', 'title roomType rent location description amenities photos availabilityFrom availabilityTo minBookingLeadDays')
-      .populate('agent', 'firstName lastName email phone');
+      .populate('agent', 'username email phoneNumber');
 
     if (!lead) {
       console.warn('[agentController] lead not found for id=', req.params.id);
@@ -509,7 +559,7 @@ export const updateLead = async (req, res) => {
     const agentId = toUserId(req.user._id);
     const { status, agentNotes, contactMethod, lastContactedAt } = req.body;
 
-    const lead = await AgentLead.findById(id);
+    const lead = await AgentLead.findById(id).populate('vacancy');
 
     if (!lead) {
       return res.status(404).json({ message: 'Lead not found' });
@@ -519,12 +569,66 @@ export const updateLead = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized to update this lead' });
     }
 
+    const prevStatus = lead.status;
     if (status) lead.status = status;
     if (agentNotes !== undefined) lead.agentNotes = agentNotes;
     if (contactMethod) lead.contactMethod = contactMethod;
     if (lastContactedAt) lead.lastContactedAt = new Date(lastContactedAt);
 
     await lead.save();
+
+    // When agent confirms a viewing appointment, unlock exact location for the tenant
+    const justConfirmedViewing =
+      lead.leadType === 'viewing' &&
+      status === 'contacted' &&
+      prevStatus !== 'contacted';
+
+    if (justConfirmedViewing) {
+      (async () => {
+        try {
+          const tenant = lead.student ? await User.findById(lead.student) : null;
+          const vacancy = lead.vacancy;
+          const mapsUrl = mapsUrlFromLocation({
+            coordinates: vacancy?.location?.coordinates,
+            googleMapsUrl: vacancy?.googleMapsUrl,
+          });
+          const listingTitle = vacancy?.title || 'the listing';
+          const areaLabel = [vacancy?.location?.area, vacancy?.location?.city].filter(Boolean).join(', ');
+
+          if (tenant?.email) {
+            sendEmail(
+              tenant.email,
+              `Viewing confirmed — ${listingTitle}`,
+              `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#222;">
+                <div style="background:#16a34a;padding:24px;text-align:center;border-radius:8px 8px 0 0;">
+                  <h2 style="color:#fff;margin:0;font-size:20px;">Viewing Confirmed</h2>
+                </div>
+                <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+                  <p style="font-size:15px;line-height:1.6;">Your viewing for <strong>${listingTitle}</strong> has been confirmed.</p>
+                  ${areaLabel ? `<p style="font-size:14px;color:#555;"><strong>Area:</strong> ${areaLabel}</p>` : ''}
+                  ${lead.preferredViewingDate ? `<p style="font-size:14px;color:#555;"><strong>Date:</strong> ${new Date(lead.preferredViewingDate).toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>` : ''}
+                  ${lead.preferredViewingTimeRange ? `<p style="font-size:14px;color:#555;"><strong>Time:</strong> ${lead.preferredViewingTimeRange}</p>` : ''}
+                  ${mapsUrl ? `<div style="text-align:center;margin:16px 0;"><a href="${mapsUrl}" style="display:inline-block;background:#16a34a;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Open exact location in Maps</a></div>` : ''}
+                  <p style="text-align:center;margin-top:12px;"><a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/my-viewings" style="color:#4F46E5;">View in My Viewings</a></p>
+                </div>
+              </div>`
+            ).catch(() => {});
+          }
+
+          if (lead.student) {
+            sendPushNotification(lead.student, {
+              title: 'Viewing confirmed',
+              body: `Exact location for ${listingTitle} is now available`,
+              url: `/my-viewings?leadId=${lead._id}`,
+              tag: `agent-viewing-confirmed-${lead._id}`,
+            }).catch(() => {});
+          }
+        } catch (_) {
+          // ignore notification errors
+        }
+      })();
+    }
+
     res.json({ message: 'Lead updated successfully', lead });
   } catch (error) {
     console.error('Error updating lead:', error);
@@ -556,10 +660,13 @@ export const markLeadOutcome = async (req, res) => {
     lead.outcome = outcome;
     lead.outcomeMarkedAt = new Date();
     lead.markedBy = agentId;
-    // If agent marks as booked, finalize booking: mark lead as booked and update vacancy counts/room
+    // If agent marks as booked, finalize booking inventory and ask tenant to confirm placement
     if (outcome === 'booked') {
       lead.status = 'booked';
       lead.provisionalHoldUntil = undefined;
+      lead.placementConfirmStatus = 'awaiting_tenant';
+      lead.placementConfirmRequestedAt = new Date();
+      lead.placementNudgeCount = 0;
       await lead.save();
 
       try {
@@ -598,7 +705,18 @@ export const markLeadOutcome = async (req, res) => {
         console.error('Error finalizing booking on vacancy:', err);
       }
 
-      res.json({ message: 'Outcome marked successfully', lead });
+      // Ask tenant to confirm so reputation can count
+      if (lead.student) {
+        sendPushNotification(lead.student, {
+          title: 'Did you get this house?',
+          body: 'Confirm your placement so we can update the agent’s reputation. You can also leave a rating.',
+          url: `/placement-confirm/${lead._id}`,
+          type: 'booking',
+          style: 'info',
+        }).catch(() => {});
+      }
+
+      res.json({ message: 'Outcome marked successfully. Waiting for tenant confirmation.', lead });
       return;
     }
 
@@ -683,11 +801,23 @@ export const getAgentStats = async (req, res) => {
       if (item._id && leadTypeStats[item._id] !== undefined) leadTypeStats[item._id] = item.count;
     });
 
+    const agentUser = await User.findById(agentId).select(agentReputationSelect).lean();
+    const awaitingConfirm = await AgentLead.countDocuments({
+      agent: agentId,
+      placementConfirmStatus: 'awaiting_tenant',
+    });
+
     res.json({
       activeVacancies,
       totalLeads,
       unreadLeads,
       leadTypeStats,
+      awaitingTenantConfirm: awaitingConfirm,
+      reputation: buildPublicAgentReputation(agentUser),
+      settings: {
+        displayName: agentUser?.agentReputation?.displayName || '',
+        hideRealName: !!agentUser?.agentReputation?.hideRealName,
+      },
     });
   } catch (error) {
     console.error('Error fetching agent stats:', error);
@@ -738,7 +868,10 @@ export const createLead = async (req, res) => {
     }
 
     const studentInfo = {
-      name: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || (req.body?.studentInfo?.name || 'Student'),
+      name:
+        String(req.user.username || '').trim() ||
+        `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() ||
+        (req.body?.studentInfo?.name || 'Tenant'),
       phone: String(providedPhone).trim(),
       email: req.user.email || (req.body?.studentInfo?.email || ''),
     };
@@ -747,7 +880,7 @@ export const createLead = async (req, res) => {
     const roomDetails = req.body?.roomDetails || undefined;
 
     // If booking/reserve, enforce roomDetails and check existing provisional holds
-    const HOLD_MS = 2 * 60 * 60 * 1000; // 2 hours provisional hold
+    // Hold stays open until agent confirms placement or cancels (no auto-expiry)
     let provisionalHoldUntil = undefined;
     if (leadType === 'booking') {
       if (!roomDetails || !roomDetails.buildingId) {
@@ -763,12 +896,13 @@ export const createLead = async (req, res) => {
         'roomDetails.col': Number(roomDetails.col || 0),
         provisionalHoldUntil: { $gt: now },
         leadType: 'booking',
+        status: { $nin: ['booked', 'not-fit', 'no-response'] },
       });
       if (conflict) {
         return res.status(409).json({ message: 'Room is currently held by another reservation. Try again later.' });
       }
 
-      provisionalHoldUntil = new Date(Date.now() + HOLD_MS);
+      provisionalHoldUntil = farFutureDate();
     }
 
     const lead = new AgentLead({
@@ -810,7 +944,7 @@ export const createLead = async (req, res) => {
         const listingTitle = vacancy.title || vacancy.roomType || 'an agent listing';
         const html = `<div style="font-family:Arial,sans-serif;color:#222;max-width:520px;margin:auto;">
             <h2 style="background:#4F46E5;color:#fff;padding:12px;border-radius:6px;margin:0 0 12px;">New lead for ${listingTitle}</h2>
-            <p style="margin:0 0 8px;">Student: <strong>${studentContact}</strong></p>
+            <p style="margin:0 0 8px;">Tenant: <strong>${studentContact}</strong></p>
             <p style="margin:0 0 8px;">Message: ${message ? `<em>${message}</em>` : '—'}</p>
             <p style="margin:0 0 8px;">Vacancy: ${listingTitle}</p>
             <p style="margin:0 0 8px;">Open the agent dashboard to manage this lead.</p>
@@ -831,5 +965,271 @@ export const createLead = async (req, res) => {
   } catch (error) {
     console.error('Error creating lead:', error);
     res.status(500).json({ message: 'Error expressing interest', error: error.message });
+  }
+};
+
+const viewingLocationUnlocked = (lead) => {
+  const status = String(lead?.status || '').toLowerCase();
+  const outcome = String(lead?.outcome || '').toLowerCase();
+  return ['contacted', 'viewed', 'booked'].includes(status)
+    || ['viewed', 'booked'].includes(outcome);
+};
+
+/** GET: Tenant — their own agent leads (exact pin only after viewing confirmed). */
+export const getMyLeads = async (req, res) => {
+  try {
+    const userId = toUserId(req.user._id);
+    const leads = await AgentLead.find({ student: userId })
+      .populate('vacancy', 'title location googleMapsUrl rent roomType photos')
+      .populate('agent', 'username phoneNumber image')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const items = leads.map((lead) => {
+      const unlocked = viewingLocationUnlocked(lead);
+      const vacancy = lead.vacancy ? { ...lead.vacancy } : null;
+      let exactLocation = null;
+
+      if (vacancy) {
+        if (unlocked) {
+          const coords = normalizeCoordinates(vacancy.location?.coordinates);
+          exactLocation = {
+            area: vacancy.location?.area || '',
+            city: vacancy.location?.city || '',
+            coordinates: coords,
+            mapsUrl: mapsUrlFromLocation({
+              coordinates: coords,
+              googleMapsUrl: vacancy.googleMapsUrl,
+            }),
+          };
+        } else if (vacancy.location) {
+          delete vacancy.location.coordinates;
+          delete vacancy.googleMapsUrl;
+        }
+      }
+
+      return {
+        ...lead,
+        vacancy,
+        exactLocation,
+        locationUnlocked: unlocked,
+      };
+    });
+
+    res.json({ success: true, leads: items });
+  } catch (error) {
+    console.error('getMyLeads error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching your leads' });
+  }
+};
+
+// GET: Agent reputation privacy settings
+export const getReputationSettings = async (req, res) => {
+  try {
+    const agentId = toUserId(req.user._id);
+    const user = await User.findById(agentId).select(agentReputationSelect).lean();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({
+      success: true,
+      settings: {
+        displayName: user.agentReputation?.displayName || '',
+        hideRealName: !!user.agentReputation?.hideRealName,
+      },
+      reputation: buildPublicAgentReputation(user),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// PUT: Update agent reputation privacy settings
+export const updateReputationSettings = async (req, res) => {
+  try {
+    const agentId = toUserId(req.user._id);
+    const displayName = String(req.body?.displayName ?? '').trim().slice(0, 80);
+    const hideRealName = !!req.body?.hideRealName;
+
+    const user = await User.findById(agentId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const nextRep = {
+      displayName,
+      hideRealName,
+      successfulPlacements: Number(user.agentReputation?.successfulPlacements || 0),
+      ratingAvg: Number(user.agentReputation?.ratingAvg || 0),
+      ratingCount: Number(user.agentReputation?.ratingCount || 0),
+    };
+    user.set('agentReputation', nextRep);
+    user.markModified('agentReputation');
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Reputation settings updated',
+      settings: {
+        displayName: nextRep.displayName,
+        hideRealName: nextRep.hideRealName,
+      },
+      reputation: buildPublicAgentReputation(user),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET: Tenant — leads awaiting placement confirmation
+export const getPendingPlacementConfirmations = async (req, res) => {
+  try {
+    const userId = toUserId(req.user._id);
+    const leads = await AgentLead.find({
+      student: userId,
+      placementConfirmStatus: 'awaiting_tenant',
+    })
+      .populate('vacancy', 'title location rent')
+      .sort({ placementConfirmRequestedAt: -1 })
+      .lean();
+
+    res.json({ success: true, leads });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET: Tenant — single placement confirmation detail
+export const getPlacementConfirmation = async (req, res) => {
+  try {
+    const userId = toUserId(req.user._id);
+    const lead = await AgentLead.findById(req.params.id)
+      .populate('vacancy', 'title location rent photos')
+      .lean();
+
+    if (!lead) return res.status(404).json({ message: 'Lead not found' });
+
+    const isTenant = String(lead.student) === String(userId);
+    const isAgent = String(lead.agent) === String(userId);
+    if (!isTenant && !isAgent && !hasRole(req.user, 'admin')) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const agentUser = await User.findById(lead.agent).select(agentReputationSelect).lean();
+
+    res.json({
+      success: true,
+      lead,
+      agent: buildPublicAgentReputation(agentUser),
+      canConfirm: isTenant && lead.placementConfirmStatus === 'awaiting_tenant',
+      canRate: isTenant
+        && lead.placementConfirmStatus === 'confirmed'
+        && !lead.rating?.stars,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// POST: Tenant confirms or denies placement
+export const confirmPlacement = async (req, res) => {
+  try {
+    const userId = toUserId(req.user._id);
+    const confirmed = req.body?.confirmed === true || req.body?.confirmed === 'true';
+
+    const lead = await AgentLead.findById(req.params.id);
+    if (!lead) return res.status(404).json({ message: 'Lead not found' });
+
+    if (String(lead.student) !== String(userId) && !hasRole(req.user, 'admin')) {
+      return res.status(403).json({ message: 'Only the tenant can confirm this placement' });
+    }
+
+    if (lead.placementConfirmStatus !== 'awaiting_tenant') {
+      return res.status(400).json({
+        message: lead.placementConfirmStatus === 'confirmed'
+          ? 'Placement already confirmed'
+          : 'This placement is not awaiting confirmation',
+      });
+    }
+
+    lead.placementConfirmRespondedAt = new Date();
+
+    if (!confirmed) {
+      lead.placementConfirmStatus = 'denied';
+      await lead.save();
+      return res.json({
+        success: true,
+        message: 'Thanks — this placement will not count toward the agent’s reputation.',
+        lead,
+        canRate: false,
+      });
+    }
+
+    lead.placementConfirmStatus = 'confirmed';
+    await lead.save();
+
+    // Increment agent successful placements
+    await User.findByIdAndUpdate(lead.agent, {
+      $inc: { 'agentReputation.successfulPlacements': 1 },
+    });
+
+    res.json({
+      success: true,
+      message: 'Placement confirmed! You can leave a rating for this agent.',
+      lead,
+      canRate: true,
+    });
+  } catch (error) {
+    console.error('confirmPlacement error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// POST: Tenant rates agent after confirmed placement
+export const rateAgentPlacement = async (req, res) => {
+  try {
+    const userId = toUserId(req.user._id);
+    const stars = Number(req.body?.stars);
+    const comment = String(req.body?.comment || '').trim().slice(0, 500);
+
+    if (!Number.isFinite(stars) || stars < 1 || stars > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5 stars' });
+    }
+
+    const lead = await AgentLead.findById(req.params.id);
+    if (!lead) return res.status(404).json({ message: 'Lead not found' });
+
+    if (String(lead.student) !== String(userId) && !hasRole(req.user, 'admin')) {
+      return res.status(403).json({ message: 'Only the tenant can rate this placement' });
+    }
+
+    if (lead.placementConfirmStatus !== 'confirmed') {
+      return res.status(400).json({ message: 'Confirm the placement before rating' });
+    }
+
+    if (lead.rating?.stars) {
+      return res.status(400).json({ message: 'You already rated this placement' });
+    }
+
+    lead.rating = { stars, comment, ratedAt: new Date() };
+    await lead.save();
+
+    const agent = await User.findById(lead.agent);
+    if (agent) {
+      agent.agentReputation = agent.agentReputation || {};
+      const prevCount = Number(agent.agentReputation.ratingCount || 0);
+      const prevAvg = Number(agent.agentReputation.ratingAvg || 0);
+      const nextCount = prevCount + 1;
+      const nextAvg = ((prevAvg * prevCount) + stars) / nextCount;
+      agent.agentReputation.ratingCount = nextCount;
+      agent.agentReputation.ratingAvg = Number(nextAvg.toFixed(2));
+      await agent.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Thanks for your rating!',
+      reputation: buildPublicAgentReputation(agent),
+    });
+  } catch (error) {
+    console.error('rateAgentPlacement error:', error);
+    res.status(500).json({ message: error.message });
   }
 };

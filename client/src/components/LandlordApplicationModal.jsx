@@ -102,7 +102,7 @@ const LandlordApplicationModal = ({ onClose }) => {
 
     if (checkingStatus) {
         return (
-            <div className='fixed top-0 bottom-0 left-0 right-0 z-[100] flex items-center justify-center bg-black/50'>
+            <div className='fixed top-0 bottom-0 left-0 right-0 z-[10000] flex items-center justify-center bg-black/50'>
                 <div className='bg-white dark:bg-gray-800 rounded-xl p-8'>
                     <p className='text-gray-600 dark:text-gray-300'>Checking landlord status...</p>
                 </div>
@@ -112,7 +112,7 @@ const LandlordApplicationModal = ({ onClose }) => {
 
     if (existingApplication?.status === 'approved') {
         return (
-            <div onClick={onClose} className='fixed top-0 bottom-0 left-0 right-0 z-[100] flex items-center justify-center bg-black/50 p-4'>
+            <div onClick={onClose} className='fixed top-0 bottom-0 left-0 right-0 z-[10000] flex items-center justify-center bg-black/50 p-4'>
                 <div onClick={(e) => e.stopPropagation()} className='bg-white dark:bg-gray-800 rounded-xl max-w-xl w-full shadow-2xl p-8'>
                     <div className='flex justify-between items-start mb-6'>
                         <h2 className='text-2xl font-bold dark:text-white'>Already a Landlord</h2>
@@ -133,7 +133,7 @@ const LandlordApplicationModal = ({ onClose }) => {
 
     if (existingApplication?.status === 'pending') {
         return (
-            <div onClick={onClose} className='fixed top-0 bottom-0 left-0 right-0 z-[100] flex items-center justify-center bg-black/50 p-4'>
+            <div onClick={onClose} className='fixed top-0 bottom-0 left-0 right-0 z-[10000] flex items-center justify-center bg-black/50 p-4'>
                 <div onClick={(e) => e.stopPropagation()} className='bg-white dark:bg-gray-800 rounded-xl max-w-xl w-full shadow-2xl p-8'>
                     <div className='flex justify-between items-start mb-6'>
                         <h2 className='text-2xl font-bold dark:text-white'>Application Pending</h2>
@@ -153,7 +153,7 @@ const LandlordApplicationModal = ({ onClose }) => {
     }
 
     return (
-        <div onClick={onClose} className='fixed top-0 bottom-0 left-0 right-0 z-[100] flex items-center justify-center bg-black/50 overflow-y-auto p-4'>
+        <div onClick={onClose} className='fixed top-0 bottom-0 left-0 right-0 z-[10000] flex items-center justify-center bg-black/50 overflow-y-auto p-4'>
             <div onClick={(e) => e.stopPropagation()} className='bg-white dark:bg-gray-800 rounded-xl max-w-xl w-full my-auto shadow-2xl'>
                 <div className='border-b border-gray-200 dark:border-gray-700 p-6'>
                     <div className='flex justify-between items-start'>

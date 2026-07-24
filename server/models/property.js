@@ -197,6 +197,10 @@ const propertySchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  coordinates: {
+    latitude: { type: Number },
+    longitude: { type: Number },
+  },
   buildings: [buildingSchema],
   images: [String], // Cloudinary URLs
   videos: [{

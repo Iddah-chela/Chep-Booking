@@ -30,12 +30,13 @@ import utilityRouter from "./routes/utilityRoutes.js";
 import analyticsRouter from "./routes/analyticsRoutes.js";
 import agentRouter from "./routes/agentRoutes.js";
 import agentApplicationRouter from "./routes/agentApplicationRoutes.js";
+import mapRouter from "./routes/mapRoutes.js";
 import multer from 'multer';
 import upload from './middleware/uploadMiddleware.js';
 import * as agentController from './controllers/agentController.js';
 import { expireViewingRequests } from "./utils/expirationHandler.js";
 import { expireProvisionalHolds } from "./utils/expirationHandler.js";
-import { checkListingFreshness, checkUnlockAutoRefunds, sendPostViewingNudges, sendViewingReminders, sendMoveInNudges, sendMoveOutNudges, sendWeeklyPropertyUpdateReminders } from "./utils/cronJobs.js";
+import { checkListingFreshness, checkUnlockAutoRefunds, sendPostViewingNudges, sendViewingReminders, sendMoveInNudges, sendMoveOutNudges, sendWeeklyPropertyUpdateReminders, processPlacementConfirmations } from "./utils/cronJobs.js";
 import mongoose from 'mongoose';
 import { runAgentVacancyMigration } from './utils/agentVacancyMigration.js';
 
@@ -204,6 +205,7 @@ app.use('/api/visit', generalLimiter, analyticsRouter)
 app.use('/api/analytics', generalLimiter, analyticsRouter)
 app.use('/api/agent', generalLimiter, agentRouter)
 app.use('/api/agent-applications', generalLimiter, agentApplicationRouter)
+app.use('/api/map', generalLimiter, mapRouter)
 
 // Dev-only: debug upload endpoint to test multipart handling without Cloudinary/auth
 if (isDev) {
@@ -275,6 +277,11 @@ setInterval(async () => {
     await sendMoveOutNudges();
 }, 6 * 60 * 60 * 1000);
 
+// Every 6 hours: agent placement confirmation nudges / 7-day expiry
+setInterval(async () => {
+    await processPlacementConfirmations();
+}, 6 * 60 * 60 * 1000);
+
 // Daily: send viewing reminders (day-before reminder push + email)
 setInterval(async () => {
     await sendViewingReminders();
@@ -296,6 +303,7 @@ setTimeout(async () => {
     await sendMoveOutNudges();
     await sendWeeklyPropertyUpdateReminders();
     await expireProvisionalHolds();
+    await processPlacementConfirmations();
 }, 5000);
 
 

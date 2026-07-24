@@ -29,7 +29,7 @@ const Footer = () => {
                 <div className='max-w-80'>
                     <img src={assets.logo} alt="logo" className='mb-4 h-20 md:h-27  invert opacity-80' />
                     <p className='text-sm leading-relaxed'>
-                        Find verified student housing near University of Eldoret. No brokers. No scams. Just honest listings.
+                        Find verified rental houses across Kenya. No brokers. No scams. Just honest listings.
                     </p>
                 </div>
 

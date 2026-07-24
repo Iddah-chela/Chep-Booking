@@ -65,6 +65,23 @@ const agentLeadSchema = new mongoose.Schema(
       type: String,
       ref: 'User',
     },
+    // Tenant must confirm placement before it counts toward agent reputation
+    placementConfirmStatus: {
+      type: String,
+      enum: ['none', 'awaiting_tenant', 'confirmed', 'denied', 'expired'],
+      default: 'none',
+      index: true,
+    },
+    placementConfirmRequestedAt: Date,
+    placementConfirmRespondedAt: Date,
+    placementNudgeCount: { type: Number, default: 0 },
+    placementLastNudgeAt: Date,
+    // One rating per successful (tenant-confirmed) placement
+    rating: {
+      stars: { type: Number, min: 1, max: 5 },
+      comment: { type: String, maxlength: 500 },
+      ratedAt: Date,
+    },
     // Track agent communication
     lastContactedAt: Date,
     contactMethod: {

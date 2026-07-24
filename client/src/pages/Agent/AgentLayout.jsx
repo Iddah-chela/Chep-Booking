@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Home, LayoutGrid, Bell, Calendar, Eye } from 'lucide-react';
+import { Home, LayoutGrid, Bell, Calendar, Eye, Settings } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 export default function AgentLayout() {
@@ -40,6 +40,7 @@ export default function AgentLayout() {
     { name: 'My Leads', path: '/agent/leads', icon: Bell },
     { name: 'Bookings', path: '/agent/bookings', icon: Calendar },
     { name: 'Viewings', path: '/agent/viewings', icon: Eye },
+    { name: 'Settings', path: '/agent/settings', icon: Settings },
   ];
 
   const isActive = (path) => location.pathname === path;

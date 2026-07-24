@@ -55,7 +55,7 @@ const Safety = () => {
             </div>
 
             <ul className='list-disc pl-5 text-gray-700 dark:text-gray-300 space-y-1.5 text-sm'>
-              <li><strong>Verify tenant identity.</strong> Ask for a valid national ID or student ID.</li>
+              <li><strong>Verify tenant identity.</strong> Ask for a valid national ID.</li>
               <li><strong>Use the Platform.</strong> Respond to viewing requests through PataKeja to maintain records.</li>
               <li><strong>Be available.</strong> Your response time is tracked and displayed to tenants.</li>
               <li><strong>Be honest.</strong> Accurately describe your property. Misleading listings lead to bad reviews.</li>

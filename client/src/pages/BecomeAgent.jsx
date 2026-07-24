@@ -220,7 +220,7 @@ export default function BecomeAgent() {
       <div className='mb-8'>
         <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Become an Agent</h1>
         <p className='text-gray-600 dark:text-gray-400 mt-2'>
-          Unlock the power to post vacancies and connect with students
+          Unlock the power to post vacancies and connect with renters
         </p>
       </div>
 

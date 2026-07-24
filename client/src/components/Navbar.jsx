@@ -13,6 +13,7 @@ const Navbar = () => {
     const navLinks = [
         { name: 'Home', path: '/' },
         { name: 'Houses', path: '/rooms' },
+        { name: 'Map', path: '/map' },
         { name: 'About', path: '/about' },
     ];
 
@@ -74,7 +75,7 @@ const Navbar = () => {
         <>
             <nav
                 style={{ top: 'var(--announcement-offset, 0px)' }}
-                className={`fixed left-0 w-full flex items-center justify-between px-4 md:px-16 lg:px-24 xl:px-32 transition-all duration-500 z-40 overflow-visible ${
+                className={`fixed left-0 w-full flex items-center justify-between px-4 md:px-16 lg:px-24 xl:px-32 transition-all duration-500 z-[1100] overflow-visible ${
                 isScrolled
                     ? "bg-white/80 dark:bg-gray-900/80 shadow-md text-gray-700 dark:text-gray-200 backdrop-blur-lg py-2 md:py-2"
                     : heroLight

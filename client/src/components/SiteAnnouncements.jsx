@@ -130,7 +130,7 @@ const SiteAnnouncements = () => {
   if (!visible.length) return null;
 
   return (
-    <div ref={containerRef} className="fixed top-0 left-0 right-0 z-[200] px-3 pt-1 md:px-6 lg:px-8 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 space-y-1 max-h-[24vh] overflow-y-auto">
+    <div ref={containerRef} className="fixed top-0 left-0 right-0 z-[1200] px-3 pt-1 md:px-6 lg:px-8 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 space-y-1 max-h-[24vh] overflow-y-auto">
       {visible.map((announcement, index) => {
         const config = styleMap[announcement.bannerStyle] || styleMap.info;
         const Icon = config.icon;

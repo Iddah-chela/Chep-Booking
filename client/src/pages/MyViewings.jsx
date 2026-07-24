@@ -59,7 +59,7 @@ const MyViewings = () => {
       const token = await getToken()
       const allViewings = []
 
-      // Fetch tenant viewing requests (where user is the renter)
+      // Fetch tenant viewing requests (where user is the renter) — landlord properties
       try {
         const { data } = await axios.get('/api/viewing/user-requests', {
           headers: { Authorization: `Bearer ${token}` }
@@ -72,6 +72,23 @@ const MyViewings = () => {
         }
       } catch (error) {
         console.error('Failed to fetch tenant viewings:', error)
+      }
+
+      // Fetch this user's agent vacancy viewing leads (exact pin after agent confirms)
+      try {
+        const { data } = await axios.get('/api/agent/my-leads', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const myLeads = (data.leads || [])
+          .filter((lead) => String(lead.leadType || '').toLowerCase() === 'viewing')
+          .map((lead) => ({
+            ...lead,
+            _viewingType: 'agent-tenant',
+            _leadStatus: String(lead.outcome || lead.status || '').toLowerCase(),
+          }))
+        allViewings.push(...myLeads)
+      } catch (error) {
+        console.error('Failed to fetch agent viewing leads:', error)
       }
 
       // Fetch agent viewing requests (where user is the agent)
@@ -87,7 +104,6 @@ const MyViewings = () => {
               return leadType === 'viewing' || leadType === 'view'
             })
             .map(rawItem => {
-              // Server wraps each item as { type: 'lead', lead: <actual lead>, ... }
               const leadObj = rawItem.type === 'lead' && rawItem.lead ? rawItem.lead : rawItem
               return {
                 ...leadObj,
@@ -238,6 +254,89 @@ const MyViewings = () => {
       ) : (
         <div className="space-y-4">
           {viewings.map((viewing) => {
+            // Tenant's own agent vacancy viewing
+            if (viewing._viewingType === 'agent-tenant') {
+              const mapsUrl = viewing.exactLocation?.mapsUrl
+              const areaLabel = [viewing.exactLocation?.area, viewing.exactLocation?.city]
+                .filter(Boolean)
+                .join(', ')
+              const statusLabel = viewing.locationUnlocked
+                ? (viewing._leadStatus === 'viewed' ? 'Viewed' : 'Confirmed')
+                : (viewing._leadStatus === 'not-fit' || viewing._leadStatus === 'no-response' ? 'Declined' : 'Pending')
+
+              return (
+                <div
+                  key={viewing._id}
+                  className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+                >
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-medium text-gray-900 dark:text-white">
+                          {viewing.vacancy?.title || 'Agent listing'}
+                        </h3>
+                        <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-full">
+                          Agent
+                        </span>
+                      </div>
+                      <div className="mt-3 space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                        {viewing.preferredViewingDate && (
+                          <p>
+                            <span className="font-medium">Date:</span>{' '}
+                            {formatDate(viewing.preferredViewingDate)}
+                          </p>
+                        )}
+                        {viewing.preferredViewingTimeRange && (
+                          <p>
+                            <span className="font-medium">Time:</span> {viewing.preferredViewingTimeRange}
+                          </p>
+                        )}
+                        {viewing.message && (
+                          <p className="text-gray-600 dark:text-gray-400">{viewing.message}</p>
+                        )}
+                      </div>
+
+                      {viewing.locationUnlocked && (mapsUrl || areaLabel) && (
+                        <div className='mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg'>
+                          <p className='text-xs font-semibold text-green-700 dark:text-green-300 mb-1.5 flex items-center gap-1.5'>
+                            <MapPin className='w-3.5 h-3.5' /> Exact location
+                          </p>
+                          {areaLabel && (
+                            <p className='text-sm text-gray-700 dark:text-gray-300 mb-1.5'>{areaLabel}</p>
+                          )}
+                          {mapsUrl && (
+                            <a
+                              href={mapsUrl}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-all'
+                            >
+                              <Navigation className='w-3.5 h-3.5' /> Open in Google Maps
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {!viewing.locationUnlocked && statusLabel === 'Pending' && (
+                        <p className='mt-3 text-xs text-amber-700 dark:text-amber-300'>
+                          Exact location unlocks after the agent confirms your viewing.
+                        </p>
+                      )}
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium h-fit ${
+                      statusLabel === 'Confirmed' || statusLabel === 'Viewed'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                        : statusLabel === 'Declined'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                          : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                    }`}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                </div>
+              )
+            }
+
             // Agent viewing row
             if (viewing._viewingType === 'agent') {
               return (
@@ -361,18 +460,23 @@ const MyViewings = () => {
                         </p>
                       )}
 
-                      {/* Show map link after viewing is confirmed */}
-                      {isRenter && viewing.status === 'confirmed' && (viewing.property?.googleMapsUrl || viewing.property?.address) && (
+                      {/* Exact location after viewing is confirmed */}
+                      {isRenter && viewing.exactLocation && (viewing.exactLocation.mapsUrl || viewing.exactLocation.address) && (
                         <div className='mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg'>
                           <p className='text-xs font-semibold text-green-700 dark:text-green-300 mb-1.5 flex items-center gap-1.5'>
-                            <MapPin className='w-3.5 h-3.5' /> Property Location
+                            <MapPin className='w-3.5 h-3.5' /> Exact location
                           </p>
-                          {viewing.property?.address && (
-                            <p className='text-sm text-gray-700 dark:text-gray-300 mb-1.5'>{viewing.property.address}{viewing.property.estate ? `, ${viewing.property.estate}` : ''}</p>
+                          {(viewing.exactLocation.address || viewing.property?.address) && (
+                            <p className='text-sm text-gray-700 dark:text-gray-300 mb-1.5'>
+                              {viewing.exactLocation.address || viewing.property?.address}
+                              {(viewing.exactLocation.estate || viewing.property?.estate)
+                                ? `, ${viewing.exactLocation.estate || viewing.property.estate}`
+                                : ''}
+                            </p>
                           )}
-                          {viewing.property?.googleMapsUrl && (
+                          {viewing.exactLocation.mapsUrl && (
                             <a
-                              href={viewing.property.googleMapsUrl}
+                              href={viewing.exactLocation.mapsUrl}
                               target='_blank'
                               rel='noopener noreferrer'
                               className='inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-all'
@@ -381,6 +485,11 @@ const MyViewings = () => {
                             </a>
                           )}
                         </div>
+                      )}
+                      {isRenter && ['pending'].includes(viewing.status) && !viewing.isDirectApply && (
+                        <p className='mt-3 text-xs text-amber-700 dark:text-amber-300'>
+                          Exact location unlocks after the landlord confirms your viewing.
+                        </p>
                       )}
                     </div>
                   </div>

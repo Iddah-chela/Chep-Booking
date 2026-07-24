@@ -101,7 +101,7 @@ const ProfileModal = ({ onClose }) => {
     return (
         <div 
             onClick={onClose} 
-            className='fixed top-0 bottom-0 left-0 right-0 z-[100] flex items-center justify-center bg-black/50 overflow-y-auto p-4'
+            className='fixed top-0 bottom-0 left-0 right-0 z-[10000] flex items-center justify-center bg-black/50 overflow-y-auto p-4'
         >
             <div 
                 onClick={(e) => e.stopPropagation()} 

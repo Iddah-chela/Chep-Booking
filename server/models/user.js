@@ -115,7 +115,16 @@ const userSchema = mongoose.Schema({
     referralUnlocksUsed: {
         type: Number,
         default: 0  // how many referral unlocks have been redeemed
-    }
+    },
+
+    // Agent public reputation / privacy
+    agentReputation: {
+        displayName: { type: String, default: '' },
+        hideRealName: { type: Boolean, default: false },
+        successfulPlacements: { type: Number, default: 0 },
+        ratingAvg: { type: Number, default: 0 },
+        ratingCount: { type: Number, default: 0 },
+    },
     
 },{timestamps: true});
 

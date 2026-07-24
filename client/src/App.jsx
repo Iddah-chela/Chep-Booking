@@ -43,7 +43,10 @@ const LeadInbox       = lazy(() => import('./pages/Agent/LeadInbox'))
 const AgentChats      = lazy(() => import('./pages/Agent/AgentChats'))
 const AgentViewings   = lazy(() => import('./pages/Agent/AgentViewings'))
 const AgentBookings   = lazy(() => import('./pages/Agent/AgentBookings'))
+const AgentSettings   = lazy(() => import('./pages/Agent/AgentSettings'))
 const BecomeAgent     = lazy(() => import('./pages/BecomeAgent'))
+const VacancyMap      = lazy(() => import('./pages/VacancyMap'))
+const PlacementConfirm = lazy(() => import('./pages/PlacementConfirm'))
 const Terms           = lazy(() => import('./pages/Terms'))
 const Privacy         = lazy(() => import('./pages/Privacy'))
 const UnlockPolicy    = lazy(() => import('./pages/UnlockPolicy'))
@@ -113,6 +116,8 @@ const App = () => {
           <Route path='/about' element={<About/>}/>
           <Route path='/rooms' element={<AllRooms/>}/>
           <Route path='/rooms/:id' element={<PropertyDetails/>}/>
+          <Route path='/map' element={<VacancyMap/>}/>
+          <Route path='/placement-confirm/:id' element={<PlacementConfirm/>}/>
           <Route path='/my-bookings' element={<MyBooking/>}/>
           <Route path='/my-viewings' element={<MyViewings/>}/>
           <Route path='/my-chats' element={<MyChats/>}/>
@@ -152,6 +157,7 @@ const App = () => {
               <Route path='chats' element={<AgentChats/>}/>
               <Route path='viewings' element={<AgentViewings/>}/>
               <Route path='bookings' element={<AgentBookings/>}/>
+              <Route path='settings' element={<AgentSettings/>}/>
               <Route path='analytics' element={<Navigate to='/agent' replace/>}/>
           </Route>
         </Routes>

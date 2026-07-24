@@ -6,6 +6,7 @@ import UserPass from "../models/userPass.js";
 import Booking from "../models/booking.js";
 import { sendEmail } from "../utils/mailer.js";
 import { sendPushNotification } from "../utils/pushNotifier.js";
+import { mapsUrlFromLocation, normalizeCoordinates } from "../utils/geoUtils.js";
 const API_BASE = (process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000').replace(/\/$/, '');
 const normalizeDate = (value) => {
     const d = new Date(value);
@@ -362,6 +363,10 @@ export const respondToViewingRequest = async (req, res) => {
                     // Label differs: direct-apply = "Application", viewing = "Viewing"
                     const reqLabel = isDirectApply ? 'Application' : 'Viewing';
                     const statusLabel = isConfirmed ? (isDirectApply ? 'Application Accepted!' : 'Viewing Confirmed!') : (isDirectApply ? 'Application Declined' : 'Viewing Declined');
+                    const mapsUrl = mapsUrlFromLocation({
+                        coordinates: property.coordinates,
+                        googleMapsUrl: property.googleMapsUrl,
+                    }) || '';
 
                     sendEmail(
                         renterUser.email,
@@ -383,7 +388,7 @@ export const respondToViewingRequest = async (req, res) => {
                                         <tr><td style="padding:6px 0;font-size:14px;color:#555;"><strong>Address:</strong> ${property.address}, ${property.estate}</td></tr>
                                         <tr><td style="padding:6px 0;font-size:14px;color:#555;"><strong>Contact:</strong> ${property.contact}</td></tr>
                                     </table>
-                                    ${property.googleMapsUrl ? `<div style="text-align:center;margin-bottom:16px;"><a href="${property.googleMapsUrl}" style="display:inline-block;background:#16a34a;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Open in Google Maps</a></div>` : ''}
+                                    ${mapsUrl ? `<div style="text-align:center;margin-bottom:16px;"><a href="${mapsUrl}" style="display:inline-block;background:#16a34a;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Open exact location in Maps</a></div>` : ''}
                                 ` : `
                                     ${ownerResponse ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin:0 0 16px;"><p style="margin:0;font-size:14px;color:#555;"><strong>Reason:</strong> ${ownerResponse}</p></div>` : ''}
                                 `}
@@ -424,7 +429,43 @@ export const getUserViewingRequests = async (req, res) => {
             ]
         }).populate('renter owner property').sort({ createdAt: -1 });
 
-        res.json({ success: true, viewingRequests: requests });
+        const viewingRequests = requests.map((reqDoc) => {
+            const obj = reqDoc.toObject();
+            const isRenter = String(obj.renter?._id || obj.renter) === String(userId);
+            const locationUnlocked = ['confirmed', 'booked', 'completed'].includes(String(obj.status || ''));
+
+            if (obj.property) {
+                const coords = normalizeCoordinates(obj.property.coordinates);
+                const mapsUrl = mapsUrlFromLocation({
+                    coordinates: coords,
+                    googleMapsUrl: obj.property.googleMapsUrl,
+                });
+
+                if (isRenter && locationUnlocked) {
+                    obj.exactLocation = {
+                        address: obj.property.address || '',
+                        estate: obj.property.estate || '',
+                        place: obj.property.place || '',
+                        coordinates: coords,
+                        mapsUrl,
+                    };
+                    if (!obj.property.googleMapsUrl && mapsUrl) {
+                        obj.property.googleMapsUrl = mapsUrl;
+                    }
+                } else if (isRenter && !locationUnlocked) {
+                    delete obj.property.googleMapsUrl;
+                    delete obj.property.address;
+                    if (obj.property.coordinates) {
+                        delete obj.property.coordinates;
+                    }
+                    obj.exactLocation = null;
+                }
+            }
+
+            return obj;
+        });
+
+        res.json({ success: true, viewingRequests });
     } catch (error) {
         res.json({ success: false, message: error.message });
     }

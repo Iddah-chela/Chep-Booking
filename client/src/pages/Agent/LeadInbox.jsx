@@ -64,8 +64,8 @@ export default function LeadInbox() {
             _id: item._id || `chat_${c._id}`,
             leadType: 'chat',
             studentInfo: {
-              name: (c.tenant?.firstName || '') + (c.tenant?.lastName ? ' ' + c.tenant.lastName : ''),
-              phone: c.tenant?.phone || '',
+              name: c.tenant?.username || [c.tenant?.firstName, c.tenant?.lastName].filter(Boolean).join(' ') || 'Tenant',
+              phone: c.tenant?.phoneNumber || c.tenant?.phone || '',
               email: c.tenant?.email || '',
             },
             message: lastMsg,
@@ -78,14 +78,33 @@ export default function LeadInbox() {
 
         // If item.type === 'lead' or legacy lead object
         const leadObj = item.type === 'lead' && item.lead ? item.lead : item.lead ? item.lead : item;
+        const info = leadObj.studentInfo || { name: '', phone: '', email: '' };
+        const studentUser = leadObj.student;
+        const resolvedName =
+          (info.name && !['student', 'tenant', 'n/a'].includes(String(info.name).toLowerCase())
+            ? info.name
+            : null) ||
+          studentUser?.username ||
+          [studentUser?.firstName, studentUser?.lastName].filter(Boolean).join(' ') ||
+          info.name ||
+          'Tenant';
         return {
           _id: leadObj._id,
           leadType: leadObj.leadType || 'contact',
-          studentInfo: leadObj.studentInfo || { name: '', phone: '', email: '' },
+          studentInfo: {
+            name: resolvedName,
+            phone: info.phone || studentUser?.phoneNumber || studentUser?.phone || '',
+            email: info.email || studentUser?.email || '',
+          },
           message: leadObj.message || '',
           vacancy: leadObj.vacancy || {},
           createdAt: leadObj.createdAt,
           updatedAt: leadObj.updatedAt,
+          status: leadObj.status,
+          outcome: leadObj.outcome,
+          placementConfirmStatus: leadObj.placementConfirmStatus,
+          provisionalHoldUntil: leadObj.provisionalHoldUntil,
+          roomDetails: leadObj.roomDetails,
           raw: leadObj,
         };
       }).filter(Boolean);
@@ -436,9 +455,9 @@ export default function LeadInbox() {
                           <button
                             onClick={() => handleMarkOccupied(vacancy._id)}
                             disabled={markingOccupiedId === vacancy._id}
-                            className='w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-60 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors'
+                            className='w-full px-4 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors'
                           >
-                            {markingOccupiedId === vacancy._id ? 'Updating…' : 'Mark as Occupied'}
+                            {markingOccupiedId === vacancy._id ? 'Updating…' : 'Mark as Occupied / Remove from feed'}
                           </button>
                         )}
                       </div>
@@ -674,8 +693,8 @@ export default function LeadInbox() {
                       <p className='text-gray-700 dark:text-gray-300'>{formatDate(selectedLead.raw?.preferredMoveInDate || selectedLead.raw?.moveInDate)}</p>
                     </div>
                     <div className='mb-2'>
-                      <p className='font-medium'>Temporary Hold Until</p>
-                      <p className='text-gray-700 dark:text-gray-300'>{formatDate(selectedLead.raw?.provisionalHoldUntil)}</p>
+                      <p className='font-medium'>Reservation Hold</p>
+                      <p className='text-gray-700 dark:text-gray-300'>Active until agent confirms or cancels</p>
                     </div>
                     {selectedLead.message && (
                       <div className='mb-3'>

@@ -145,7 +145,7 @@ export const suspendUser = async (req, res) => {
                         <p style="font-size:14px;line-height:1.7;color:#555;">While suspended, you will not be able to access most features on PataKeja. If you believe this was a mistake, please reply to this email and we will review your case.</p>
                     </div>
                     <div style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-                        <p style="margin:0;font-size:12px;color:#9ca3af;">PataKeja — Student Housing Made Easy</p>
+                        <p style="margin:0;font-size:12px;color:#9ca3af;">PataKeja — Verified Rentals Made Easy</p>
                     </div>
                 </div>`
             );
@@ -214,7 +214,7 @@ export const removeListing = async (req, res) => {
                                 <p style="font-size:14px;line-height:1.7;color:#555;">This action was taken after reviewing a report filed against your listing. If you believe this was a mistake, please reply to this email and we will review your case.</p>
                             </div>
                             <div style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-                                <p style="margin:0;font-size:12px;color:#9ca3af;">PataKeja — Student Housing Made Easy</p>
+                                <p style="margin:0;font-size:12px;color:#9ca3af;">PataKeja — Verified Rentals Made Easy</p>
                             </div>
                         </div>`
                     );
@@ -300,7 +300,7 @@ export const warnUser = async (req, res) => {
                         <p style="font-size:14px;line-height:1.7;color:#555;">We encourage all users to follow our community guidelines to keep PataKeja safe for everyone. If you have questions, please reply to this email.</p>
                     </div>
                     <div style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-                        <p style="margin:0;font-size:12px;color:#9ca3af;">PataKeja — Student Housing Made Easy</p>
+                        <p style="margin:0;font-size:12px;color:#9ca3af;">PataKeja — Verified Rentals Made Easy</p>
                     </div>
                 </div>`
             );

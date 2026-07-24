@@ -83,16 +83,16 @@ export const Places = [
 
 // Exclusive Offers Dummy Data
 export const exclusiveOffers = [
-    { _id: 1, title: "Student Special", description: "Get your first month at 15% off any verified listing", priceOff: 15, expiryDate: "Aug 31", image: exclusiveOfferCardImg1 },
-    { _id: 2, title: "Semester Package", description: "Book for 6 months and save on verified rentals", priceOff: 20, expiryDate: "Sep 20", image: exclusiveOfferCardImg2 },
+    { _id: 1, title: "New Renter Special", description: "Get your first month at 15% off any verified listing", priceOff: 15, expiryDate: "Aug 31", image: exclusiveOfferCardImg1 },
+    { _id: 2, title: "Long Stay Package", description: "Book for 6 months and save on verified rentals", priceOff: 20, expiryDate: "Sep 20", image: exclusiveOfferCardImg2 },
     { _id: 3, title: "Early Bird Offer", description: "Book 2 months in advance and get 25% off your rental", priceOff: 25, expiryDate: "Sep 25", image: exclusiveOfferCardImg3 },
 ]
 
 // Testimonials Dummy Data
 export const testimonials = [
-    { id: 1, name: "Emma Wanjiku", address: "Nairobi, Kenya", image: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200", rating: 5, review: "Found the perfect room near campus! The verification process made me feel safe, and the owner was very responsive to my viewing request." },
-    { id: 2, name: "David Ochieng", address: "Eldoret, Kenya", image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200", rating: 4, review: "Great platform for finding student accommodation. The viewing system works perfectly and all listings are verified. Highly recommended!" },
-    { id: 3, name: "Grace Muthoni", address: "Mombasa, Kenya", image: "https://images.unsplash.com/photo-1701615004837-40d8573b6652?q=80&w=200", rating: 5, review: "Amazing service! I found a clean, affordable bedsitter within walking distance to campus. The booking process was smooth and secure." }
+    { id: 1, name: "Emma Wanjiku", address: "Nairobi, Kenya", image: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200", rating: 5, review: "Found the perfect room quickly! The verification process made me feel safe, and the owner was very responsive to my viewing request." },
+    { id: 2, name: "David Ochieng", address: "Eldoret, Kenya", image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200", rating: 4, review: "Great platform for finding rental accommodation. The viewing system works perfectly and all listings are verified. Highly recommended!" },
+    { id: 3, name: "Grace Muthoni", address: "Mombasa, Kenya", image: "https://images.unsplash.com/photo-1701615004837-40d8573b6652?q=80&w=200", rating: 5, review: "Amazing service! I found a clean, affordable bedsitter in a convenient location. The booking process was smooth and secure." }
 ];
 
 // Facility Icon
@@ -108,8 +108,8 @@ export const facilityIcons = {
 export const roomCommonData = [
     { icon: assets.homeIcon, title: "Clean & Safe Stay", description: "Well-maintained and secure rental space." },
     { icon: assets.badgeIcon, title: "Verified Listing", description: "This property has been verified by our team." },
-    { icon: assets.locationFilledIcon, title: "Near Campus", description: "Walking distance to university facilities." },
-    { icon: assets.heartIcon, title: "Student Friendly", description: "Perfect for students and young professionals." },
+    { icon: assets.locationFilledIcon, title: "Great Location", description: "Convenient access to local amenities and transport." },
+    { icon: assets.heartIcon, title: "Renter Friendly", description: "Suitable for professionals, families, and anyone seeking a home." },
 ];
 
 // User Dummy Data
@@ -134,11 +134,11 @@ export const userDummyData = {
 export const houseDummyData = {
     "_id": "house_456def",
     "name": "Mwamba Apartments",
-    "address": "Plot 45, University Road",
+    "address": "Plot 45, Main Road",
     "contact": "+254712345678",
     "owner": userDummyData,
     "place": "Junction",
-    "estate": "Campus View Estate",
+    "estate": "Green View Estate",
     "isVerified": true,
     "createdAt": "2025-04-10T06:22:11.663Z",
     "updatedAt": "2025-04-10T06:22:11.663Z",

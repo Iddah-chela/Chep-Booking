@@ -3,6 +3,7 @@ import { assets, Places } from '../assets/assets'
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import { HardHat, Save, Home, Check, X as XIcon, GripVertical, MapPin, Navigation, ExternalLink } from 'lucide-react';
+import LocationPinPicker from './LocationPinPicker';
 
 const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord = false }) => {
   const { user, navigate, getToken, axios, darkMode, isAdmin } = useAppContext()
@@ -18,6 +19,12 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
     estate: existingProperty.estate,
     propertyType: existingProperty.propertyType,
     googleMapsUrl: existingProperty.googleMapsUrl || '',
+    coordinates: existingProperty.coordinates?.latitude != null
+      ? {
+          latitude: existingProperty.coordinates.latitude,
+          longitude: existingProperty.coordinates.longitude,
+        }
+      : null,
     landlordName: existingProperty.landlordName || ''
   } : {
     name: '',
@@ -28,6 +35,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
     estate: '',
     propertyType: '',
     googleMapsUrl: '',
+    coordinates: null,
     landlordName: ''
   })
 
@@ -203,8 +211,12 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
-        const url = `https://www.google.com/maps?q=${coords.latitude},${coords.longitude}`
-        setPropertyInfo(prev => ({ ...prev, googleMapsUrl: url }))
+        const coordinates = {
+          latitude: Number(coords.latitude.toFixed(6)),
+          longitude: Number(coords.longitude.toFixed(6)),
+        }
+        const url = `https://www.google.com/maps?q=${coordinates.latitude},${coordinates.longitude}`
+        setPropertyInfo(prev => ({ ...prev, googleMapsUrl: url, coordinates }))
         setLocationPermission('granted')
         toast.success('Location pinned!')
         setLocating(false)
@@ -595,6 +607,12 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
       return
     }
 
+    const hasPin = propertyInfo.coordinates?.latitude != null && propertyInfo.coordinates?.longitude != null
+    if (!isAdminCreateMode && !hasPin) {
+      toast.error('Drop an accurate map pin for this property. Exact location is shared only after a viewing is confirmed.')
+      return
+    }
+
     let totalRooms = 0
     buildings.forEach(building => {
       building.grid.forEach(row => {
@@ -675,7 +693,7 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
   const baseCellPx = Math.max(32, Math.min(72, Math.floor(580 / (totalCols + buildings.length))))
 
   return (
-    <div onClick={onClose} className='fixed inset-0 z-[100] flex items-center justify-center bg-black/70 overflow-y-auto p-4'>
+    <div onClick={onClose} className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 overflow-y-auto p-4'>
       <form onSubmit={onSubmitHandler} onClick={(e) => e.stopPropagation()} className='bg-white dark:bg-gray-800 rounded-xl max-w-6xl w-full my-auto max-h-[95vh] overflow-y-auto overflow-x-hidden p-6 md:p-8 relative'>
         
         <button type="button" onClick={onClose} className='absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 transition-colors'>
@@ -770,6 +788,18 @@ const PropertyListingModal = ({ onClose, existingProperty = null, showAsLandlord
                   <ExternalLink className='w-3 h-3' /> Preview pinned location
                 </a>
               )}
+              <LocationPinPicker
+                value={propertyInfo.coordinates}
+                onChange={(coordinates) => {
+                  setPropertyInfo((prev) => ({
+                    ...prev,
+                    coordinates,
+                    googleMapsUrl: coordinates
+                      ? `https://www.google.com/maps?q=${coordinates.latitude},${coordinates.longitude}`
+                      : prev.googleMapsUrl,
+                  }))
+                }}
+              />
             </div>
           </div>
         </div>

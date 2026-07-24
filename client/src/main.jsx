@@ -6,12 +6,29 @@ import { BrowserRouter } from 'react-router-dom'
 import {ClerkProvider} from '@clerk/clerk-react'
 import {AppProvider} from './context/AppContext.jsx'
 
-// IMPORT YOUR PUBLISHABLE KEY
+// Clerk keys from env
 const PRIMARY_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 const FALLBACK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY_FALLBACK
 
-if(!PRIMARY_PUBLISHABLE_KEY){
+if (!PRIMARY_PUBLISHABLE_KEY) {
   throw new Error('Add your Clerk Publishable key to the .env file')
+}
+
+const isLocalDevHost =
+  typeof window !== 'undefined' &&
+  ['localhost', '127.0.0.1'].includes(window.location.hostname)
+
+const isLiveKey = (value) => String(value || '').startsWith('pk_live_')
+const isTestKey = (value) => String(value || '').startsWith('pk_test_')
+
+// Always force a test key on localhost to avoid Clerk custom-domain origin errors.
+const TEST_KEY_CANDIDATE = [PRIMARY_PUBLISHABLE_KEY, FALLBACK_PUBLISHABLE_KEY].find(isTestKey)
+const STARTUP_PUBLISHABLE_KEY = isLocalDevHost
+  ? (TEST_KEY_CANDIDATE || PRIMARY_PUBLISHABLE_KEY)
+  : PRIMARY_PUBLISHABLE_KEY
+
+if (isLocalDevHost && !isTestKey(STARTUP_PUBLISHABLE_KEY)) {
+  throw new Error('Localhost must use a Clerk test key (pk_test_...). Set VITE_CLERK_PUBLISHABLE_KEY in client/.env.local.')
 }
 
 const toErrorText = (reason) => {
@@ -32,7 +49,7 @@ const isClerkLoadFailure = (reason) => {
 }
 
 const Root = () => {
-  const [activePublishableKey, setActivePublishableKey] = useState(PRIMARY_PUBLISHABLE_KEY)
+  const [activePublishableKey, setActivePublishableKey] = useState(STARTUP_PUBLISHABLE_KEY)
   const [usingFallbackKey, setUsingFallbackKey] = useState(false)
 
   useEffect(() => {
@@ -57,6 +74,12 @@ const Root = () => {
     return () => {
       window.removeEventListener('unhandledrejection', onUnhandledRejection)
       window.removeEventListener('error', onWindowError)
+    }
+  }, [activePublishableKey])
+
+  useEffect(() => {
+    if (isLocalDevHost && isLiveKey(activePublishableKey)) {
+      console.warn('[Auth] Live Clerk key detected on localhost. Use VITE_CLERK_PUBLISHABLE_KEY=pk_test_... in local env.')
     }
   }, [activePublishableKey])
 

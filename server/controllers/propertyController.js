@@ -14,6 +14,8 @@ import {
   evaluateListingReadiness,
   normalizeListingActionability,
 } from "../utils/listingLifecycle.js";
+import { resolveCoordinates, toPublicLocation } from "../utils/geoUtils.js";
+import { buildPublicAgentReputation, agentReputationSelect } from "../utils/agentReputation.js";
 
 const inferTierAndStatus = (property) => {
   const hasRoomLevelData = property.hasRoomLevelData ?? (
@@ -175,12 +177,21 @@ export const createProperty = async (req, res) => {
       compoundGate,
       compoundRoadSurface,
       googleMapsUrl,
+      coordinates,
       landlordName,
       videos,
     } = req.body;
     const owner = req.user._id;
     const isAdmin = hasRole(req.user, 'admin');
+    const resolvedCoords = resolveCoordinates({ coordinates, googleMapsUrl });
 
+    // Exact pin required — shared with renters only after a viewing is confirmed
+    if (!resolvedCoords) {
+      return res.json({
+        success: false,
+        message: 'Please drop an accurate map pin for this property. Exact location is shared only after a viewing is confirmed.',
+      });
+    }
 
     // Upload images to Cloudinary
     let uploadedImageUrls = [];
@@ -237,6 +248,7 @@ export const createProperty = async (req, res) => {
       contactDisplayMode: contactDisplayMode || 'public',
       consentStatus: consentStatus || 'unknown',
       googleMapsUrl: googleMapsUrl || '',
+      coordinates: resolvedCoords || undefined,
       landlordName: landlordName?.trim() || '',
       buildings: parsedBuildings,
       images: uploadedImageUrls,
@@ -304,13 +316,20 @@ export const getAllProperties = async (req, res) => {
         return obj;
       });
 
-    // Include active agent vacancies in the public feed (agent name/contact intentionally omitted)
+    // Include active agent vacancies in the public feed
     try {
       const rawVacancies = await AgentVacancy.find({ isActive: true })
         .sort({ createdAt: -1 })
         .lean();
 
+      const agentIds = [...new Set(rawVacancies.map((v) => String(v.agent || '')).filter(Boolean))];
+      const agentUsers = agentIds.length
+        ? await User.find({ _id: { $in: agentIds } }).select(agentReputationSelect).lean()
+        : [];
+      const agentById = Object.fromEntries(agentUsers.map((u) => [String(u._id), u]));
+
       const vacancyProps = rawVacancies.map(v => {
+        const agentRep = buildPublicAgentReputation(agentById[String(v.agent)]);
         const obj = {
           _id: v._id,
           name: v.title || 'Agent listing',
@@ -323,7 +342,9 @@ export const getAllProperties = async (req, res) => {
           listingTier: 'agent',
           sourceType: 'agent',
           agentPost: true,
-          agent: v.agent, // keep id for internal use but do not expose agent name
+          agent: v.agent,
+          agentReputation: agentRep,
+          agentName: agentRep?.name || '',
           expiresAt: v.expiresAt,
           createdAt: v.createdAt,
           updatedAt: v.updatedAt,
@@ -332,7 +353,7 @@ export const getAllProperties = async (req, res) => {
           availableRooms: v.availableRooms,
           amenities: v.amenities || [],
           description: v.description || '',
-          // Hide landlord/agent name for public feed
+          // Hide landlord/agent legal contact identity on public feed
           landlordName: '',
           // Contact fields provided by agent
           contact: v.contactPhone || '',
@@ -379,8 +400,9 @@ export const getPropertyById = async (req, res) => {
       }
 
       const agentUser = vacancy.agent
-        ? await User.findById(vacancy.agent).select('username image email phoneNumber').lean()
+        ? await User.findById(vacancy.agent).select(agentReputationSelect).lean()
         : null;
+      const agentRep = buildPublicAgentReputation(agentUser);
       
       // Convert agent vacancy to property-like object
       property = {
@@ -401,10 +423,11 @@ export const getPropertyById = async (req, res) => {
         sourceType: 'agent',
         agentPost: true,
         agent: vacancy.agent,
-        agentName: agentUser?.username || 'Agent',
-        agentImage: agentUser?.image || '',
+        agentName: agentRep?.name || 'Agent',
+        agentImage: agentRep?.image || agentUser?.image || '',
         agentEmail: agentUser?.email || '',
         agentPhone: agentUser?.phoneNumber || '',
+        agentReputation: agentRep,
         contact: vacancy.contactPhone || agentUser?.phoneNumber || '',
         whatsappNumber: vacancy.whatsappNumber || agentUser?.phoneNumber || '',
         landlordName: '',
@@ -433,6 +456,26 @@ export const getPropertyById = async (req, res) => {
 
     if (String(propertyObj.listingTier || '').toLowerCase() !== 'live' && !canSeeStewardData) {
       delete propertyObj.landlordName;
+    }
+
+    // Exact door stays private on the listing page; approximate pin only for the public map UI
+    if (!canSeeStewardData) {
+      const publicLoc = toPublicLocation({
+        coordinates: propertyObj.location?.coordinates || propertyObj.coordinates,
+        googleMapsUrl: propertyObj.googleMapsUrl,
+        seed: propertyObj._id,
+      });
+      if (propertyObj.location) {
+        propertyObj.location = {
+          ...propertyObj.location,
+          coordinates: publicLoc.coordinates || {},
+        };
+      }
+      if (propertyObj.coordinates) {
+        propertyObj.coordinates = publicLoc.coordinates || {};
+      }
+      propertyObj.googleMapsUrl = '';
+      propertyObj.locationApproximate = true;
     }
 
     // Only reveal contact details to paying/authorised users (agent vacancies don't have contact/whatsapp)
@@ -487,6 +530,7 @@ export const updateProperty = async (req, res) => {
       compoundGate,
       compoundRoadSurface,
       googleMapsUrl,
+      coordinates,
       landlordName,
       videos,
     } = req.body;
@@ -503,6 +547,18 @@ export const updateProperty = async (req, res) => {
     const isCaretaker = existing.caretakers?.some((email) => email?.toLowerCase() === req.user?.email?.toLowerCase());
     if (!isOwner && !isApprovedClaimant && !isCaretaker) {
       return res.json({ success: false, message: "Property not found or unauthorized" });
+    }
+
+    const resolvedCoords = resolveCoordinates({
+      coordinates: coordinates !== undefined ? coordinates : existing.coordinates,
+      googleMapsUrl: googleMapsUrl !== undefined ? googleMapsUrl : existing.googleMapsUrl,
+    });
+
+    if (!resolvedCoords) {
+      return res.json({
+        success: false,
+        message: 'Please drop an accurate map pin for this property. Exact location is shared only after a viewing is confirmed.',
+      });
     }
 
     // Handle image uploads if new images provided
@@ -567,6 +623,9 @@ export const updateProperty = async (req, res) => {
       totalRooms,
       vacantRooms,
     };
+    if (coordinates !== undefined || googleMapsUrl !== undefined) {
+      updatePayload.coordinates = resolvedCoords || { latitude: undefined, longitude: undefined };
+    }
     if (parsedBuildings) updatePayload.buildings = parsedBuildings;
     if (compoundGate) updatePayload.compoundGate = compoundGate;
 

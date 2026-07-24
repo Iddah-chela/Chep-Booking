@@ -216,9 +216,8 @@ const AgentLeadModal = ({ vacancyId, leadType = 'contact', room, onClose, onSucc
                 </div>
               )}
               <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
-                <p className="text-sm text-green-800 dark:text-green-200">Room temporarily held until:</p>
-                <p className="font-semibold">{new Date(reservedLead.provisionalHoldUntil).toLocaleString()}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">The agent must confirm to finalize the booking. You can cancel this temporary hold.</p>
+                <p className="text-sm text-green-800 dark:text-green-200 font-medium">Room reserved</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">Hold stays active until the agent confirms the placement or cancels. You can cancel this hold anytime.</p>
               </div>
               <div className="flex gap-2">
                 <button

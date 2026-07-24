@@ -26,7 +26,7 @@ const PaymentModal = ({ property, onClose, onSuccess, freeReason, referralInfo, 
             const { data } = await axios.post('/api/payment/initiate-unlock', {
                 phoneNumber: '0000',
                 passType: '1day',
-                propertyId: property._id
+                propertyId: property?._id || null
             }, { headers: { Authorization: `Bearer ${token}` } })
 
             if (data.success) {
@@ -60,7 +60,7 @@ const PaymentModal = ({ property, onClose, onSuccess, freeReason, referralInfo, 
                 const { data } = await axios.post('/api/payment/guest-unlock', {
                     phoneNumber,
                     passType,
-                    propertyId: property._id
+                    propertyId: property?._id || null
                 })
                 if (data.success) {
                     if (data.alreadyUnlocked) {
@@ -82,7 +82,7 @@ const PaymentModal = ({ property, onClose, onSuccess, freeReason, referralInfo, 
                 const { data } = await axios.post('/api/payment/initiate-unlock', {
                     phoneNumber,
                     passType,
-                    propertyId: property._id
+                    propertyId: property?._id || null
                 }, { headers: { Authorization: `Bearer ${token}` } })
 
                 if (data.success) {
@@ -143,7 +143,7 @@ const PaymentModal = ({ property, onClose, onSuccess, freeReason, referralInfo, 
     }
 
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[10000] p-4 overflow-y-auto">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md my-8 overflow-hidden">
 
                 {/* Header */}
@@ -170,8 +170,8 @@ const PaymentModal = ({ property, onClose, onSuccess, freeReason, referralInfo, 
                         /* ── FREE UNLOCK FLOW ─────────────────────────────── */
                         <>
                             <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm mb-0.5">{property.name}</h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{property.estate}, {property.place}</p>
+                                <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm mb-0.5">{property?.name || 'Browsing pass'}</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{[property?.estate, property?.place].filter(Boolean).join(', ') || 'Unlock contact & map pins'}</p>
                             </div>
 
                             <div className="mb-5 p-4 bg-green-50 dark:bg-green-900/30 border-2 border-green-200 dark:border-green-700 rounded-lg text-center">
@@ -210,8 +210,8 @@ const PaymentModal = ({ property, onClose, onSuccess, freeReason, referralInfo, 
                         /* ── PAID FLOW — phone number input ──────────────── */
                         <>
                             <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm mb-0.5">{property.name}</h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{property.estate}, {property.place}</p>
+                                <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm mb-0.5">{property?.name || 'Browsing pass'}</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{[property?.estate, property?.place].filter(Boolean).join(', ') || 'Unlock contact & map pins'}</p>
                             </div>
 
                             <div className="mb-4 space-y-1.5 text-xs text-gray-700 dark:text-gray-300">

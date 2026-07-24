@@ -7,6 +7,7 @@ import AgentLeadModal from '../components/AgentLeadModal'
 import AgentChatInterface from '../components/AgentChatInterface'
 import ReportModal from '../components/ReportModal'
 import VerificationBadge from '../components/VerificationBadge'
+import AgentReputationBadge from '../components/AgentReputationBadge'
 import PaymentModal from '../components/PaymentModal'
 import { useAppContext } from '../context/AppContext'
 import { toast } from 'react-hot-toast'
@@ -710,7 +711,22 @@ const PropertyDetails = () => {
             <div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
               <div className='lg:col-span-2 p-5 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20'>
                 <p className='text-sm font-semibold text-indigo-900 dark:text-indigo-100'>Agent listing</p>
-                <p className='text-sm text-indigo-800 dark:text-indigo-200 mt-1'>
+                {(property.agentReputation || property.agentName) && (
+                  <div className='mt-3 p-3 rounded-lg bg-white/70 dark:bg-gray-900/30 border border-indigo-100 dark:border-indigo-800'>
+                    <AgentReputationBadge
+                      reputation={property.agentReputation || {
+                        name: agentContactName,
+                        isVerifiedAgent: true,
+                        successfulPlacements: 0,
+                        ratingAvg: null,
+                        ratingCount: 0,
+                      }}
+                      showImage
+                      image={property.agentImage}
+                    />
+                  </div>
+                )}
+                <p className='text-sm text-indigo-800 dark:text-indigo-200 mt-3'>
                   This listing works like a normal house detail page: unlock contact details, then contact the agent, book the house, or request a viewing.
                 </p>
                 <div className='mt-4 flex flex-wrap gap-2'>
@@ -728,9 +744,12 @@ const PropertyDetails = () => {
                     rel='noreferrer'
                     className='px-4 py-2 rounded-lg border border-indigo-300 text-indigo-700 dark:text-indigo-200 dark:border-indigo-700 text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
                   >
-                    Open in Google Maps
+                    Approximate area on Maps
                   </a>
                 </div>
+                <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>
+                  Exact pin unlocks in My Viewings after the viewing is confirmed.
+                </p>
               </div>
               <div className='p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'>
                 <p className='text-sm font-semibold text-gray-900 dark:text-white mb-2'>Quick actions</p>
@@ -1986,49 +2005,58 @@ const PropertyDetails = () => {
           </div>
         )}
 
-        {/* Owner Info */}
+        {/* Owner / Agent public identity */}
         <div className='mt-10 p-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800'>
-          <div className='flex items-start gap-4'>
-            {(() => {
-              const hasLandlordDisplayName = !!String(property?.landlordName || '').trim()
-              if (!hasLandlordDisplayName) {
-                return (
-                  <div className='w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center'>
-                    <UserIcon className='w-7 h-7 text-gray-500 dark:text-gray-300' />
-                  </div>
-                )
-              }
+          {isAgentListing ? (
+            <AgentReputationBadge
+              reputation={property.agentReputation || {
+                name: agentContactName || 'Verified Agent',
+                isVerifiedAgent: true,
+                successfulPlacements: 0,
+                ratingAvg: null,
+                ratingCount: 0,
+              }}
+              showImage
+              image={property.agentImage}
+            />
+          ) : (
+            <div className='flex items-start gap-4'>
+              {(() => {
+                const hasLandlordDisplayName = !!String(property?.landlordName || '').trim()
+                if (!hasLandlordDisplayName) {
+                  return (
+                    <div className='w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center'>
+                      <UserIcon className='w-7 h-7 text-gray-500 dark:text-gray-300' />
+                    </div>
+                  )
+                }
 
-              const displayName = property.landlordName || property.owner?.username || 'Property Contact'
-              const fallbackAvatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName) + '&background=e5e7eb&color=111827&bold=true'
-              const avatarSrc = isPartnerListing ? fallbackAvatar : (property.owner?.image || fallbackAvatar)
-              return (
-                <img
-                  src={avatarSrc}
-                  alt=""
-                  onError={(e) => { e.target.src = fallbackAvatar }}
-                  className='w-16 h-16 rounded-full object-cover'
-                />
-              )
-            })()}
-            <div className='flex-1'>
-              <div className='flex items-center gap-2'>
-                <p className='text-lg font-medium'>
-                  {!String(property?.landlordName || '').trim()
-                    ? ''
-                    : (property.landlordName || property.owner?.username || 'Property Owner')}
+                const displayName = property.landlordName || property.owner?.username || 'Property Contact'
+                const fallbackAvatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName) + '&background=e5e7eb&color=111827&bold=true'
+                const avatarSrc = isPartnerListing ? fallbackAvatar : (property.owner?.image || fallbackAvatar)
+                return (
+                  <img
+                    src={avatarSrc}
+                    alt=""
+                    onError={(e) => { e.target.src = fallbackAvatar }}
+                    className='w-16 h-16 rounded-full object-cover'
+                  />
+                )
+              })()}
+              <div className='flex-1'>
+                <div className='flex items-center gap-2'>
+                  <p className='text-lg font-medium'>
+                    {!String(property?.landlordName || '').trim()
+                      ? ''
+                      : (property.landlordName || property.owner?.username || 'Property Owner')}
+                  </p>
+                </div>
+                <p className='text-gray-600 dark:text-gray-400 text-sm mt-1'>
+                  {isPartnerListing ? 'Partner Contact' : 'Property Owner'}
                 </p>
               </div>
-                {!isAgentListing && (
-                  <p className='text-gray-600 dark:text-gray-400 text-sm mt-1'>
-                    {isPartnerListing ? 'Partner Contact' : 'Property Owner'}
-                  </p>
-                )}
-              {/* <p className='text-gray-500 text-sm mt-2'>
-                Contact: {property.contact}
-              </p> */}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Modals */}

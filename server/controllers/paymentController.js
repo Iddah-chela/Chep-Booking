@@ -75,12 +75,12 @@ export const initiateUnlock = async (req, res) => {
         const dbUser = await User.findById(userId);
         const availableReferralUnlocks = (dbUser?.referralUnlocks || 0) - (dbUser?.referralUnlocksUsed || 0);
         
-        if (priorCount < FREE_UNLOCKS) {
-            // Signup freebie - per-property only (not global)
+        if (priorCount < FREE_UNLOCKS && propertyId) {
+            // Signup freebie - per-property only (not global / not map)
             const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
             const freePass = await UserPass.create({
                 user: userId, passType: '1day', amount: 0, isFree: true,
-                property: propertyId || null,
+                property: propertyId,
                 phoneNumber: phoneNumber || '0000', paymentStatus: 'completed',
                 transactionRef: 'FREE_' + Date.now(), expiresAt
             });
@@ -95,12 +95,12 @@ export const initiateUnlock = async (req, res) => {
             });
         }
         
-        if (availableReferralUnlocks > 0) {
+        if (availableReferralUnlocks > 0 && propertyId) {
             // Referral freebie - per-property only
             const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
             const freePass = await UserPass.create({
                 user: userId, passType: '1day', amount: 0, isFree: true,
-                property: propertyId || null,
+                property: propertyId,
                 phoneNumber: phoneNumber || '0000', paymentStatus: 'completed',
                 transactionRef: 'REFERRAL_' + Date.now(), expiresAt
             });

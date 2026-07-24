@@ -18,7 +18,7 @@ const Terms = () => {
           <p className='text-gray-700 leading-relaxed'>
             By accessing or using PataKeja ("the Platform"), you agree to be bound by these Terms of Service. 
             PataKeja is a rental listing platform that connects tenants with property owners and caretakers 
-            in Kenya, primarily around university areas. If you do not agree with these terms, please do not use the Platform.
+            in Kenya. If you do not agree with these terms, please do not use the Platform.
           </p>
         </section>
 

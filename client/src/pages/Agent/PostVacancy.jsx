@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { ChevronLeft, Plus, X, Loader, Image, Video, MapPin, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
+import LocationPinPicker from '../../components/LocationPinPicker';
 
 export default function PostVacancy() {
   const { axios, getToken, navigate } = useAppContext();
@@ -31,6 +32,7 @@ export default function PostVacancy() {
     location: {
       area: '',
       city: '',
+      coordinates: null,
     },
     rent: {
       min: '',
@@ -266,6 +268,14 @@ export default function PostVacancy() {
         return;
       }
 
+      if (
+        formData.location.coordinates?.latitude == null ||
+        formData.location.coordinates?.longitude == null
+      ) {
+        toast.error('Drop an accurate map pin. Exact location is shared only after a viewing is confirmed.');
+        return;
+      }
+
       if (!formData.rent.min || !formData.rent.max) {
         toast.error('Please fill in rent range');
         return;
@@ -343,14 +353,24 @@ export default function PostVacancy() {
 
       const payload = {
         title: formData.title.trim(),
-        location: formData.location,
+        location: {
+          area: formData.location.area,
+          city: formData.location.city,
+          ...(formData.location.coordinates
+            ? { coordinates: formData.location.coordinates }
+            : {}),
+        },
         rent: {
           min: Number(formData.rent.min),
           max: Number(formData.rent.max),
         },
         roomType: formData.roomType,
         availableRooms: Number(formData.availableRooms),
-        googleMapsUrl: formData.googleMapsUrl?.trim() || '',
+        googleMapsUrl: formData.googleMapsUrl?.trim() || (
+          formData.location.coordinates
+            ? `https://www.google.com/maps?q=${formData.location.coordinates.latitude},${formData.location.coordinates.longitude}`
+            : ''
+        ),
         description: formData.description,
         amenities,
         photos: photos.map((p) => (typeof p === 'string' ? { url: p, publicId: '' } : { url: p.url, publicId: p.publicId || '', thumbnail: p.thumbnail || '' })),
@@ -391,7 +411,7 @@ export default function PostVacancy() {
         </button>
         <div>
           <h1 className='text-2xl md:text-3xl font-bold text-gray-900 dark:text-white'>Post a Vacancy</h1>
-          <p className='text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1'>Share the details students need to decide quickly.</p>
+          <p className='text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1'>Share the details renters need to decide quickly.</p>
         </div>
       </div>
 
@@ -401,7 +421,7 @@ export default function PostVacancy() {
           <input
             type='text'
             name='title'
-            placeholder='e.g. Spacious bedsitter near campus'
+            placeholder='e.g. Spacious bedsitter near town'
             value={formData.title}
             onChange={handleInputChange}
             className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
@@ -437,7 +457,7 @@ export default function PostVacancy() {
             <input
               type='url'
               name='googleMapsUrl'
-              placeholder='Optional Google Maps link'
+              placeholder='Google Maps link (optional if pin is set)'
               value={formData.googleMapsUrl}
               onChange={handleInputChange}
               className='md:col-span-3 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
@@ -450,7 +470,23 @@ export default function PostVacancy() {
               Open Maps
             </button>
           </div>
-          <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>Google Maps link is optional.</p>
+          <div className='mt-4'>
+            <LocationPinPicker
+              value={formData.location.coordinates}
+              onChange={(coordinates) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  location: { ...prev.location, coordinates },
+                  googleMapsUrl: coordinates
+                    ? `https://www.google.com/maps?q=${coordinates.latitude},${coordinates.longitude}`
+                    : prev.googleMapsUrl,
+                }));
+              }}
+            />
+          </div>
+          <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>
+            Accurate pin required. Public map shows an approximate area; exact location unlocks after you confirm a viewing.
+          </p>
         </div>
 
         <div className='mb-8'>
@@ -521,9 +557,9 @@ export default function PostVacancy() {
                 value={formData.availabilityFrom}
                 onChange={handleInputChange}
                 className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-                title='The earliest date a student can move in'
+                title='The earliest date a tenant can move in'
               />
-              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Students can move in on or after this date</p>
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Tenants can move in on or after this date</p>
             </div>
             <div>
               <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Move-In Deadline</label>
@@ -533,9 +569,9 @@ export default function PostVacancy() {
                 value={formData.availabilityTo}
                 onChange={handleInputChange}
                 className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-                title='The latest date a student can move in'
+                title='The latest date a tenant can move in'
               />
-              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Last date a student can move in before this vacancy is no longer considered current</p>
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Last date a tenant can move in before this vacancy is no longer considered current</p>
             </div>
             <div>
               <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Min Days Notice</label>
@@ -547,7 +583,7 @@ export default function PostVacancy() {
                 value={formData.minBookingLeadDays}
                 onChange={handleInputChange}
                 className='w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-                title='How many days in advance students must book'
+                title='How many days in advance tenants must book'
               />
               <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Days in advance to confirm booking</p>
             </div>

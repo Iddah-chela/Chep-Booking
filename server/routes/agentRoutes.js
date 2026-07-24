@@ -58,8 +58,19 @@ router.put('/leads/:id/outcome', protect, isAgent, validateLeadId, agentControll
 // Authenticated user: Express interest in a vacancy (create lead)
 router.post('/leads', protect, agentController.createLead);
 
+// Tenant: their own leads (viewing exact location after agent confirms)
+router.get('/my-leads', protect, agentController.getMyLeads);
+
 // Cancel provisional hold (tenant or agent)
 router.put('/leads/:id/cancel-hold', protect, validateLeadId, agentController.cancelProvisionalHold);
+
+// Reputation / placement confirmation (tenant + agent settings)
+router.get('/reputation/settings', protect, isAgent, agentController.getReputationSettings);
+router.put('/reputation/settings', protect, isAgent, agentController.updateReputationSettings);
+router.get('/placements/pending', protect, agentController.getPendingPlacementConfirmations);
+router.get('/placements/:id', protect, validateLeadId, agentController.getPlacementConfirmation);
+router.post('/placements/:id/confirm', protect, validateLeadId, agentController.confirmPlacement);
+router.post('/placements/:id/rate', protect, validateLeadId, agentController.rateAgentPlacement);
 
 // ===== STATS ROUTES =====
 
